@@ -35,9 +35,7 @@ define(
 */
 
 require_once APP_PATH . '/core/Database.php';
-
 require_once APP_PATH . '/core/Auth.php';
-
 require_once APP_PATH . '/core/AuthMiddleware.php';
 
 
@@ -55,6 +53,7 @@ require_once APP_PATH . '/controllers/BorrowerController.php';
 require_once APP_PATH . '/controllers/AccountController.php';
 require_once APP_PATH . '/controllers/LoanController.php';
 require_once APP_PATH . '/controllers/CategoryController.php';
+require_once APP_PATH . '/controllers/ReportController.php';
 
 
 /*
@@ -94,7 +93,6 @@ $url = trim($url, '/');
 */
 
 switch ($url) {
-
 
     /*
     |--------------------------------------------------------------------------
@@ -237,6 +235,15 @@ switch ($url) {
         break;
 
 
+        case 'borrowers/details':
+
+    $controller = new BorrowerController();
+
+    $controller->details();
+
+    break;
+
+
     /*
     |--------------------------------------------------------------------------
     | Categories
@@ -330,6 +337,23 @@ switch ($url) {
         break;
 
 
+ case 'payments':
+
+    $controller = new LoanController();
+
+    $controller->payments();
+
+    break;
+
+    case 'loans/show':
+
+        $controller = new LoanController();
+
+        $controller->show();
+
+        break;
+
+
     case 'loans/edit':
 
         $controller = new LoanController();
@@ -353,6 +377,51 @@ switch ($url) {
         $controller = new LoanController();
 
         $controller->delete();
+
+        break;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | APPROVE LOAN
+    |--------------------------------------------------------------------------
+    */
+
+    case 'loans/approve':
+
+        $controller = new LoanController();
+
+        $controller->approve();
+
+        break;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REJECT LOAN
+    |--------------------------------------------------------------------------
+    */
+
+    case 'loans/reject':
+
+        $controller = new LoanController();
+
+        $controller->reject();
+
+        break;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RELEASE LOAN
+    |--------------------------------------------------------------------------
+    */
+
+    case 'loans/release':
+
+        $controller = new LoanController();
+
+        $controller->release();
 
         break;
 
@@ -516,14 +585,37 @@ switch ($url) {
         break;
 
 
-        
-    /*
+
+case 'loans/payment':
+
+    $controller = new LoanController();
+
+    $controller->payment();
+
+    break;
+
+
+case 'loans/payment/store':
+
+    $controller = new LoanController();
+
+    $controller->storePayment();
+
+    break;
+
+ /*
     |--------------------------------------------------------------------------
-    | Transfer Account Balance
+    | REPORTS
     |--------------------------------------------------------------------------
     */
+      case 'reports/index':
 
-   /* |-------------------------------------------------------------------------- | Loans |-------------------------------------------------------------------------- */ case 'loans': $controller = new LoanController(); $controller->index(); break; case 'loans/create': $controller = new LoanController(); $controller->create(); break; case 'loans/store': $controller = new LoanController(); $controller->store(); break; case 'loans/edit': $controller = new LoanController(); $controller->edit(); break; case 'loans/update': $controller = new LoanController(); $controller->update(); break; case 'loans/delete': $controller = new LoanController(); $controller->delete(); break;
+        $controller = new ReportController();
+
+        $controller->index();
+
+        break;
+
     /*
     |--------------------------------------------------------------------------
     | Default / 404

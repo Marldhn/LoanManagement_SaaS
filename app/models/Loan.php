@@ -1,4 +1,3 @@
-
 <?php
 
 class Loan
@@ -455,6 +454,10 @@ class Loan
         array $data
     ): bool {
 
+        /*
+         * Only these fields are allowed
+         * to be updated.
+         */
         $allowedFields = [
             'borrower_id',
             'category_id',
@@ -464,13 +467,15 @@ class Loan
             'release_date'
         ];
 
+
+        /*
+         * Build the SET portion of the query.
+         */
         $fields = [];
         $values = [];
 
-        foreach (
-            $allowedFields
-            as $field
-        ) {
+
+        foreach ($allowedFields as $field) {
 
             if (
                 array_key_exists(
@@ -480,32 +485,44 @@ class Loan
             ) {
 
                 $fields[] =
-                    "{$field} = :{$field}";
+                    "l.{$field} = :{$field}";
 
                 $values[$field] =
                     $data[$field];
             }
         }
 
+
+        /*
+         * Nothing to update.
+         */
         if (empty($fields)) {
             return false;
         }
 
+
+        /*
+         * Add WHERE parameters.
+         */
         $values['id'] =
             $id;
 
         $values['business_id'] =
             $businessId;
 
-        $sql = "
-            UPDATE loans l
 
-            INNER JOIN borrowers b
+        /*
+         * Update the loan.
+         */
+        $sql = "
+            UPDATE loans AS l
+
+            INNER JOIN borrowers AS b
                 ON b.id = l.borrower_id
 
-            SET " .
-                implode(
-                    ', ',
+            SET
+                " . implode(
+                    ",\n                ",
                     $fields
                 ) . "
 
@@ -514,10 +531,12 @@ class Loan
             AND b.business_id = :business_id
         ";
 
+
         $stmt =
             $this->db->prepare(
                 $sql
             );
+
 
         return $stmt->execute(
             $values
@@ -554,33 +573,36 @@ class Loan
     }
 
 
-/*
-|--------------------------------------------------------------------------
-| GET CATEGORIES
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | GET CATEGORIES
+    |--------------------------------------------------------------------------
+    */
 
-public function categories(int $businessId): array
-{
-    $stmt = $this->db->prepare(
-        "
-        SELECT *
-        FROM categories
-        WHERE business_id = :business_id
-        AND status = 'active'
-        AND type IN ('loan', 'both')
-        ORDER BY name ASC
-        "
-    );
+    public function categories(
+        int $businessId
+    ): array {
 
-    $stmt->execute([
-        ':business_id' => $businessId
-    ]);
+        $stmt = $this->db->prepare(
+            "
+            SELECT *
+            FROM categories
+            WHERE business_id = :business_id
+            AND status = 'active'
+            AND type IN ('loan', 'both')
+            ORDER BY name ASC
+            "
+        );
 
-    return $stmt->fetchAll(
-        PDO::FETCH_ASSOC
-    );
-}
+        $stmt->execute([
+            ':business_id' =>
+                $businessId
+        ]);
+
+        return $stmt->fetchAll(
+            PDO::FETCH_ASSOC
+        );
+    }
 
 
     /*
@@ -614,6 +636,79 @@ public function categories(int $businessId): array
 
     /*
     |--------------------------------------------------------------------------
+    | GET SINGLE SCHEDULE
+    |--------------------------------------------------------------------------
+    */
+
+    public function getScheduleById(
+        int $scheduleId,
+        int $loanId
+    ): ?array {
+
+        $stmt = $this->db->prepare(
+            "
+            SELECT *
+            FROM loan_schedules
+            WHERE id = ?
+            AND loan_id = ?
+            LIMIT 1
+            "
+        );
+
+        $stmt->execute([
+            $scheduleId,
+            $loanId
+        ]);
+
+        $schedule =
+            $stmt->fetch(
+                PDO::FETCH_ASSOC
+            );
+
+        return $schedule ?: null;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET SCHEDULE INTEREST
+    |--------------------------------------------------------------------------
+    |
+    | This method fixes:
+    |
+    | Call to undefined method Loan::getScheduleInterest()
+    |
+    */
+
+    public function getScheduleInterest(
+        int $scheduleId
+    ): float {
+
+        $stmt = $this->db->prepare(
+            "
+            SELECT
+                interest_amount
+            FROM loan_schedules
+            WHERE id = ?
+            LIMIT 1
+            "
+        );
+
+        $stmt->execute([
+            $scheduleId
+        ]);
+
+        $interest =
+            $stmt->fetchColumn();
+
+        return (float)(
+            $interest ?? 0
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
     | GET PAYMENTS
     |--------------------------------------------------------------------------
     */
@@ -633,6 +728,72 @@ public function categories(int $businessId): array
 
         $stmt->execute([
             $loanId
+        ]);
+
+        return $stmt->fetchAll(
+            PDO::FETCH_ASSOC
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET ALL PAYMENTS FOR BUSINESS
+    |--------------------------------------------------------------------------
+    */
+
+    public function getAllPayments(
+        int $businessId
+    ): array {
+
+        $sql = "
+            SELECT
+                lp.*,
+
+                l.loan_number,
+                l.principal_amount,
+                l.total_payable,
+                l.status AS loan_status,
+
+                CONCAT(
+                    COALESCE(b.first_name, ''),
+                    ' ',
+                    COALESCE(b.middle_name, ''),
+                    ' ',
+                    COALESCE(b.last_name, '')
+                ) AS borrower_name,
+
+                a.account_name,
+
+                ls.installment_number
+
+            FROM loan_payments lp
+
+            INNER JOIN loans l
+                ON l.id = lp.loan_id
+
+            INNER JOIN borrowers b
+                ON b.id = l.borrower_id
+
+            LEFT JOIN accounts a
+                ON a.id = lp.account_id
+
+            LEFT JOIN loan_schedules ls
+                ON ls.id = lp.schedule_id
+
+            WHERE lp.business_id = ?
+
+            ORDER BY
+                lp.payment_date DESC,
+                lp.id DESC
+        ";
+
+        $stmt = $this->db->prepare(
+            $sql
+        );
+
+        $stmt->execute([
+            $businessId
         ]);
 
         return $stmt->fetchAll(

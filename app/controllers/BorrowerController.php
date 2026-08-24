@@ -5,6 +5,12 @@ class BorrowerController
     private Borrower $borrower;
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | CONSTRUCTOR
+    |--------------------------------------------------------------------------
+    */
+
     public function __construct()
     {
         Auth::startSession();
@@ -13,10 +19,12 @@ class BorrowerController
     }
 
 
-    /**
-     * Make sure the user is logged in
-     * and belongs to a business.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | REQUIRE BUSINESS
+    |--------------------------------------------------------------------------
+    */
+
     private function requireBusiness(): int
     {
         if (!Auth::check()) {
@@ -28,7 +36,9 @@ class BorrowerController
             exit;
         }
 
+
         $businessId = Auth::businessId();
+
 
         if (!$businessId) {
 
@@ -41,62 +51,262 @@ class BorrowerController
             exit;
         }
 
-        return $businessId;
+
+        return (int)$businessId;
     }
 
 
-    /**
-     * Borrower list.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | BORROWER LIST
+    |--------------------------------------------------------------------------
+    */
+
     public function index(): void
     {
         $businessId = $this->requireBusiness();
 
+
         $user = Auth::user();
 
         $business = Auth::business();
 
         $tenantRole = Auth::tenantRole();
 
-        $borrowers = $this->borrower
-            ->getAllByBusiness($businessId);
+
+        $borrowers =
+            $this->borrower
+                ->getAllByBusiness(
+                    $businessId
+                );
+
 
         $currentUrl = 'borrowers';
 
-        require APP_PATH . '/views/borrowers/index.php';
+
+        require APP_PATH .
+            '/views/borrowers/index.php';
     }
 
 
-    /**
-     * Create borrower form.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | BORROWER DETAILS
+    |--------------------------------------------------------------------------
+    */
+
+    public function details(): void
+    {
+        $businessId = $this->requireBusiness();
+
+
+        $id = (int)(
+            $_GET['id'] ?? 0
+        );
+
+
+        if ($id <= 0) {
+
+            header(
+                'Location: index.php?url=borrowers'
+            );
+
+            exit;
+        }
+
+
+        /*
+         * Get borrower.
+         *
+         * The model checks the business_id,
+         * so users cannot access another
+         * business's borrower.
+         */
+
+        $borrower =
+            $this->borrower
+                ->findById(
+                    $id,
+                    $businessId
+                );
+
+
+        if (!$borrower) {
+
+            http_response_code(404);
+
+            echo '<h1>404 - Borrower Not Found</h1>';
+
+            echo '<p>The borrower does not exist.</p>';
+
+            echo '<br>';
+
+            echo '
+                <a href="index.php?url=borrowers">
+                    Back to Borrowers
+                </a>
+            ';
+
+            exit;
+        }
+
+
+        /*
+         * Get all loans belonging to
+         * this borrower.
+         */
+
+        $loans =
+            $this->borrower
+                ->getLoansByBorrower(
+                    $id,
+                    $businessId
+                );
+
+
+        /*
+         * Calculate borrower loan summary.
+         */
+
+        $totalLoans = count($loans);
+
+        $totalPrincipal = 0;
+
+        $totalPayable = 0;
+
+        $totalPaid = 0;
+
+        $activeLoans = 0;
+
+        $completedLoans = 0;
+
+        $pendingLoans = 0;
+
+        $overdueLoans = 0;
+
+
+        foreach ($loans as $loan) {
+
+            $totalPrincipal +=
+                (float)(
+                    $loan['principal_amount']
+                    ?? 0
+                );
+
+
+            $totalPayable +=
+                (float)(
+                    $loan['total_payable']
+                    ?? 0
+                );
+
+
+            $totalPaid +=
+                (float)(
+                    $loan['total_paid']
+                    ?? 0
+                );
+
+
+            $loanStatus =
+                $loan['status']
+                ?? 'pending';
+
+
+            if ($loanStatus === 'active') {
+
+                $activeLoans++;
+
+            } elseif ($loanStatus === 'completed') {
+
+                $completedLoans++;
+
+            } elseif ($loanStatus === 'pending') {
+
+                $pendingLoans++;
+
+            } elseif ($loanStatus === 'overdue') {
+
+                $overdueLoans++;
+            }
+        }
+
+
+        /*
+         * Remaining balance.
+         */
+
+        $remainingBalance =
+            $totalPayable - $totalPaid;
+
+
+        if ($remainingBalance < 0) {
+
+            $remainingBalance = 0;
+        }
+
+
+        $user = Auth::user();
+
+        $business = Auth::business();
+
+        $tenantRole = Auth::tenantRole();
+
+        $currentUrl = 'borrowers';
+
+
+        require APP_PATH .
+            '/views/borrowers/details.php';
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE BORROWER
+    |--------------------------------------------------------------------------
+    */
+
     public function create(): void
     {
         $businessId = $this->requireBusiness();
 
+
         $user = Auth::user();
 
         $business = Auth::business();
 
         $tenantRole = Auth::tenantRole();
 
-        $borrowerCode = $this->borrower
-            ->generateCode($businessId);
+
+        $borrowerCode =
+            $this->borrower
+                ->generateCode(
+                    $businessId
+                );
+
 
         $error = null;
 
-        $currentUrl = 'borrowers/create';
 
-        require APP_PATH . '/views/borrowers/create.php';
+        $currentUrl =
+            'borrowers/create';
+
+
+        require APP_PATH .
+            '/views/borrowers/create.php';
     }
 
 
-    /**
-     * Store borrower.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | STORE BORROWER
+    |--------------------------------------------------------------------------
+    */
+
     public function store(): void
     {
         $businessId = $this->requireBusiness();
+
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
@@ -107,92 +317,114 @@ class BorrowerController
             exit;
         }
 
+
         $user = Auth::user();
+
 
         $data = [
 
-            'borrower_code' => trim(
-                $_POST['borrower_code'] ?? ''
-            ),
+            'borrower_code' =>
+                trim(
+                    $_POST['borrower_code'] ?? ''
+                ),
 
-            'first_name' => trim(
-                $_POST['first_name'] ?? ''
-            ),
+            'first_name' =>
+                trim(
+                    $_POST['first_name'] ?? ''
+                ),
 
-            'middle_name' => trim(
-                $_POST['middle_name'] ?? ''
-            ),
+            'middle_name' =>
+                trim(
+                    $_POST['middle_name'] ?? ''
+                ),
 
-            'last_name' => trim(
-                $_POST['last_name'] ?? ''
-            ),
+            'last_name' =>
+                trim(
+                    $_POST['last_name'] ?? ''
+                ),
 
-            'email' => trim(
-                $_POST['email'] ?? ''
-            ),
+            'email' =>
+                trim(
+                    $_POST['email'] ?? ''
+                ),
 
-            'phone' => trim(
-                $_POST['phone'] ?? ''
-            ),
+            'phone' =>
+                trim(
+                    $_POST['phone'] ?? ''
+                ),
 
-            'date_of_birth' => !empty(
-                $_POST['date_of_birth'] ?? ''
-            )
-                ? $_POST['date_of_birth']
-                : null,
+            'date_of_birth' =>
+                !empty(
+                    $_POST['date_of_birth'] ?? ''
+                )
+                    ? $_POST['date_of_birth']
+                    : null,
 
-            'gender' => !empty(
-                $_POST['gender'] ?? ''
-            )
-                ? $_POST['gender']
-                : null,
+            'gender' =>
+                !empty(
+                    $_POST['gender'] ?? ''
+                )
+                    ? $_POST['gender']
+                    : null,
 
-            'address' => trim(
-                $_POST['address'] ?? ''
-            ),
+            'address' =>
+                trim(
+                    $_POST['address'] ?? ''
+                ),
 
-            'city' => trim(
-                $_POST['city'] ?? ''
-            ),
+            'city' =>
+                trim(
+                    $_POST['city'] ?? ''
+                ),
 
-            'province' => trim(
-                $_POST['province'] ?? ''
-            ),
+            'province' =>
+                trim(
+                    $_POST['province'] ?? ''
+                ),
 
-            'postal_code' => trim(
-                $_POST['postal_code'] ?? ''
-            ),
+            'postal_code' =>
+                trim(
+                    $_POST['postal_code'] ?? ''
+                ),
 
-            'occupation' => trim(
-                $_POST['occupation'] ?? ''
-            ),
+            'occupation' =>
+                trim(
+                    $_POST['occupation'] ?? ''
+                ),
 
-            'employer' => trim(
-                $_POST['employer'] ?? ''
-            ),
+            'employer' =>
+                trim(
+                    $_POST['employer'] ?? ''
+                ),
 
-            'monthly_income' => (float) (
-                $_POST['monthly_income'] ?? 0
-            ),
+            'monthly_income' =>
+                (float)(
+                    $_POST['monthly_income'] ?? 0
+                ),
 
-            'status' => $_POST['status'] ?? 'active',
+            'status' =>
+                $_POST['status'] ?? 'active',
 
-            'notes' => trim(
-                $_POST['notes'] ?? ''
-            )
+            'notes' =>
+                trim(
+                    $_POST['notes'] ?? ''
+                )
         ];
 
 
         /*
          * Required fields.
          */
+
         if (
-            $data['first_name'] === '' ||
+            $data['first_name'] === ''
+            ||
             $data['last_name'] === ''
         ) {
 
             $error =
                 'First name and last name are required.';
+
 
             $user = Auth::user();
 
@@ -200,10 +432,14 @@ class BorrowerController
 
             $tenantRole = Auth::tenantRole();
 
+
             $borrowerCode =
                 $data['borrower_code'];
 
-            $currentUrl = 'borrowers/create';
+
+            $currentUrl =
+                'borrowers/create';
+
 
             require APP_PATH .
                 '/views/borrowers/create.php';
@@ -213,24 +449,31 @@ class BorrowerController
 
 
         /*
-         * Generate code if somehow missing.
+         * Generate code if missing.
          */
-        if ($data['borrower_code'] === '') {
+
+        if (
+            $data['borrower_code'] === ''
+        ) {
 
             $data['borrower_code'] =
                 $this->borrower
-                    ->generateCode($businessId);
+                    ->generateCode(
+                        $businessId
+                    );
         }
 
 
         /*
          * Create borrower.
          */
-        $created = $this->borrower->create(
-            $businessId,
-            $data,
-            $user['id'] ?? null
-        );
+
+        $created =
+            $this->borrower->create(
+                $businessId,
+                $data,
+                $user['id'] ?? null
+            );
 
 
         if (!$created) {
@@ -238,16 +481,21 @@ class BorrowerController
             $error =
                 'Unable to create borrower. Please try again.';
 
+
             $user = Auth::user();
 
             $business = Auth::business();
 
             $tenantRole = Auth::tenantRole();
 
+
             $borrowerCode =
                 $data['borrower_code'];
 
-            $currentUrl = 'borrowers/create';
+
+            $currentUrl =
+                'borrowers/create';
+
 
             require APP_PATH .
                 '/views/borrowers/create.php';
@@ -264,16 +512,21 @@ class BorrowerController
     }
 
 
-    /**
-     * Edit borrower.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | EDIT BORROWER
+    |--------------------------------------------------------------------------
+    */
+
     public function edit(): void
     {
         $businessId = $this->requireBusiness();
 
-        $id = (int) (
+
+        $id = (int)(
             $_GET['id'] ?? 0
         );
+
 
         if ($id <= 0) {
 
@@ -285,10 +538,12 @@ class BorrowerController
         }
 
 
-        $borrower = $this->borrower->findById(
-            $id,
-            $businessId
-        );
+        $borrower =
+            $this->borrower
+                ->findById(
+                    $id,
+                    $businessId
+                );
 
 
         if (!$borrower) {
@@ -311,19 +566,25 @@ class BorrowerController
 
         $error = null;
 
-        $currentUrl = 'borrowers/edit';
+        $currentUrl =
+            'borrowers/edit';
+
 
         require APP_PATH .
             '/views/borrowers/edit.php';
     }
 
 
-    /**
-     * Update borrower.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE BORROWER
+    |--------------------------------------------------------------------------
+    */
+
     public function update(): void
     {
         $businessId = $this->requireBusiness();
+
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
@@ -335,7 +596,7 @@ class BorrowerController
         }
 
 
-        $id = (int) (
+        $id = (int)(
             $_POST['id'] ?? 0
         );
 
@@ -352,91 +613,114 @@ class BorrowerController
 
         $data = [
 
-            'first_name' => trim(
-                $_POST['first_name'] ?? ''
-            ),
+            'first_name' =>
+                trim(
+                    $_POST['first_name'] ?? ''
+                ),
 
-            'middle_name' => trim(
-                $_POST['middle_name'] ?? ''
-            ),
+            'middle_name' =>
+                trim(
+                    $_POST['middle_name'] ?? ''
+                ),
 
-            'last_name' => trim(
-                $_POST['last_name'] ?? ''
-            ),
+            'last_name' =>
+                trim(
+                    $_POST['last_name'] ?? ''
+                ),
 
-            'email' => trim(
-                $_POST['email'] ?? ''
-            ),
+            'email' =>
+                trim(
+                    $_POST['email'] ?? ''
+                ),
 
-            'phone' => trim(
-                $_POST['phone'] ?? ''
-            ),
+            'phone' =>
+                trim(
+                    $_POST['phone'] ?? ''
+                ),
 
-            'date_of_birth' => !empty(
-                $_POST['date_of_birth'] ?? ''
-            )
-                ? $_POST['date_of_birth']
-                : null,
+            'date_of_birth' =>
+                !empty(
+                    $_POST['date_of_birth'] ?? ''
+                )
+                    ? $_POST['date_of_birth']
+                    : null,
 
-            'gender' => !empty(
-                $_POST['gender'] ?? ''
-            )
-                ? $_POST['gender']
-                : null,
+            'gender' =>
+                !empty(
+                    $_POST['gender'] ?? ''
+                )
+                    ? $_POST['gender']
+                    : null,
 
-            'address' => trim(
-                $_POST['address'] ?? ''
-            ),
+            'address' =>
+                trim(
+                    $_POST['address'] ?? ''
+                ),
 
-            'city' => trim(
-                $_POST['city'] ?? ''
-            ),
+            'city' =>
+                trim(
+                    $_POST['city'] ?? ''
+                ),
 
-            'province' => trim(
-                $_POST['province'] ?? ''
-            ),
+            'province' =>
+                trim(
+                    $_POST['province'] ?? ''
+                ),
 
-            'postal_code' => trim(
-                $_POST['postal_code'] ?? ''
-            ),
+            'postal_code' =>
+                trim(
+                    $_POST['postal_code'] ?? ''
+                ),
 
-            'occupation' => trim(
-                $_POST['occupation'] ?? ''
-            ),
+            'occupation' =>
+                trim(
+                    $_POST['occupation'] ?? ''
+                ),
 
-            'employer' => trim(
-                $_POST['employer'] ?? ''
-            ),
+            'employer' =>
+                trim(
+                    $_POST['employer'] ?? ''
+                ),
 
-            'monthly_income' => (float) (
-                $_POST['monthly_income'] ?? 0
-            ),
+            'monthly_income' =>
+                (float)(
+                    $_POST['monthly_income'] ?? 0
+                ),
 
-            'status' => $_POST['status'] ?? 'active',
+            'status' =>
+                $_POST['status'] ?? 'active',
 
-            'notes' => trim(
-                $_POST['notes'] ?? ''
-            )
+            'notes' =>
+                trim(
+                    $_POST['notes'] ?? ''
+                )
         ];
 
 
         if (
-            $data['first_name'] === '' ||
+            $data['first_name'] === ''
+            ||
             $data['last_name'] === ''
         ) {
 
             $error =
                 'First name and last name are required.';
 
-            $borrower = $this->borrower->findById(
-                $id,
-                $businessId
-            );
 
-            $borrower = array_merge(
-                $borrower ?? [],
-                $data
-            );
+            $borrower =
+                $this->borrower
+                    ->findById(
+                        $id,
+                        $businessId
+                    );
+
+
+            $borrower =
+                array_merge(
+                    $borrower ?? [],
+                    $data
+                );
+
 
             $user = Auth::user();
 
@@ -444,7 +728,9 @@ class BorrowerController
 
             $tenantRole = Auth::tenantRole();
 
-            $currentUrl = 'borrowers/edit';
+            $currentUrl =
+                'borrowers/edit';
+
 
             require APP_PATH .
                 '/views/borrowers/edit.php';
@@ -453,11 +739,12 @@ class BorrowerController
         }
 
 
-        $updated = $this->borrower->update(
-            $id,
-            $businessId,
-            $data
-        );
+        $updated =
+            $this->borrower->update(
+                $id,
+                $businessId,
+                $data
+            );
 
 
         if (!$updated) {
@@ -465,15 +752,21 @@ class BorrowerController
             $error =
                 'Unable to update borrower. Please try again.';
 
-            $borrower = $this->borrower->findById(
-                $id,
-                $businessId
-            );
 
-            $borrower = array_merge(
-                $borrower ?? [],
-                $data
-            );
+            $borrower =
+                $this->borrower
+                    ->findById(
+                        $id,
+                        $businessId
+                    );
+
+
+            $borrower =
+                array_merge(
+                    $borrower ?? [],
+                    $data
+                );
+
 
             $user = Auth::user();
 
@@ -481,7 +774,9 @@ class BorrowerController
 
             $tenantRole = Auth::tenantRole();
 
-            $currentUrl = 'borrowers/edit';
+            $currentUrl =
+                'borrowers/edit';
+
 
             require APP_PATH .
                 '/views/borrowers/edit.php';
@@ -498,24 +793,29 @@ class BorrowerController
     }
 
 
-    /**
-     * Delete borrower.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE BORROWER
+    |--------------------------------------------------------------------------
+    */
+
     public function delete(): void
     {
         $businessId = $this->requireBusiness();
 
-        $id = (int) (
+
+        $id = (int)(
             $_GET['id'] ?? 0
         );
 
 
         if ($id > 0) {
 
-            $this->borrower->delete(
-                $id,
-                $businessId
-            );
+            $this->borrower
+                ->delete(
+                    $id,
+                    $businessId
+                );
         }
 
 

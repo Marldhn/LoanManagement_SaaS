@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 24, 2026 at 11:27 AM
+-- Generation Time: Aug 24, 2026 at 11:21 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -44,7 +44,7 @@ CREATE TABLE `accounts` (
 --
 
 INSERT INTO `accounts` (`id`, `business_id`, `account_name`, `account_type`, `balance`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Gcash', 'asset', 6000.00, 'active', 2, '2026-08-22 00:06:29', '2026-08-23 03:40:46'),
+(1, 1, 'Gcash', 'asset', 0.00, 'active', 2, '2026-08-22 00:06:29', '2026-08-24 19:49:35'),
 (2, 1, 'Maribank', 'asset', 1000.00, 'active', 2, '2026-08-22 00:28:41', '2026-08-22 00:43:32'),
 (3, 1, 'Cash', 'asset', 0.00, 'active', 2, '2026-08-22 00:35:34', '2026-08-23 01:34:54');
 
@@ -225,11 +225,37 @@ CREATE TABLE `loans` (
 INSERT INTO `loans` (`id`, `business_id`, `borrower_id`, `account_id`, `category_id`, `loan_number`, `principal_amount`, `interest_rate`, `interest_type`, `payment_type`, `term`, `term_period`, `processing_fee`, `total_interest`, `total_payable`, `release_date`, `first_payment_date`, `status`, `purpose`, `notes`, `created_by`, `created_at`, `updated_at`) VALUES
 (1, 1, 1, NULL, 1, 'LN-20260823-C46F36', 1000.00, 10.00, 'flat', 'installment', 1, 'months', 10.00, 100.00, 1110.00, '2026-08-23', '0002-09-23', 'pending', '', '', 2, '2026-08-22 23:19:00', '2026-08-22 23:19:00'),
 (2, 1, 1, NULL, 1, 'LN-20260823-C0BE0D', 1000.00, 10.00, 'flat', 'installment', 1, 'months', 10.00, 100.00, 1110.00, '2026-08-23', '0002-09-23', 'pending', '', '', 2, '2026-08-22 23:22:08', '2026-08-22 23:22:08'),
-(3, 1, 1, NULL, 1, 'LN-20260823-5E5A88', 5000.00, 10.00, 'flat', 'full_payment', 1, 'months', 0.00, 500.00, 5500.00, '2026-08-23', '2026-09-23', 'pending', '', '', 2, '2026-08-23 01:27:51', '2026-08-23 01:27:51'),
+(3, 1, 1, NULL, 1, 'LN-20260823-5E5A88', 5000.00, 10.00, 'flat', 'full_payment', 1, 'months', 0.00, 500.00, 5500.00, '2026-08-23', '2026-09-23', 'active', '', '', 2, '2026-08-23 01:27:51', '2026-08-24 19:45:43'),
 (4, 1, 1, NULL, 1, 'LN-20260823-6DAA05', 5000.00, 10.00, 'flat', 'installment', 1, 'months', 0.00, 500.00, 5500.00, '2026-08-23', '2026-08-23', 'active', '', '', 2, '2026-08-23 01:34:54', '2026-08-23 01:50:15'),
 (5, 1, 1, NULL, 2, 'LN-20260823-519AB2', 1000.00, 10.00, 'flat', 'installment', 5, 'months', 0.00, 500.00, 1500.00, '2026-08-23', '2027-01-23', 'pending', '', '', 2, '2026-08-23 03:38:40', '2026-08-23 03:38:40'),
-(6, 1, 1, NULL, 2, 'LN-20260823-8C01A2', 1000.00, 10.00, 'flat', 'installment', 3, 'months', 0.00, 300.00, 1300.00, '2026-08-23', '2026-11-23', 'pending', '', '', 2, '2026-08-23 03:39:10', '2026-08-23 03:39:10'),
-(7, 1, 1, NULL, 2, 'LN-20260823-30CC0C', 1000.00, 10.00, 'flat', 'installment', 5, 'months', 0.00, 500.00, 1500.00, '2026-08-23', '2026-09-23', 'pending', '', '', 2, '2026-08-23 03:40:45', '2026-08-23 03:40:45');
+(6, 1, 1, NULL, 2, 'LN-20260823-8C01A2', 1000.00, 10.00, 'flat', 'installment', 3, 'months', 0.00, 300.00, 1300.00, '2026-08-23', '2026-11-23', 'active', '', '', 2, '2026-08-23 03:39:10', '2026-08-24 19:32:33'),
+(7, 1, 1, NULL, 2, 'LN-20260823-30CC0C', 1000.00, 10.00, 'flat', 'installment', 5, 'months', 0.00, 500.00, 1500.00, '2026-08-23', '2026-09-23', 'active', '', '', 2, '2026-08-23 03:40:45', '2026-08-24 19:33:06'),
+(8, 1, 1, NULL, 2, 'LN-20260824-3913E0', 6000.00, 100.00, 'flat', 'full_payment', 1, 'months', 1000.00, 6000.00, 13000.00, '2026-08-25', '2026-09-25', 'pending', '', '', 2, '2026-08-24 19:49:35', '2026-08-24 19:49:35');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `loan_payments`
+--
+
+CREATE TABLE `loan_payments` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `business_id` bigint(20) UNSIGNED NOT NULL,
+  `loan_id` int(10) UNSIGNED NOT NULL,
+  `schedule_id` int(10) UNSIGNED DEFAULT NULL,
+  `account_id` int(10) UNSIGNED NOT NULL,
+  `payment_number` varchar(50) DEFAULT NULL,
+  `payment_date` date NOT NULL,
+  `amount` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `principal_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `interest_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `penalty_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `notes` text DEFAULT NULL,
+  `status` enum('posted','void') NOT NULL DEFAULT 'posted',
+  `created_by` int(10) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -272,7 +298,8 @@ INSERT INTO `loan_schedules` (`id`, `loan_id`, `installment_number`, `due_date`,
 (13, 7, 2, '2026-10-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
 (14, 7, 3, '2026-11-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
 (15, 7, 4, '2026-12-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
-(16, 7, 5, '2027-01-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46');
+(16, 7, 5, '2027-01-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
+(17, 8, 1, '2026-09-25', 6000.00, 6000.00, 12000.00, 'pending', 0.00, NULL, '2026-08-24 19:49:35', '2026-08-24 19:49:35');
 
 -- --------------------------------------------------------
 
@@ -429,6 +456,18 @@ ALTER TABLE `loans`
   ADD KEY `idx_loans_account_id` (`account_id`);
 
 --
+-- Indexes for table `loan_payments`
+--
+ALTER TABLE `loan_payments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_loan_payments_business_id` (`business_id`),
+  ADD KEY `idx_loan_payments_loan_id` (`loan_id`),
+  ADD KEY `idx_loan_payments_schedule_id` (`schedule_id`),
+  ADD KEY `idx_loan_payments_account_id` (`account_id`),
+  ADD KEY `idx_loan_payments_payment_date` (`payment_date`),
+  ADD KEY `idx_loan_payments_status` (`status`);
+
+--
 -- Indexes for table `loan_schedules`
 --
 ALTER TABLE `loan_schedules`
@@ -507,13 +546,19 @@ ALTER TABLE `expenses`
 -- AUTO_INCREMENT for table `loans`
 --
 ALTER TABLE `loans`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `loan_payments`
+--
+ALTER TABLE `loan_payments`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `loan_schedules`
 --
 ALTER TABLE `loan_schedules`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `plans`
@@ -565,6 +610,14 @@ ALTER TABLE `loans`
   ADD CONSTRAINT `fk_loans_borrower` FOREIGN KEY (`borrower_id`) REFERENCES `borrowers` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_loans_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_loans_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `loan_payments`
+--
+ALTER TABLE `loan_payments`
+  ADD CONSTRAINT `fk_loan_payments_account` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_loan_payments_loan` FOREIGN KEY (`loan_id`) REFERENCES `loans` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_loan_payments_schedule` FOREIGN KEY (`schedule_id`) REFERENCES `loan_schedules` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `subscriptions`
