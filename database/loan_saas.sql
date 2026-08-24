@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 21, 2026 at 12:35 PM
+-- Generation Time: Aug 24, 2026 at 11:27 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,33 @@ SET time_zone = "+00:00";
 --
 -- Database: `loan_management_db`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `accounts`
+--
+
+CREATE TABLE `accounts` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `business_id` bigint(20) UNSIGNED NOT NULL,
+  `account_name` varchar(150) NOT NULL,
+  `account_type` varchar(50) DEFAULT NULL,
+  `balance` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `status` enum('active','inactive') NOT NULL DEFAULT 'active',
+  `created_by` int(10) UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `accounts`
+--
+
+INSERT INTO `accounts` (`id`, `business_id`, `account_name`, `account_type`, `balance`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Gcash', 'asset', 6000.00, 'active', 2, '2026-08-22 00:06:29', '2026-08-23 03:40:46'),
+(2, 1, 'Maribank', 'asset', 1000.00, 'active', 2, '2026-08-22 00:28:41', '2026-08-22 00:43:32'),
+(3, 1, 'Cash', 'asset', 0.00, 'active', 2, '2026-08-22 00:35:34', '2026-08-23 01:34:54');
 
 -- --------------------------------------------------------
 
@@ -84,7 +111,8 @@ CREATE TABLE `businesses` (
 
 INSERT INTO `businesses` (`id`, `name`, `slug`, `email`, `phone`, `address`, `logo`, `status`, `created_at`, `updated_at`) VALUES
 (1, 'ShelDohns Financial', 'sheldohns-financial', 'sheldohn@gmail.com', '09061941138', 'Jakosalem Street', NULL, 'active', '2026-08-21 00:28:50', '2026-08-21 00:28:50'),
-(2, 'Secret', 'secret', NULL, NULL, NULL, NULL, 'active', '2026-08-21 01:19:55', '2026-08-21 01:19:55');
+(2, 'Secret', 'secret', NULL, NULL, NULL, NULL, 'active', '2026-08-21 01:19:55', '2026-08-21 01:19:55'),
+(3, 'Dondi', 'dondi', NULL, NULL, NULL, NULL, 'active', '2026-08-22 01:31:34', '2026-08-22 01:31:34');
 
 -- --------------------------------------------------------
 
@@ -109,7 +137,8 @@ CREATE TABLE `business_users` (
 INSERT INTO `business_users` (`id`, `business_id`, `user_id`, `role`, `status`, `created_at`, `updated_at`) VALUES
 (1, 1, 2, 'owner', 'active', '2026-08-21 00:28:50', '2026-08-21 00:28:50'),
 (2, 1, 3, 'staff', 'active', '2026-08-21 01:08:35', '2026-08-21 01:08:35'),
-(3, 2, 4, 'owner', 'active', '2026-08-21 01:19:55', '2026-08-21 01:19:55');
+(3, 2, 4, 'owner', 'active', '2026-08-21 01:19:55', '2026-08-21 01:19:55'),
+(4, 3, 5, 'owner', 'active', '2026-08-22 01:31:34', '2026-08-22 01:31:34');
 
 -- --------------------------------------------------------
 
@@ -119,6 +148,7 @@ INSERT INTO `business_users` (`id`, `business_id`, `user_id`, `role`, `status`, 
 
 CREATE TABLE `categories` (
   `id` int(10) UNSIGNED NOT NULL,
+  `business_id` int(11) DEFAULT NULL,
   `name` varchar(100) NOT NULL,
   `description` varchar(255) DEFAULT NULL,
   `type` enum('expense','loan','both') NOT NULL DEFAULT 'both',
@@ -132,8 +162,9 @@ CREATE TABLE `categories` (
 -- Dumping data for table `categories`
 --
 
-INSERT INTO `categories` (`id`, `name`, `description`, `type`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 'Food', NULL, 'expense', 'active', 4, '2026-08-21 09:55:37', '2026-08-21 09:55:37');
+INSERT INTO `categories` (`id`, `business_id`, `name`, `description`, `type`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Food', NULL, 'expense', 'active', 4, '2026-08-21 09:55:37', '2026-08-23 02:52:15'),
+(2, 1, 'Emergency', 'Emergency', 'loan', 'active', 2, '2026-08-23 03:05:39', '2026-08-23 03:05:39');
 
 -- --------------------------------------------------------
 
@@ -163,12 +194,15 @@ CREATE TABLE `expenses` (
 
 CREATE TABLE `loans` (
   `id` int(10) UNSIGNED NOT NULL,
+  `business_id` bigint(20) UNSIGNED NOT NULL,
   `borrower_id` int(10) UNSIGNED NOT NULL,
+  `account_id` int(10) UNSIGNED DEFAULT NULL,
   `category_id` int(10) UNSIGNED DEFAULT NULL,
   `loan_number` varchar(50) NOT NULL,
   `principal_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
   `interest_rate` decimal(8,2) NOT NULL DEFAULT 0.00,
   `interest_type` enum('flat','reducing_balance') NOT NULL DEFAULT 'flat',
+  `payment_type` enum('installment','full_payment') NOT NULL DEFAULT 'installment',
   `term` int(11) NOT NULL DEFAULT 1,
   `term_period` enum('days','weeks','months','years') NOT NULL DEFAULT 'months',
   `processing_fee` decimal(15,2) NOT NULL DEFAULT 0.00,
@@ -183,6 +217,62 @@ CREATE TABLE `loans` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `loans`
+--
+
+INSERT INTO `loans` (`id`, `business_id`, `borrower_id`, `account_id`, `category_id`, `loan_number`, `principal_amount`, `interest_rate`, `interest_type`, `payment_type`, `term`, `term_period`, `processing_fee`, `total_interest`, `total_payable`, `release_date`, `first_payment_date`, `status`, `purpose`, `notes`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, NULL, 1, 'LN-20260823-C46F36', 1000.00, 10.00, 'flat', 'installment', 1, 'months', 10.00, 100.00, 1110.00, '2026-08-23', '0002-09-23', 'pending', '', '', 2, '2026-08-22 23:19:00', '2026-08-22 23:19:00'),
+(2, 1, 1, NULL, 1, 'LN-20260823-C0BE0D', 1000.00, 10.00, 'flat', 'installment', 1, 'months', 10.00, 100.00, 1110.00, '2026-08-23', '0002-09-23', 'pending', '', '', 2, '2026-08-22 23:22:08', '2026-08-22 23:22:08'),
+(3, 1, 1, NULL, 1, 'LN-20260823-5E5A88', 5000.00, 10.00, 'flat', 'full_payment', 1, 'months', 0.00, 500.00, 5500.00, '2026-08-23', '2026-09-23', 'pending', '', '', 2, '2026-08-23 01:27:51', '2026-08-23 01:27:51'),
+(4, 1, 1, NULL, 1, 'LN-20260823-6DAA05', 5000.00, 10.00, 'flat', 'installment', 1, 'months', 0.00, 500.00, 5500.00, '2026-08-23', '2026-08-23', 'active', '', '', 2, '2026-08-23 01:34:54', '2026-08-23 01:50:15'),
+(5, 1, 1, NULL, 2, 'LN-20260823-519AB2', 1000.00, 10.00, 'flat', 'installment', 5, 'months', 0.00, 500.00, 1500.00, '2026-08-23', '2027-01-23', 'pending', '', '', 2, '2026-08-23 03:38:40', '2026-08-23 03:38:40'),
+(6, 1, 1, NULL, 2, 'LN-20260823-8C01A2', 1000.00, 10.00, 'flat', 'installment', 3, 'months', 0.00, 300.00, 1300.00, '2026-08-23', '2026-11-23', 'pending', '', '', 2, '2026-08-23 03:39:10', '2026-08-23 03:39:10'),
+(7, 1, 1, NULL, 2, 'LN-20260823-30CC0C', 1000.00, 10.00, 'flat', 'installment', 5, 'months', 0.00, 500.00, 1500.00, '2026-08-23', '2026-09-23', 'pending', '', '', 2, '2026-08-23 03:40:45', '2026-08-23 03:40:45');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `loan_schedules`
+--
+
+CREATE TABLE `loan_schedules` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `loan_id` int(10) UNSIGNED NOT NULL,
+  `installment_number` int(11) NOT NULL,
+  `due_date` date NOT NULL,
+  `principal_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `interest_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `total_due` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `status` enum('pending','paid','partial','overdue','cancelled') NOT NULL DEFAULT 'pending',
+  `paid_amount` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `paid_date` date DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `loan_schedules`
+--
+
+INSERT INTO `loan_schedules` (`id`, `loan_id`, `installment_number`, `due_date`, `principal_amount`, `interest_amount`, `total_due`, `status`, `paid_amount`, `paid_date`, `created_at`, `updated_at`) VALUES
+(1, 2, 1, '0002-09-23', 1000.00, 100.00, 1100.00, 'pending', 0.00, NULL, '2026-08-22 23:22:08', '2026-08-22 23:22:08'),
+(2, 3, 1, '2026-09-23', 5000.00, 500.00, 5500.00, 'pending', 0.00, NULL, '2026-08-23 01:27:51', '2026-08-23 01:27:51'),
+(3, 4, 1, '2026-08-23', 5000.00, 500.00, 5500.00, 'pending', 0.00, NULL, '2026-08-23 01:34:54', '2026-08-23 01:34:54'),
+(4, 5, 1, '2027-01-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:38:40', '2026-08-23 03:38:40'),
+(5, 5, 2, '2027-02-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:38:40', '2026-08-23 03:38:40'),
+(6, 5, 3, '2027-03-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:38:40', '2026-08-23 03:38:40'),
+(7, 5, 4, '2027-04-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:38:40', '2026-08-23 03:38:40'),
+(8, 5, 5, '2027-05-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:38:40', '2026-08-23 03:38:40'),
+(9, 6, 1, '2026-11-23', 333.33, 100.00, 433.33, 'pending', 0.00, NULL, '2026-08-23 03:39:10', '2026-08-23 03:39:10'),
+(10, 6, 2, '2026-12-23', 333.33, 100.00, 433.33, 'pending', 0.00, NULL, '2026-08-23 03:39:10', '2026-08-23 03:39:10'),
+(11, 6, 3, '2027-01-23', 333.33, 100.00, 433.33, 'pending', 0.00, NULL, '2026-08-23 03:39:10', '2026-08-23 03:39:10'),
+(12, 7, 1, '2026-09-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
+(13, 7, 2, '2026-10-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
+(14, 7, 3, '2026-11-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
+(15, 7, 4, '2026-12-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
+(16, 7, 5, '2027-01-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46');
 
 -- --------------------------------------------------------
 
@@ -260,11 +350,21 @@ INSERT INTO `users` (`id`, `username`, `email`, `password`, `full_name`, `role`,
 (1, 'superadmin', 'superadmin@gmail.com', '$2y$10$r7wubJjlYNzs7Hwvf3UVQO6CiInOxL00.dLwHFxJK11FJiRX7xTUe', 'System Administrator', 'super_admin', 'approved', '2026-08-20 22:36:25', '2026-08-20 22:41:15'),
 (2, 'mrubinos', 'mrubinos@azpired.net', '$2y$10$LkgWVckDDNPU0znd7oFXpOov73A6ZJe/Vf0LVV7VIQT.0fio2KN5a', 'Marldohn Rubinos', 'admin', 'approved', '2026-08-21 00:28:50', '2026-08-21 00:28:50'),
 (3, 'sardillo', 'ardilloshelou@gmail.com', '$2y$10$DDlROKvh1.OvHpQDKCip2uQXtr3Jr.A6..hep7b0y3/IP0XW9GBLq', 'March Shelou Ardillo', 'staff', 'approved', '2026-08-21 01:08:35', '2026-08-21 01:08:35'),
-(4, 'mardonio1104', 'marldohncrubinos11@gmail.com', '$2y$10$E2rsODQgncoWsy5sBF9LuuHn6Fq.NWlY0NumDhgf.iyLdYX1FSXoa', 'March Shelou', 'admin', 'approved', '2026-08-21 01:19:55', '2026-08-21 01:19:55');
+(4, 'mardonio1104', 'marldohncrubinos11@gmail.com', '$2y$10$E2rsODQgncoWsy5sBF9LuuHn6Fq.NWlY0NumDhgf.iyLdYX1FSXoa', 'March Shelou', 'admin', 'approved', '2026-08-21 01:19:55', '2026-08-21 01:19:55'),
+(5, 'drubinos', 'drubinos@gmail.com', '$2y$10$bZ78GqH5dGy4UbvpAeKcz.VZqheopHr4ZZtXsVMqsJVBWFNM5A9KO', 'Dondi Rubinos', 'admin', 'approved', '2026-08-22 01:31:34', '2026-08-22 01:31:34');
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `accounts`
+--
+ALTER TABLE `accounts`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_accounts_business` (`business_id`),
+  ADD KEY `idx_accounts_created_by` (`created_by`),
+  ADD KEY `idx_accounts_status` (`status`);
 
 --
 -- Indexes for table `borrowers`
@@ -324,7 +424,18 @@ ALTER TABLE `loans`
   ADD KEY `idx_borrower_id` (`borrower_id`),
   ADD KEY `idx_category_id` (`category_id`),
   ADD KEY `idx_created_by` (`created_by`),
-  ADD KEY `idx_status` (`status`);
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_loans_business_id` (`business_id`),
+  ADD KEY `idx_loans_account_id` (`account_id`);
+
+--
+-- Indexes for table `loan_schedules`
+--
+ALTER TABLE `loan_schedules`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_loan_schedules_loan_id` (`loan_id`),
+  ADD KEY `idx_loan_schedules_due_date` (`due_date`),
+  ADD KEY `idx_loan_schedules_status` (`status`);
 
 --
 -- Indexes for table `plans`
@@ -357,6 +468,12 @@ ALTER TABLE `users`
 --
 
 --
+-- AUTO_INCREMENT for table `accounts`
+--
+ALTER TABLE `accounts`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT for table `borrowers`
 --
 ALTER TABLE `borrowers`
@@ -366,19 +483,19 @@ ALTER TABLE `borrowers`
 -- AUTO_INCREMENT for table `businesses`
 --
 ALTER TABLE `businesses`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `business_users`
 --
 ALTER TABLE `business_users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `expenses`
@@ -390,7 +507,13 @@ ALTER TABLE `expenses`
 -- AUTO_INCREMENT for table `loans`
 --
 ALTER TABLE `loans`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `loan_schedules`
+--
+ALTER TABLE `loan_schedules`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `plans`
@@ -408,11 +531,18 @@ ALTER TABLE `subscriptions`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `accounts`
+--
+ALTER TABLE `accounts`
+  ADD CONSTRAINT `fk_accounts_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_accounts_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `business_users`
@@ -431,7 +561,9 @@ ALTER TABLE `categories`
 -- Constraints for table `loans`
 --
 ALTER TABLE `loans`
+  ADD CONSTRAINT `fk_loans_account` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_loans_borrower` FOREIGN KEY (`borrower_id`) REFERENCES `borrowers` (`id`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_loans_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_loans_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
