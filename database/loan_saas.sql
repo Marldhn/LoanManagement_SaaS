@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 24, 2026 at 11:21 PM
+-- Generation Time: Aug 24, 2026 at 11:59 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -44,8 +44,8 @@ CREATE TABLE `accounts` (
 --
 
 INSERT INTO `accounts` (`id`, `business_id`, `account_name`, `account_type`, `balance`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Gcash', 'asset', 0.00, 'active', 2, '2026-08-22 00:06:29', '2026-08-24 19:49:35'),
-(2, 1, 'Maribank', 'asset', 1000.00, 'active', 2, '2026-08-22 00:28:41', '2026-08-22 00:43:32'),
+(1, 1, 'Gcash', 'asset', 300.00, 'active', 2, '2026-08-22 00:06:29', '2026-08-24 21:29:22'),
+(2, 1, 'Maribank', 'asset', 1300.00, 'active', 2, '2026-08-22 00:28:41', '2026-08-24 21:28:17'),
 (3, 1, 'Cash', 'asset', 0.00, 'active', 2, '2026-08-22 00:35:34', '2026-08-23 01:34:54');
 
 -- --------------------------------------------------------
@@ -84,7 +84,8 @@ CREATE TABLE `borrowers` (
 --
 
 INSERT INTO `borrowers` (`id`, `business_id`, `borrower_code`, `first_name`, `middle_name`, `last_name`, `email`, `phone`, `date_of_birth`, `gender`, `address`, `city`, `province`, `postal_code`, `occupation`, `employer`, `monthly_income`, `status`, `notes`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 1, 'BRW-20260821-84515C', 'Jerryniel', '', 'Lauronal', '', '', NULL, 'male', '', '', '', '', '', '', 0.00, 'active', '', 3, '2026-08-21 01:18:43', '2026-08-21 01:18:43');
+(1, 1, 'BRW-20260821-84515C', 'Jerryniel', '', 'Lauronal', '', '', NULL, 'male', '', '', '', '', '', '', 0.00, 'active', '', 3, '2026-08-21 01:18:43', '2026-08-21 01:18:43'),
+(2, 1, 'BRW-20260824-423BF6', 'March Shelou', 'Goc-ong', 'Ardillo', 'ardilloshelou@gmail.com', '09059626063', '2004-03-19', 'female', 'Jakosalem Street', '', '', '6000', 'Student', '', 10000.00, 'active', '', 2, '2026-08-24 21:22:54', '2026-08-24 21:22:54');
 
 -- --------------------------------------------------------
 
@@ -257,6 +258,14 @@ CREATE TABLE `loan_payments` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `loan_payments`
+--
+
+INSERT INTO `loan_payments` (`id`, `business_id`, `loan_id`, `schedule_id`, `account_id`, `payment_number`, `payment_date`, `amount`, `principal_amount`, `interest_amount`, `penalty_amount`, `notes`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
+(2, 1, 7, 14, 2, 'PAY-20260824-C1A0BB', '2026-08-24', 300.00, 200.00, 100.00, 0.00, 'Paid', 'posted', 2, '2026-08-24 21:28:17', '2026-08-24 21:28:17'),
+(3, 1, 7, 12, 1, 'PAY-20260824-72C9C0', '2026-08-24', 300.00, 200.00, 100.00, 0.00, '', 'posted', 2, '2026-08-24 21:29:21', '2026-08-24 21:29:21');
+
 -- --------------------------------------------------------
 
 --
@@ -294,9 +303,9 @@ INSERT INTO `loan_schedules` (`id`, `loan_id`, `installment_number`, `due_date`,
 (9, 6, 1, '2026-11-23', 333.33, 100.00, 433.33, 'pending', 0.00, NULL, '2026-08-23 03:39:10', '2026-08-23 03:39:10'),
 (10, 6, 2, '2026-12-23', 333.33, 100.00, 433.33, 'pending', 0.00, NULL, '2026-08-23 03:39:10', '2026-08-23 03:39:10'),
 (11, 6, 3, '2027-01-23', 333.33, 100.00, 433.33, 'pending', 0.00, NULL, '2026-08-23 03:39:10', '2026-08-23 03:39:10'),
-(12, 7, 1, '2026-09-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
+(12, 7, 1, '2026-09-23', 200.00, 100.00, 300.00, 'paid', 300.00, '2026-08-24', '2026-08-23 03:40:46', '2026-08-24 21:29:22'),
 (13, 7, 2, '2026-10-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
-(14, 7, 3, '2026-11-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
+(14, 7, 3, '2026-11-23', 200.00, 100.00, 300.00, 'paid', 300.00, '2026-08-24', '2026-08-23 03:40:46', '2026-08-24 21:28:17'),
 (15, 7, 4, '2026-12-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
 (16, 7, 5, '2027-01-23', 200.00, 100.00, 300.00, 'pending', 0.00, NULL, '2026-08-23 03:40:46', '2026-08-23 03:40:46'),
 (17, 8, 1, '2026-09-25', 6000.00, 6000.00, 12000.00, 'pending', 0.00, NULL, '2026-08-24 19:49:35', '2026-08-24 19:49:35');
@@ -516,7 +525,7 @@ ALTER TABLE `accounts`
 -- AUTO_INCREMENT for table `borrowers`
 --
 ALTER TABLE `borrowers`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `businesses`
@@ -552,7 +561,7 @@ ALTER TABLE `loans`
 -- AUTO_INCREMENT for table `loan_payments`
 --
 ALTER TABLE `loan_payments`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `loan_schedules`
