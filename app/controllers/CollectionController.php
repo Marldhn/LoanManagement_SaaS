@@ -1,2043 +1,2557 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| AUTH / BUSINESS DATA
-|--------------------------------------------------------------------------
-*/
-
-$user =
-    $user ?? Auth::user();
-
-$business =
-    $business ?? Auth::business();
-
-$tenantRole =
-    $tenantRole ?? Auth::tenantRole();
-
-$currentUrl =
-    $currentUrl ?? 'borrowers';
-
-
-/*
-|--------------------------------------------------------------------------
-| BORROWER INFORMATION
-|--------------------------------------------------------------------------
-*/
-
-$borrowerId =
-    (int)($borrower['id'] ?? 0);
-
-$borrowerCode =
-    $borrower['borrower_code'] ?? '-';
-
-$firstName =
-    $borrower['first_name'] ?? '';
-
-$middleName =
-    $borrower['middle_name'] ?? '';
-
-$lastName =
-    $borrower['last_name'] ?? '';
-
-$fullName =
-    trim(
-        $firstName . ' ' .
-        $middleName . ' ' .
-        $lastName
-    );
-
-if ($fullName === '') {
-    $fullName = 'Unnamed Borrower';
-}
-
-
-$status =
-    $borrower['status'] ?? 'active';
-
-$statusClass =
-    'status-' . $status;
-
-
-/*
-|--------------------------------------------------------------------------
-| SUMMARY VALUES
-|--------------------------------------------------------------------------
-*/
-
-$totalLoans =
-    (int)($totalLoans ?? 0);
-
-$totalPrincipal =
-    (float)($totalPrincipal ?? 0);
-
-$totalPaid =
-    (float)($totalPaid ?? 0);
-
-$remainingBalance =
-    max(
-        0,
-        (float)($remainingBalance ?? 0)
-    );
-
-$totalPayable =
-    (float)($totalPayable ?? 0);
-
-$activeLoans =
-    (int)($activeLoans ?? 0);
-
-$pendingLoans =
-    (int)($pendingLoans ?? 0);
-
-$completedLoans =
-    (int)($completedLoans ?? 0);
-
-$overdueLoans =
-    (int)($overdueLoans ?? 0);
-
-
-/*
-|--------------------------------------------------------------------------
-| LOANS
-|--------------------------------------------------------------------------
-*/
-
-$loans =
-    is_array($loans ?? null)
-        ? $loans
-        : [];
-
-
-/*
-|--------------------------------------------------------------------------
-| HELPER
-|--------------------------------------------------------------------------
-*/
-
-function borrowerValue($value, $fallback = '-')
+class CollectionController
 {
-    if (
-        $value === null ||
-        $value === ''
-    ) {
-        return $fallback;
+    private PDO $db;
+
+    public function __construct()
+    {
+        $this->db = Database::getInstance();
+
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
     }
 
-    return htmlspecialchars(
-        (string)$value,
-        ENT_QUOTES,
-        'UTF-8'
-    );
-}
 
-?>
-
-<!DOCTYPE html>
-
-<html lang="en">
-
-<head>
-
-    <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        <?= borrowerValue($fullName) ?>
-        | Borrower Details
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="assets/css/style.css"
-    >
-
-
-    <style>
-
-        /*
-        |--------------------------------------------------------------------------
-        | PAGE
-        |--------------------------------------------------------------------------
-        */
-
-        .borrower-details-page {
-            width: 100%;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | HEADER
-        |--------------------------------------------------------------------------
-        */
-
-        .borrower-details-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-
-        .borrower-details-title {
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
-        }
-
-
-        .borrower-avatar {
-            width: 58px;
-            height: 58px;
-
-            border-radius: 14px;
-
-            background: #eff6ff;
-
-            color: #2563eb;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            font-size: 22px;
-            font-weight: 700;
-
-            flex-shrink: 0;
-        }
-
-
-        .borrower-details-title h1 {
-            margin: 0 0 5px;
-
-            font-size: 27px;
-            font-weight: 700;
-        }
-
-
-        .borrower-details-title p {
-            margin: 0;
-
-            color: #6b7280;
-
-            font-size: 14px;
-        }
-
-
-        .borrower-header-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | SUMMARY CARDS
-        |--------------------------------------------------------------------------
-        */
-
-        .borrower-summary-grid {
-            display: grid;
-
-            grid-template-columns:
-                repeat(4, minmax(0, 1fr));
-
-            gap: 16px;
-
-            margin-bottom: 22px;
-        }
-
-
-        .borrower-summary-card {
-            background: #fff;
-
-            border: 1px solid #e5e7eb;
-
-            border-radius: 12px;
-
-            padding: 20px;
-
-            box-shadow:
-                0 2px 8px
-                rgba(0, 0, 0, 0.04);
-        }
-
-
-        .borrower-summary-card-header {
-            display: flex;
-
-            align-items: center;
-
-            justify-content: space-between;
-
-            gap: 10px;
-
-            margin-bottom: 12px;
-        }
-
-
-        .borrower-summary-title {
-            color: #6b7280;
-
-            font-size: 13px;
-
-            font-weight: 500;
-        }
-
-
-        .borrower-summary-icon {
-            width: 34px;
-            height: 34px;
-
-            border-radius: 9px;
-
-            background: #f8fafc;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            font-size: 16px;
-        }
-
-
-        .borrower-summary-value {
-            font-size: 23px;
-
-            font-weight: 700;
-
-            color: #111827;
-
-            line-height: 1.2;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | CONTENT CARDS
-        |--------------------------------------------------------------------------
-        */
-
-        .borrower-details-card {
-            background: #fff;
-
-            border: 1px solid #e5e7eb;
-
-            border-radius: 12px;
-
-            margin-bottom: 22px;
-
-            overflow: hidden;
-
-            box-shadow:
-                0 2px 8px
-                rgba(0, 0, 0, 0.04);
-        }
-
-
-        .borrower-details-card-header {
-            padding: 18px 22px;
-
-            border-bottom:
-                1px solid #e5e7eb;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: space-between;
-
-            gap: 15px;
-        }
-
-
-        .borrower-details-card-header h2 {
-            margin: 0;
-
-            font-size: 17px;
-
-            font-weight: 700;
-
-            color: #111827;
-        }
-
-
-        .borrower-details-card-header p {
-            margin: 4px 0 0;
-
-            color: #6b7280;
-
-            font-size: 13px;
-        }
-
-
-        .borrower-details-card-body {
-            padding: 22px;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | INFORMATION GRID
-        |--------------------------------------------------------------------------
-        */
-
-        .borrower-info-grid {
-            display: grid;
-
-            grid-template-columns:
-                repeat(2, minmax(0, 1fr));
-
-            gap: 30px;
-        }
-
-
-        .borrower-info-column {
-            min-width: 0;
-        }
-
-
-        .borrower-info-row {
-            display: grid;
-
-            grid-template-columns:
-                160px
-                minmax(0, 1fr);
-
-            gap: 15px;
-
-            padding: 13px 0;
-
-            border-bottom:
-                1px solid #f1f5f9;
-        }
-
-
-        .borrower-info-row:first-child {
-            padding-top: 0;
-        }
-
-
-        .borrower-info-row:last-child {
-            border-bottom: none;
-        }
-
-
-        .borrower-info-label {
-            color: #64748b;
-
-            font-size: 13px;
-
-            font-weight: 600;
-        }
-
-
-        .borrower-info-value {
-            color: #111827;
-
-            font-size: 14px;
-
-            word-break: break-word;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | NOTES
-        |--------------------------------------------------------------------------
-        */
-
-        .borrower-notes {
-            margin-top: 20px;
-
-            padding: 16px;
-
-            background: #f8fafc;
-
-            border: 1px solid #e2e8f0;
-
-            border-radius: 10px;
-        }
-
-
-        .borrower-notes-title {
-            margin-bottom: 8px;
-
-            font-size: 13px;
-
-            font-weight: 700;
-
-            color: #475569;
-        }
-
-
-        .borrower-notes-content {
-            color: #334155;
-
-            font-size: 14px;
-
-            line-height: 1.6;
-
-            white-space: normal;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | LOAN STATUS GRID
-        |--------------------------------------------------------------------------
-        */
-
-        .loan-status-grid {
-            display: grid;
-
-            grid-template-columns:
-                repeat(4, minmax(0, 1fr));
-
-            gap: 12px;
-        }
-
-
-        .loan-status-box {
-            padding: 16px;
-
-            border-radius: 10px;
-
-            background: #f8fafc;
-
-            border: 1px solid #e2e8f0;
-        }
-
-
-        .loan-status-box-label {
-            display: block;
-
-            margin-bottom: 6px;
-
-            color: #64748b;
-
-            font-size: 12px;
-        }
-
-
-        .loan-status-box-value {
-            display: block;
-
-            font-size: 20px;
-
-            font-weight: 700;
-
-            color: #111827;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | TABLE
-        |--------------------------------------------------------------------------
-        */
-
-        .borrower-loan-table-wrapper {
-            width: 100%;
-
-            overflow-x: auto;
-        }
-
-
-        .borrower-loan-table {
-            width: 100%;
-
-            min-width: 1100px;
-
-            border-collapse: collapse;
-        }
-
-
-        .borrower-loan-table th {
-            padding: 13px 14px;
-
-            background: #f8fafc;
-
-            border-bottom:
-                1px solid #e5e7eb;
-
-            color: #64748b;
-
-            font-size: 12px;
-
-            font-weight: 700;
-
-            text-align: left;
-
-            white-space: nowrap;
-        }
-
-
-        .borrower-loan-table td {
-            padding: 14px;
-
-            border-bottom:
-                1px solid #f1f5f9;
-
-            color: #374151;
-
-            font-size: 13px;
-
-            white-space: nowrap;
-        }
-
-
-        .borrower-loan-table tbody tr:hover {
-            background: #fafafa;
-        }
-
-
-        .borrower-loan-number {
-            font-weight: 700;
-
-            color: #2563eb;
-        }
-
-
-        .borrower-loan-balance {
-            font-weight: 700;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | EMPTY STATE
-        |--------------------------------------------------------------------------
-        */
-
-        .borrower-empty-state {
-            text-align: center;
-
-            padding: 55px 25px;
-        }
-
-
-        .borrower-empty-icon {
-            width: 55px;
-            height: 55px;
-
-            margin: 0 auto 15px;
-
-            border-radius: 50%;
-
-            background: #f1f5f9;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            font-size: 22px;
-        }
-
-
-        .borrower-empty-state h3 {
-            margin: 0 0 8px;
-
-            font-size: 17px;
-        }
-
-
-        .borrower-empty-state p {
-            margin: 0 0 20px;
-
-            color: #6b7280;
-
-            font-size: 14px;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | ACTIONS
-        |--------------------------------------------------------------------------
-        */
-
-        .borrower-card-actions {
-            display: flex;
-
-            gap: 8px;
-
-            align-items: center;
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RESPONSIVE
-        |--------------------------------------------------------------------------
-        */
-
-        @media (max-width: 1100px) {
-
-            .borrower-summary-grid {
-                grid-template-columns:
-                    repeat(2, minmax(0, 1fr));
-            }
-
-
-            .loan-status-grid {
-                grid-template-columns:
-                    repeat(2, minmax(0, 1fr));
-            }
-
-        }
-
-
-        @media (max-width: 850px) {
-
-            .borrower-info-grid {
-                grid-template-columns: 1fr;
-            }
-
-
-            .borrower-details-header {
-                flex-direction: column;
-            }
-
-
-            .borrower-header-actions {
-                width: 100%;
-            }
-
-        }
-
-
-        @media (max-width: 600px) {
-
-            .borrower-summary-grid {
-                grid-template-columns: 1fr;
-            }
-
-
-            .loan-status-grid {
-                grid-template-columns: 1fr;
-            }
-
-
-            .borrower-details-title h1 {
-                font-size: 22px;
-            }
-
-
-            .borrower-info-row {
-                grid-template-columns: 1fr;
-
-                gap: 5px;
-            }
-
-
-            .borrower-header-actions {
-                flex-direction: column;
-            }
-
-
-            .borrower-header-actions .btn {
-                width: 100%;
-
-                text-align: center;
-            }
-
-        }
-
-    </style>
-
-</head>
-
-
-<body>
-
-
-<?php
-
-/*
-|--------------------------------------------------------------------------
-| SIDEBAR
-|--------------------------------------------------------------------------
-*/
-
-require APP_PATH .
-    '/views/layouts/sidebar.php';
-
-?>
-
-
-<div class="main-content">
-
-
-    <!--
+    /*
     |--------------------------------------------------------------------------
-    | NAVBAR
+    | AUTHENTICATION / BUSINESS ACCESS
     |--------------------------------------------------------------------------
-    -->
+    */
 
-    <nav class="navbar">
+    private function checkAccess(): array
+    {
+        if (!Auth::check()) {
+            header('Location: index.php?url=auth/login');
+            exit;
+        }
 
-        <div class="page-title">
+        $user = Auth::user();
 
-            Borrower Details
+        $business = Auth::business();
 
-        </div>
+        $tenantRole = Auth::tenantRole();
 
+        $businessId = (int)($_SESSION['business_id'] ?? 0);
 
-        <div class="user-info">
+        if ($businessId <= 0 && is_array($business)) {
+            $businessId = (int)($business['id'] ?? 0);
+        }
 
-            <span class="user-name">
+        if ($businessId <= 0) {
+            http_response_code(403);
 
-                <?= borrowerValue(
-                    $user['full_name']
-                    ?? $user['username']
-                    ?? 'User'
-                ) ?>
+            die('Business context not found.');
+        }
 
-            </span>
+        $userId = (int)($_SESSION['user_id'] ?? 0);
 
+        if ($userId <= 0 && is_array($user)) {
+            $userId = (int)($user['id'] ?? 0);
+        }
 
-            <span class="badge">
-
-                <?= borrowerValue(
-                    $tenantRole
-                    ?? 'User'
-                ) ?>
-
-            </span>
-
-        </div>
-
-    </nav>
-
-
-    <div class="container borrower-details-page">
+        return [
+            'user'       => $user,
+            'business'   => $business,
+            'tenantRole' => $tenantRole,
+            'businessId' => $businessId,
+            'userId'     => $userId,
+        ];
+    }
 
 
-        <!--
+    /*
+    |--------------------------------------------------------------------------
+    | COLLECTION DASHBOARD
+    |--------------------------------------------------------------------------
+    |
+    | URL:
+    |
+    | index.php?url=collections
+    |
+    */
+
+    public function index(): void
+    {
+        $context = $this->checkAccess();
+
+        $businessId = $context['businessId'];
+
+        /*
         |--------------------------------------------------------------------------
-        | PAGE HEADER
+        | DATE FILTER
         |--------------------------------------------------------------------------
-        -->
+        */
 
-        <div class="borrower-details-header">
+        $dateFrom =
+            $_GET['date_from']
+            ?? date('Y-m-01');
 
-
-            <div class="borrower-details-title">
-
-
-                <div class="borrower-avatar">
-
-                    <?= htmlspecialchars(
-                        strtoupper(
-                            substr(
-                                $fullName,
-                                0,
-                                1
-                            )
-                        )
-                    ) ?>
-
-                </div>
+        $dateTo =
+            $_GET['date_to']
+            ?? date('Y-m-d');
 
 
-                <div>
-
-                    <h1>
-
-                        <?= borrowerValue(
-                            $fullName
-                        ) ?>
-
-                    </h1>
-
-
-                    <p>
-
-                        Borrower Code:
-
-                        <strong>
-
-                            <?= borrowerValue(
-                                $borrowerCode
-                            ) ?>
-
-                        </strong>
-
-                    </p>
-
-                </div>
-
-
-            </div>
-
-
-            <div class="borrower-header-actions">
-
-
-                <a
-                    href="index.php?url=borrowers"
-                    class="btn btn-secondary"
-                >
-
-                    ← Back
-
-                </a>
-
-
-                <a
-                    href="index.php?url=borrowers/edit&id=<?= $borrowerId ?>"
-                    class="btn btn-primary"
-                >
-
-                    ✏️ Edit Borrower
-
-                </a>
-
-
-            </div>
-
-
-        </div>
-
-
-        <!--
+        /*
         |--------------------------------------------------------------------------
-        | SUMMARY CARDS
+        | SEARCH
         |--------------------------------------------------------------------------
-        -->
+        */
 
-        <div class="borrower-summary-grid">
-
-
-            <!-- TOTAL LOANS -->
-
-            <div class="borrower-summary-card">
-
-                <div class="borrower-summary-card-header">
-
-                    <span class="borrower-summary-title">
-
-                        Total Loans
-
-                    </span>
-
-                    <span class="borrower-summary-icon">
-
-                        📄
-
-                    </span>
-
-                </div>
+        $search =
+            trim(
+                $_GET['search']
+                ?? ''
+            );
 
 
-                <div class="borrower-summary-value">
+        /*
+        |--------------------------------------------------------------------------
+        | PAYMENT STATUS
+        |--------------------------------------------------------------------------
+        */
 
-                    <?= number_format(
-                        $totalLoans
-                    ) ?>
-
-                </div>
-
-            </div>
-
-
-            <!-- PRINCIPAL -->
-
-            <div class="borrower-summary-card">
-
-                <div class="borrower-summary-card-header">
-
-                    <span class="borrower-summary-title">
-
-                        Total Principal
-
-                    </span>
-
-                    <span class="borrower-summary-icon">
-
-                        ₱
-
-                    </span>
-
-                </div>
+        $status =
+            $_GET['status']
+            ?? 'posted';
 
 
-                <div class="borrower-summary-value">
+        /*
+        |--------------------------------------------------------------------------
+        | COLLECTION SUMMARY
+        |--------------------------------------------------------------------------
+        */
 
-                    ₱<?= number_format(
-                        $totalPrincipal,
-                        2
-                    ) ?>
+        $summarySql = "
+            SELECT
+                COUNT(*) AS total_payments,
 
-                </div>
+                COALESCE(
+                    SUM(lp.amount),
+                    0
+                ) AS total_collected,
 
-            </div>
+                COALESCE(
+                    SUM(lp.principal_amount),
+                    0
+                ) AS principal_collected,
 
+                COALESCE(
+                    SUM(lp.interest_amount),
+                    0
+                ) AS interest_collected,
 
-            <!-- PAID -->
+                COALESCE(
+                    SUM(lp.penalty_amount),
+                    0
+                ) AS penalty_collected
 
-            <div class="borrower-summary-card">
+            FROM loan_payments lp
 
-                <div class="borrower-summary-card-header">
+            INNER JOIN loans l
+                ON l.id = lp.loan_id
 
-                    <span class="borrower-summary-title">
+            WHERE
+                lp.business_id = :business_id
 
-                        Total Paid
+                AND lp.payment_date
+                    BETWEEN :date_from
+                    AND :date_to
+        ";
 
-                    </span>
-
-                    <span class="borrower-summary-icon">
-
-                        ✓
-
-                    </span>
-
-                </div>
-
-
-                <div class="borrower-summary-value">
-
-                    ₱<?= number_format(
-                        $totalPaid,
-                        2
-                    ) ?>
-
-                </div>
-
-            </div>
-
-
-            <!-- BALANCE -->
-
-            <div class="borrower-summary-card">
-
-                <div class="borrower-summary-card-header">
-
-                    <span class="borrower-summary-title">
-
-                        Remaining Balance
-
-                    </span>
-
-                    <span class="borrower-summary-icon">
-
-                        ◷
-
-                    </span>
-
-                </div>
+        $summaryParams = [
+            ':business_id' => $businessId,
+            ':date_from'   => $dateFrom,
+            ':date_to'     => $dateTo,
+        ];
 
 
-                <div class="borrower-summary-value">
+        if (
+            $status !== '' &&
+            $status !== 'all'
+        ) {
+            $summarySql .= "
+                AND lp.status = :status
+            ";
 
-                    ₱<?= number_format(
+            $summaryParams[':status'] =
+                $status;
+        }
+
+
+        $summaryStmt =
+            $this->db->prepare(
+                $summarySql
+            );
+
+        $summaryStmt->execute(
+            $summaryParams
+        );
+
+        $summary =
+            $summaryStmt->fetch(
+                PDO::FETCH_ASSOC
+            )
+            ?: [];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | COLLECTION LIST
+        |--------------------------------------------------------------------------
+        */
+
+        $sql = "
+            SELECT
+
+                lp.id,
+
+                lp.payment_number,
+
+                lp.payment_date,
+
+                lp.amount,
+
+                lp.principal_amount,
+
+                lp.interest_amount,
+
+                lp.penalty_amount,
+
+                lp.notes,
+
+                lp.status,
+
+                lp.created_at,
+
+                l.id AS loan_id,
+
+                l.loan_number,
+
+                l.principal_amount AS loan_principal,
+
+                l.total_payable,
+
+                l.status AS loan_status,
+
+                b.id AS borrower_id,
+
+                b.borrower_code,
+
+                b.first_name,
+
+                b.middle_name,
+
+                b.last_name,
+
+                CONCAT(
+                    b.first_name,
+                    ' ',
+                    COALESCE(
+                        CONCAT(
+                            b.middle_name,
+                            ' '
+                        ),
+                        ''
+                    ),
+                    b.last_name
+                ) AS borrower_name,
+
+                a.id AS account_id,
+
+                a.account_name,
+
+                u.full_name AS collected_by
+
+            FROM loan_payments lp
+
+            INNER JOIN loans l
+                ON l.id = lp.loan_id
+
+            INNER JOIN borrowers b
+                ON b.id = l.borrower_id
+
+            INNER JOIN accounts a
+                ON a.id = lp.account_id
+
+            LEFT JOIN users u
+                ON u.id = lp.created_by
+
+            WHERE
+                lp.business_id = :business_id
+
+                AND lp.payment_date
+                    BETWEEN :date_from
+                    AND :date_to
+        ";
+
+        $params = [
+            ':business_id' => $businessId,
+            ':date_from'   => $dateFrom,
+            ':date_to'     => $dateTo,
+        ];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | STATUS FILTER
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $status !== '' &&
+            $status !== 'all'
+        ) {
+            $sql .= "
+                AND lp.status = :status
+            ";
+
+            $params[':status'] =
+                $status;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SEARCH FILTER
+        |--------------------------------------------------------------------------
+        */
+
+        if ($search !== '') {
+
+            $sql .= "
+                AND (
+                    lp.payment_number LIKE :search1
+                    OR l.loan_number LIKE :search2
+                    OR b.borrower_code LIKE :search3
+                    OR b.first_name LIKE :search4
+                    OR b.last_name LIKE :search5
+                    OR a.account_name LIKE :search6
+                )
+            ";
+
+            $searchValue =
+                '%' .
+                $search .
+                '%';
+
+            $params[':search1'] =
+                $searchValue;
+
+            $params[':search2'] =
+                $searchValue;
+
+            $params[':search3'] =
+                $searchValue;
+
+            $params[':search4'] =
+                $searchValue;
+
+            $params[':search5'] =
+                $searchValue;
+
+            $params[':search6'] =
+                $searchValue;
+        }
+
+
+        $sql .= "
+            ORDER BY
+                lp.payment_date DESC,
+                lp.id DESC
+        ";
+
+
+        $stmt =
+            $this->db->prepare(
+                $sql
+            );
+
+        $stmt->execute(
+            $params
+        );
+
+        $collections =
+            $stmt->fetchAll(
+                PDO::FETCH_ASSOC
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ACCOUNTS
+        |--------------------------------------------------------------------------
+        */
+
+        $accountStmt =
+            $this->db->prepare("
+                SELECT
+                    id,
+                    account_name,
+                    account_type,
+                    balance,
+                    status
+
+                FROM accounts
+
+                WHERE
+                    business_id = :business_id
+
+                    AND status = 'active'
+
+                ORDER BY
+                    account_name ASC
+            ");
+
+        $accountStmt->execute([
+            ':business_id' => $businessId,
+        ]);
+
+        $accounts =
+            $accountStmt->fetchAll(
+                PDO::FETCH_ASSOC
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOANS FOR COLLECTION
+        |--------------------------------------------------------------------------
+        */
+
+        $loanStmt =
+            $this->db->prepare("
+                SELECT
+
+                    l.id,
+
+                    l.loan_number,
+
+                    l.principal_amount,
+
+                    l.total_interest,
+
+                    l.total_payable,
+
+                    l.status,
+
+                    b.borrower_code,
+
+                    CONCAT(
+                        b.first_name,
+                        ' ',
+                        COALESCE(
+                            CONCAT(
+                                b.middle_name,
+                                ' '
+                            ),
+                            ''
+                        ),
+                        b.last_name
+                    ) AS borrower_name,
+
+                    COALESCE(
+                        (
+                            SELECT
+                                SUM(lp2.amount)
+
+                            FROM loan_payments lp2
+
+                            WHERE
+                                lp2.loan_id = l.id
+
+                                AND lp2.status = 'posted'
+                        ),
+                        0
+                    ) AS total_paid
+
+                FROM loans l
+
+                INNER JOIN borrowers b
+                    ON b.id = l.borrower_id
+
+                WHERE
+                    l.business_id = :business_id
+
+                    AND l.status IN (
+                        'approved',
+                        'active',
+                        'overdue'
+                    )
+
+                ORDER BY
+                    b.last_name ASC,
+                    b.first_name ASC,
+                    l.id DESC
+            ");
+
+        $loanStmt->execute([
+            ':business_id' => $businessId,
+        ]);
+
+        $loans =
+            $loanStmt->fetchAll(
+                PDO::FETCH_ASSOC
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VIEW
+        |--------------------------------------------------------------------------
+        */
+
+        require APP_PATH .
+            '/views/collections/index.php';
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE COLLECTION PAGE
+    |--------------------------------------------------------------------------
+    |
+    | URL:
+    |
+    | index.php?url=collections/create
+    |
+    */
+
+    public function create(): void
+    {
+        $context = $this->checkAccess();
+
+        $businessId = $context['businessId'];
+
+        $loanId =
+            (int)(
+                $_GET['loan_id']
+                ?? 0
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ACTIVE ACCOUNTS
+        |--------------------------------------------------------------------------
+        */
+
+        $accountStmt =
+            $this->db->prepare("
+                SELECT
+                    id,
+                    account_name,
+                    account_type,
+                    balance
+
+                FROM accounts
+
+                WHERE
+                    business_id = :business_id
+
+                    AND status = 'active'
+
+                ORDER BY
+                    account_name ASC
+            ");
+
+        $accountStmt->execute([
+            ':business_id' => $businessId,
+        ]);
+
+        $accounts =
+            $accountStmt->fetchAll(
+                PDO::FETCH_ASSOC
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOAN
+        |--------------------------------------------------------------------------
+        */
+
+        $loan = null;
+
+
+        if ($loanId > 0) {
+
+            $stmt =
+                $this->db->prepare("
+                    SELECT
+
+                        l.*,
+
+                        b.borrower_code,
+
+                        b.first_name,
+
+                        b.middle_name,
+
+                        b.last_name,
+
+                        CONCAT(
+                            b.first_name,
+                            ' ',
+                            COALESCE(
+                                CONCAT(
+                                    b.middle_name,
+                                    ' '
+                                ),
+                                ''
+                            ),
+                            b.last_name
+                        ) AS borrower_name,
+
+                        COALESCE(
+                            (
+                                SELECT
+                                    SUM(lp.amount)
+
+                                FROM loan_payments lp
+
+                                WHERE
+                                    lp.loan_id = l.id
+
+                                    AND lp.status = 'posted'
+                            ),
+                            0
+                        ) AS total_paid
+
+                    FROM loans l
+
+                    INNER JOIN borrowers b
+                        ON b.id = l.borrower_id
+
+                    WHERE
+                        l.id = :loan_id
+
+                        AND l.business_id = :business_id
+
+                    LIMIT 1
+                ");
+
+            $stmt->execute([
+                ':loan_id'    => $loanId,
+                ':business_id' => $businessId,
+            ]);
+
+            $loan =
+                $stmt->fetch(
+                    PDO::FETCH_ASSOC
+                )
+                ?: null;
+
+
+            if (!$loan) {
+
+                $_SESSION['error'] =
+                    'Loan not found.';
+
+                header(
+                    'Location: index.php?url=collections'
+                );
+
+                exit;
+            }
+
+
+            $loan['remaining_balance'] =
+                max(
+                    0,
+                    (float)$loan['total_payable']
+                    -
+                    (float)$loan['total_paid']
+                );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | AVAILABLE LOANS
+        |--------------------------------------------------------------------------
+        */
+
+        $loanStmt =
+            $this->db->prepare("
+                SELECT
+
+                    l.id,
+
+                    l.loan_number,
+
+                    l.total_payable,
+
+                    l.status,
+
+                    b.borrower_code,
+
+                    CONCAT(
+                        b.first_name,
+                        ' ',
+                        COALESCE(
+                            CONCAT(
+                                b.middle_name,
+                                ' '
+                            ),
+                            ''
+                        ),
+                        b.last_name
+                    ) AS borrower_name,
+
+                    COALESCE(
+                        (
+                            SELECT
+                                SUM(lp.amount)
+
+                            FROM loan_payments lp
+
+                            WHERE
+                                lp.loan_id = l.id
+
+                                AND lp.status = 'posted'
+                        ),
+                        0
+                    ) AS total_paid
+
+                FROM loans l
+
+                INNER JOIN borrowers b
+                    ON b.id = l.borrower_id
+
+                WHERE
+                    l.business_id = :business_id
+
+                    AND l.status IN (
+                        'approved',
+                        'active',
+                        'overdue'
+                    )
+
+                ORDER BY
+                    b.last_name ASC,
+                    b.first_name ASC
+            ");
+
+        $loanStmt->execute([
+            ':business_id' => $businessId,
+        ]);
+
+        $loans =
+            $loanStmt->fetchAll(
+                PDO::FETCH_ASSOC
+            );
+
+
+        foreach ($loans as &$item) {
+
+            $item['remaining_balance'] =
+                max(
+                    0,
+                    (float)$item['total_payable']
+                    -
+                    (float)$item['total_paid']
+                );
+        }
+
+        unset($item);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VIEW
+        |--------------------------------------------------------------------------
+        */
+
+        require APP_PATH .
+            '/views/collections/create.php';
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | STORE COLLECTION
+    |--------------------------------------------------------------------------
+    |
+    | URL:
+    |
+    | index.php?url=collections/store
+    |
+    */
+
+    public function store(): void
+    {
+        $context = $this->checkAccess();
+
+        $businessId =
+            $context['businessId'];
+
+        $userId =
+            $context['userId'];
+
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+
+            header(
+                'Location: index.php?url=collections'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | INPUT
+        |--------------------------------------------------------------------------
+        */
+
+        $loanId =
+            (int)(
+                $_POST['loan_id']
+                ?? 0
+            );
+
+        $accountId =
+            (int)(
+                $_POST['account_id']
+                ?? 0
+            );
+
+        $paymentDate =
+            trim(
+                $_POST['payment_date']
+                ?? date('Y-m-d')
+            );
+
+        $amount =
+            (float)(
+                $_POST['amount']
+                ?? 0
+            );
+
+        $principalAmount =
+            (float)(
+                $_POST['principal_amount']
+                ?? 0
+            );
+
+        $interestAmount =
+            (float)(
+                $_POST['interest_amount']
+                ?? 0
+            );
+
+        $penaltyAmount =
+            (float)(
+                $_POST['penalty_amount']
+                ?? 0
+            );
+
+        $notes =
+            trim(
+                $_POST['notes']
+                ?? ''
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BASIC VALIDATION
+        |--------------------------------------------------------------------------
+        */
+
+        if ($loanId <= 0) {
+
+            $_SESSION['error'] =
+                'Please select a loan.';
+
+            header(
+                'Location: index.php?url=collections/create'
+            );
+
+            exit;
+        }
+
+
+        if ($accountId <= 0) {
+
+            $_SESSION['error'] =
+                'Please select the account receiving the payment.';
+
+            header(
+                'Location: index.php?url=collections/create&loan_id='
+                . $loanId
+            );
+
+            exit;
+        }
+
+
+        if ($amount <= 0) {
+
+            $_SESSION['error'] =
+                'Payment amount must be greater than zero.';
+
+            header(
+                'Location: index.php?url=collections/create&loan_id='
+                . $loanId
+            );
+
+            exit;
+        }
+
+
+        if (
+            $principalAmount < 0 ||
+            $interestAmount < 0 ||
+            $penaltyAmount < 0
+        ) {
+
+            $_SESSION['error'] =
+                'Payment breakdown cannot contain negative amounts.';
+
+            header(
+                'Location: index.php?url=collections/create&loan_id='
+                . $loanId
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATE PAYMENT BREAKDOWN
+        |--------------------------------------------------------------------------
+        */
+
+        $breakdownTotal =
+            $principalAmount
+            +
+            $interestAmount
+            +
+            $penaltyAmount;
+
+
+        if (
+            abs(
+                $breakdownTotal
+                -
+                $amount
+            ) > 0.01
+        ) {
+
+            $_SESSION['error'] =
+                'Principal, interest, and penalty must equal the payment amount.';
+
+            header(
+                'Location: index.php?url=collections/create&loan_id='
+                . $loanId
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TRANSACTION
+        |--------------------------------------------------------------------------
+        */
+
+        try {
+
+            $this->db->beginTransaction();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | GET LOAN
+            |--------------------------------------------------------------------------
+            */
+
+            $loanStmt =
+                $this->db->prepare("
+                    SELECT
+
+                        l.id,
+
+                        l.business_id,
+
+                        l.borrower_id,
+
+                        l.account_id,
+
+                        l.loan_number,
+
+                        l.total_payable,
+
+                        l.status
+
+                    FROM loans l
+
+                    WHERE
+                        l.id = :loan_id
+
+                        AND l.business_id = :business_id
+
+                    LIMIT 1
+
+                    FOR UPDATE
+                ");
+
+            $loanStmt->execute([
+                ':loan_id' =>
+                    $loanId,
+
+                ':business_id' =>
+                    $businessId,
+            ]);
+
+            $loan =
+                $loanStmt->fetch(
+                    PDO::FETCH_ASSOC
+                );
+
+
+            if (!$loan) {
+
+                throw new Exception(
+                    'Loan not found.'
+                );
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | VALIDATE LOAN STATUS
+            |--------------------------------------------------------------------------
+            */
+
+            $allowedStatuses = [
+                'approved',
+                'active',
+                'overdue',
+            ];
+
+
+            if (
+                !in_array(
+                    $loan['status'],
+                    $allowedStatuses,
+                    true
+                )
+            ) {
+
+                throw new Exception(
+                    'This loan cannot receive a payment because its current status is '
+                    . $loan['status']
+                    . '.'
+                );
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | GET CURRENT PAID AMOUNT
+            |--------------------------------------------------------------------------
+            */
+
+            $paidStmt =
+                $this->db->prepare("
+                    SELECT
+
+                        COALESCE(
+                            SUM(amount),
+                            0
+                        ) AS total_paid
+
+                    FROM loan_payments
+
+                    WHERE
+                        loan_id = :loan_id
+
+                        AND business_id = :business_id
+
+                        AND status = 'posted'
+                ");
+
+            $paidStmt->execute([
+                ':loan_id' =>
+                    $loanId,
+
+                ':business_id' =>
+                    $businessId,
+            ]);
+
+            $paidRow =
+                $paidStmt->fetch(
+                    PDO::FETCH_ASSOC
+                );
+
+
+            $totalPaid =
+                (float)(
+                    $paidRow['total_paid']
+                    ?? 0
+                );
+
+
+            $totalPayable =
+                (float)$loan[
+                    'total_payable'
+                ];
+
+
+            $remainingBalance =
+                max(
+                    0,
+                    $totalPayable
+                    -
+                    $totalPaid
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | PREVENT OVERPAYMENT
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $amount >
+                $remainingBalance
+                &&
+                $remainingBalance > 0
+            ) {
+
+                throw new Exception(
+                    'Payment amount exceeds the remaining loan balance of ₱'
+                    .
+                    number_format(
                         $remainingBalance,
                         2
-                    ) ?>
-
-                </div>
-
-            </div>
-
-
-        </div>
-
-
-        <!--
-        |--------------------------------------------------------------------------
-        | BORROWER INFORMATION
-        |--------------------------------------------------------------------------
-        -->
-
-        <div class="borrower-details-card">
-
-
-            <div class="borrower-details-card-header">
-
-                <div>
-
-                    <h2>
-                        Borrower Information
-                    </h2>
-
-                    <p>
-                        Personal and employment information
-                    </p>
-
-                </div>
-
-
-                <span
-                    class="status <?= htmlspecialchars(
-                        $statusClass
-                    ) ?>"
-                >
-
-                    <?= borrowerValue(
-                        ucfirst($status)
-                    ) ?>
-
-                </span>
-
-            </div>
-
-
-            <div class="borrower-details-card-body">
-
-
-                <div class="borrower-info-grid">
-
-
-                    <!-- LEFT COLUMN -->
-
-                    <div class="borrower-info-column">
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Borrower Code
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $borrowerCode
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                First Name
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $firstName
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Middle Name
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $middleName
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Last Name
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $lastName
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Email
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $borrower['email']
-                                    ?? null
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Phone
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $borrower['phone']
-                                    ?? null
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Date of Birth
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $borrower['date_of_birth']
-                                    ?? null
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Gender
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    !empty(
-                                        $borrower['gender']
-                                    )
-                                        ? ucfirst(
-                                            $borrower['gender']
-                                        )
-                                        : null
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                    </div>
-
-
-                    <!-- RIGHT COLUMN -->
-
-                    <div class="borrower-info-column">
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Address
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $borrower['address']
-                                    ?? null
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                City
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $borrower['city']
-                                    ?? null
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Province
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $borrower['province']
-                                    ?? null
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Postal Code
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $borrower['postal_code']
-                                    ?? null
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Occupation
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $borrower['occupation']
-                                    ?? null
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Employer
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <?= borrowerValue(
-                                    $borrower['employer']
-                                    ?? null
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Monthly Income
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                ₱<?= number_format(
-                                    (float)(
-                                        $borrower[
-                                            'monthly_income'
-                                        ]
-                                        ?? 0
-                                    ),
-                                    2
-                                ) ?>
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="borrower-info-row">
-
-                            <div class="borrower-info-label">
-                                Status
-                            </div>
-
-                            <div class="borrower-info-value">
-
-                                <span
-                                    class="status <?= htmlspecialchars(
-                                        $statusClass
-                                    ) ?>"
-                                >
-
-                                    <?= borrowerValue(
-                                        ucfirst($status)
-                                    ) ?>
-
-                                </span>
-
-                            </div>
-
-                        </div>
-
-
-                    </div>
-
-
-                </div>
-
-
-                <?php if (
-                    !empty(
-                        $borrower['notes']
                     )
-                ): ?>
+                    .
+                    '.'
+                );
+            }
 
-                    <div class="borrower-notes">
 
-                        <div class="borrower-notes-title">
+            if (
+                $remainingBalance <= 0
+            ) {
 
-                            Notes
+                throw new Exception(
+                    'This loan is already fully paid.'
+                );
+            }
 
-                        </div>
 
+            /*
+            |--------------------------------------------------------------------------
+            | VALIDATE ACCOUNT
+            |--------------------------------------------------------------------------
+            */
 
-                        <div class="borrower-notes-content">
+            $accountStmt =
+                $this->db->prepare("
+                    SELECT
 
-                            <?= nl2br(
-                                htmlspecialchars(
-                                    $borrower['notes'],
-                                    ENT_QUOTES,
-                                    'UTF-8'
-                                )
-                            ) ?>
+                        id,
 
-                        </div>
+                        account_name,
 
-                    </div>
+                        balance,
 
-                <?php endif; ?>
+                        status
 
+                    FROM accounts
 
-            </div>
+                    WHERE
+                        id = :account_id
 
-        </div>
+                        AND business_id = :business_id
 
+                    LIMIT 1
 
-        <!--
-        |--------------------------------------------------------------------------
-        | LOAN STATUS
-        |--------------------------------------------------------------------------
-        -->
+                    FOR UPDATE
+                ");
 
-        <div class="borrower-details-card">
+            $accountStmt->execute([
+                ':account_id' =>
+                    $accountId,
 
+                ':business_id' =>
+                    $businessId,
+            ]);
 
-            <div class="borrower-details-card-header">
+            $account =
+                $accountStmt->fetch(
+                    PDO::FETCH_ASSOC
+                );
 
-                <div>
 
-                    <h2>
-                        Loan Overview
-                    </h2>
+            if (!$account) {
 
-                    <p>
-                        Current loan portfolio status
-                    </p>
+                throw new Exception(
+                    'Selected account was not found.'
+                );
+            }
 
-                </div>
 
-            </div>
+            if (
+                $account['status']
+                !==
+                'active'
+            ) {
 
+                throw new Exception(
+                    'Selected account is inactive.'
+                );
+            }
 
-            <div class="borrower-details-card-body">
 
+            /*
+            |--------------------------------------------------------------------------
+            | GENERATE PAYMENT NUMBER
+            |--------------------------------------------------------------------------
+            */
 
-                <div class="loan-status-grid">
+            $paymentNumber =
+                $this->generatePaymentNumber(
+                    $businessId
+                );
 
 
-                    <div class="loan-status-box">
+            /*
+            |--------------------------------------------------------------------------
+            | INSERT PAYMENT
+            |--------------------------------------------------------------------------
+            */
 
-                        <span class="loan-status-box-label">
-                            Active Loans
-                        </span>
+            $insertStmt =
+                $this->db->prepare("
+                    INSERT INTO loan_payments
+                    (
+                        business_id,
 
-                        <span class="loan-status-box-value">
+                        loan_id,
 
-                            <?= number_format(
-                                $activeLoans
-                            ) ?>
+                        schedule_id,
 
-                        </span>
+                        account_id,
 
-                    </div>
+                        payment_number,
 
+                        payment_date,
 
-                    <div class="loan-status-box">
+                        amount,
 
-                        <span class="loan-status-box-label">
-                            Pending Loans
-                        </span>
+                        principal_amount,
 
-                        <span class="loan-status-box-value">
+                        interest_amount,
 
-                            <?= number_format(
-                                $pendingLoans
-                            ) ?>
+                        penalty_amount,
 
-                        </span>
+                        notes,
 
-                    </div>
+                        status,
 
+                        created_by
+                    )
 
-                    <div class="loan-status-box">
+                    VALUES
+                    (
+                        :business_id,
 
-                        <span class="loan-status-box-label">
-                            Completed Loans
-                        </span>
+                        :loan_id,
 
-                        <span class="loan-status-box-value">
+                        :schedule_id,
 
-                            <?= number_format(
-                                $completedLoans
-                            ) ?>
+                        :account_id,
 
-                        </span>
+                        :payment_number,
 
-                    </div>
+                        :payment_date,
 
+                        :amount,
 
-                    <div class="loan-status-box">
+                        :principal_amount,
 
-                        <span class="loan-status-box-label">
-                            Overdue Loans
-                        </span>
+                        :interest_amount,
 
-                        <span class="loan-status-box-value">
+                        :penalty_amount,
 
-                            <?= number_format(
-                                $overdueLoans
-                            ) ?>
+                        :notes,
 
-                        </span>
+                        'posted',
 
-                    </div>
+                        :created_by
+                    )
+                ");
 
 
-                </div>
+            /*
+            |--------------------------------------------------------------------------
+            | SCHEDULE
+            |--------------------------------------------------------------------------
+            |
+            | We initially leave schedule_id NULL.
+            | The payment can still be recorded because schedule_id
+            | is nullable in your database.
+            |
+            */
 
+            $insertStmt->execute([
+                ':business_id' =>
+                    $businessId,
 
-                <div
-                    class="borrower-info-grid"
-                    style="margin-top:25px;"
-                >
+                ':loan_id' =>
+                    $loanId,
 
+                ':schedule_id' =>
+                    null,
 
-                    <div class="borrower-info-row">
+                ':account_id' =>
+                    $accountId,
 
-                        <div class="borrower-info-label">
-                            Total Payable
-                        </div>
+                ':payment_number' =>
+                    $paymentNumber,
 
-                        <div class="borrower-info-value">
+                ':payment_date' =>
+                    $paymentDate,
 
-                            ₱<?= number_format(
-                                $totalPayable,
-                                2
-                            ) ?>
+                ':amount' =>
+                    $amount,
 
-                        </div>
+                ':principal_amount' =>
+                    $principalAmount,
 
-                    </div>
+                ':interest_amount' =>
+                    $interestAmount,
 
+                ':penalty_amount' =>
+                    $penaltyAmount,
 
-                    <div class="borrower-info-row">
+                ':notes' =>
+                    $notes !== ''
+                        ? $notes
+                        : null,
 
-                        <div class="borrower-info-label">
-                            Total Paid
-                        </div>
+                ':created_by' =>
+                    $userId > 0
+                        ? $userId
+                        : null,
+            ]);
 
-                        <div class="borrower-info-value">
 
-                            ₱<?= number_format(
-                                $totalPaid,
-                                2
-                            ) ?>
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE ACCOUNT BALANCE
+            |--------------------------------------------------------------------------
+            */
 
-                        </div>
+            $updateAccountStmt =
+                $this->db->prepare("
+                    UPDATE accounts
 
-                    </div>
+                    SET
+                        balance =
+                            balance
+                            +
+                            :amount
 
+                    WHERE
+                        id = :account_id
 
-                </div>
+                        AND business_id = :business_id
+                ");
 
+            $updateAccountStmt->execute([
+                ':amount' =>
+                    $amount,
 
-            </div>
+                ':account_id' =>
+                    $accountId,
 
-        </div>
+                ':business_id' =>
+                    $businessId,
+            ]);
 
 
-        <!--
-        |--------------------------------------------------------------------------
-        | ALL LOANS
-        |--------------------------------------------------------------------------
-        -->
+            /*
+            |--------------------------------------------------------------------------
+            | CALCULATE NEW BALANCE
+            |--------------------------------------------------------------------------
+            */
 
-        <div class="borrower-details-card">
+            $newPaid =
+                $totalPaid
+                +
+                $amount;
 
 
-            <div class="borrower-details-card-header">
+            $newBalance =
+                max(
+                    0,
+                    $totalPayable
+                    -
+                    $newPaid
+                );
 
-                <div>
 
-                    <h2>
-                        All Loans
-                    </h2>
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE LOAN STATUS
+            |--------------------------------------------------------------------------
+            */
 
-                    <p>
-                        Complete loan history for this borrower
-                    </p>
+            if ($newBalance <= 0.01) {
 
-                </div>
+                $newLoanStatus =
+                    'completed';
 
+            } else {
 
-                <div class="borrower-card-actions">
+                /*
+                | Keep overdue status if it was already overdue.
+                */
 
-                    <a
-                        href="index.php?url=loans"
-                        class="btn btn-secondary"
-                    >
+                if (
+                    $loan['status']
+                    ===
+                    'overdue'
+                ) {
 
-                        View Loans
+                    $newLoanStatus =
+                        'overdue';
 
-                    </a>
+                } else {
 
-                </div>
+                    $newLoanStatus =
+                        'active';
+                }
+            }
 
-            </div>
 
+            $updateLoanStmt =
+                $this->db->prepare("
+                    UPDATE loans
 
-            <?php if (empty($loans)): ?>
+                    SET
+                        status = :status
 
+                    WHERE
+                        id = :loan_id
 
-                <div class="borrower-empty-state">
+                        AND business_id = :business_id
+                ");
 
+            $updateLoanStmt->execute([
+                ':status' =>
+                    $newLoanStatus,
 
-                    <div class="borrower-empty-icon">
+                ':loan_id' =>
+                    $loanId,
 
-                        📄
+                ':business_id' =>
+                    $businessId,
+            ]);
 
-                    </div>
 
+            /*
+            |--------------------------------------------------------------------------
+            | UPDATE SCHEDULES
+            |--------------------------------------------------------------------------
+            |
+            | Apply payment to the oldest unpaid/partial schedules first.
+            |
+            */
 
-                    <h3>
-                        No Loans Found
-                    </h3>
+            $remainingPayment =
+                $amount;
 
 
-                    <p>
-                        This borrower does not have any loans yet.
-                    </p>
+            $scheduleStmt =
+                $this->db->prepare("
+                    SELECT
 
+                        id,
 
-                    <a
-                        href="index.php?url=loans/create&borrower_id=<?= $borrowerId ?>"
-                        class="btn btn-primary"
-                    >
+                        installment_number,
 
-                        + Create Loan
+                        due_date,
 
-                    </a>
+                        total_due,
 
+                        paid_amount,
 
-                </div>
+                        status
 
+                    FROM loan_schedules
 
-            <?php else: ?>
+                    WHERE
+                        loan_id = :loan_id
 
+                        AND status IN (
+                            'pending',
+                            'partial',
+                            'overdue'
+                        )
 
-                <div class="borrower-loan-table-wrapper">
+                    ORDER BY
+                        due_date ASC,
+                        installment_number ASC
 
+                    FOR UPDATE
+                ");
 
-                    <table class="borrower-loan-table">
+            $scheduleStmt->execute([
+                ':loan_id' =>
+                    $loanId,
+            ]);
 
+            $schedules =
+                $scheduleStmt->fetchAll(
+                    PDO::FETCH_ASSOC
+                );
 
-                        <thead>
 
-                            <tr>
+            foreach (
+                $schedules
+                as $schedule
+            ) {
 
-                                <th>
-                                    Loan #
-                                </th>
+                if (
+                    $remainingPayment
+                    <=
+                    0
+                ) {
+                    break;
+                }
 
-                                <th>
-                                    Category
-                                </th>
 
-                                <th>
-                                    Principal
-                                </th>
+                $scheduleDue =
+                    (float)(
+                        $schedule[
+                            'total_due'
+                        ]
+                    );
 
-                                <th>
-                                    Interest
-                                </th>
 
-                                <th>
-                                    Total Payable
-                                </th>
+                $schedulePaid =
+                    (float)(
+                        $schedule[
+                            'paid_amount'
+                        ]
+                    );
 
-                                <th>
-                                    Paid
-                                </th>
 
-                                <th>
-                                    Balance
-                                </th>
+                $scheduleRemaining =
+                    max(
+                        0,
+                        $scheduleDue
+                        -
+                        $schedulePaid
+                    );
 
-                                <th>
-                                    Payment Type
-                                </th>
 
-                                <th>
-                                    Term
-                                </th>
+                if (
+                    $scheduleRemaining
+                    <=
+                    0
+                ) {
+                    continue;
+                }
 
-                                <th>
-                                    Release Date
-                                </th>
 
-                                <th>
-                                    Status
-                                </th>
+                $appliedAmount =
+                    min(
+                        $remainingPayment,
+                        $scheduleRemaining
+                    );
 
-                                <th>
-                                    Action
-                                </th>
 
-                            </tr>
+                $newSchedulePaid =
+                    $schedulePaid
+                    +
+                    $appliedAmount;
 
-                        </thead>
 
+                if (
+                    $newSchedulePaid
+                    >=
+                    $scheduleDue
+                ) {
 
-                        <tbody>
+                    $scheduleStatus =
+                        'paid';
 
+                    $paidDate =
+                        $paymentDate;
 
-                        <?php foreach (
-                            $loans
-                            as $loan
-                        ): ?>
+                } else {
 
+                    $scheduleStatus =
+                        'partial';
 
-                            <?php
+                    $paidDate =
+                        null;
+                }
 
-                            $loanId =
-                                (int)(
-                                    $loan['id']
-                                    ?? 0
-                                );
 
+                $updateScheduleStmt =
+                    $this->db->prepare("
+                        UPDATE loan_schedules
 
-                            $loanPayable =
-                                (float)(
-                                    $loan[
-                                        'total_payable'
-                                    ]
-                                    ?? 0
-                                );
+                        SET
 
+                            paid_amount =
+                                :paid_amount,
 
-                            $loanPaid =
-                                (float)(
-                                    $loan[
-                                        'total_paid'
-                                    ]
-                                    ?? 0
-                                );
+                            status =
+                                :status,
 
+                            paid_date =
+                                :paid_date
 
-                            $loanBalance =
-                                max(
-                                    0,
-                                    $loanPayable
-                                    - $loanPaid
-                                );
+                        WHERE
+                            id = :id
+                    ");
 
+                $updateScheduleStmt->execute([
+                    ':paid_amount' =>
+                        $newSchedulePaid,
 
-                            $loanStatus =
-                                $loan['status']
-                                ?? 'pending';
+                    ':status' =>
+                        $scheduleStatus,
 
+                    ':paid_date' =>
+                        $paidDate,
 
-                            $paymentType =
-                                $loan[
-                                    'payment_type'
-                                ]
-                                ?? '-';
+                    ':id' =>
+                        $schedule['id'],
+                ]);
 
 
-                            $paymentType =
-                                ucfirst(
-                                    str_replace(
-                                        '_',
-                                        ' ',
-                                        $paymentType
-                                    )
-                                );
+                $remainingPayment -=
+                    $appliedAmount;
+            }
 
-                            ?>
 
+            /*
+            |--------------------------------------------------------------------------
+            | COMMIT
+            |--------------------------------------------------------------------------
+            */
 
-                            <tr>
+            $this->db->commit();
 
 
-                                <!-- LOAN NUMBER -->
+            /*
+            |--------------------------------------------------------------------------
+            | SUCCESS
+            |--------------------------------------------------------------------------
+            */
 
-                                <td>
+            $_SESSION['success'] =
+                'Payment '
+                .
+                $paymentNumber
+                .
+                ' was successfully recorded.';
 
-                                    <span
-                                        class="borrower-loan-number"
-                                    >
 
-                                        <?= borrowerValue(
-                                            $loan[
-                                                'loan_number'
-                                            ]
-                                            ?? '-'
-                                        ) ?>
+            header(
+                'Location: index.php?url=collections'
+            );
 
-                                    </span>
+            exit;
 
-                                </td>
 
+        } catch (
+            Throwable $e
+        ) {
 
-                                <!-- CATEGORY -->
+            /*
+            |--------------------------------------------------------------------------
+            | ROLLBACK
+            |--------------------------------------------------------------------------
+            */
 
-                                <td>
+            if (
+                $this->db->inTransaction()
+            ) {
 
-                                    <?= borrowerValue(
-                                        $loan[
-                                            'category_name'
-                                        ]
-                                        ?? null
-                                    ) ?>
+                $this->db->rollBack();
+            }
 
-                                </td>
 
+            $_SESSION['error'] =
+                $e->getMessage();
 
-                                <!-- PRINCIPAL -->
 
-                                <td>
+            header(
+                'Location: index.php?url=collections/create&loan_id='
+                .
+                $loanId
+            );
 
-                                    ₱<?= number_format(
-                                        (float)(
-                                            $loan[
-                                                'principal_amount'
-                                            ]
-                                            ?? 0
-                                        ),
-                                        2
-                                    ) ?>
+            exit;
+        }
+    }
 
-                                </td>
 
+    /*
+    |--------------------------------------------------------------------------
+    | SHOW COLLECTION
+    |--------------------------------------------------------------------------
+    |
+    | URL:
+    |
+    | index.php?url=collections/show&id=1
+    |
+    */
 
-                                <!-- INTEREST -->
+    public function show(): void
+    {
+        $context =
+            $this->checkAccess();
 
-                                <td>
+        $businessId =
+            $context['businessId'];
 
-                                    ₱<?= number_format(
-                                        (float)(
-                                            $loan[
-                                                'total_interest'
-                                            ]
-                                            ?? 0
-                                        ),
-                                        2
-                                    ) ?>
 
-                                </td>
+        $id =
+            (int)(
+                $_GET['id']
+                ?? 0
+            );
 
 
-                                <!-- PAYABLE -->
+        if ($id <= 0) {
 
-                                <td>
+            $_SESSION['error'] =
+                'Invalid collection ID.';
 
-                                    ₱<?= number_format(
-                                        $loanPayable,
-                                        2
-                                    ) ?>
+            header(
+                'Location: index.php?url=collections'
+            );
 
-                                </td>
+            exit;
+        }
 
 
-                                <!-- PAID -->
+        $stmt =
+            $this->db->prepare("
+                SELECT
 
-                                <td>
+                    lp.*,
 
-                                    ₱<?= number_format(
-                                        $loanPaid,
-                                        2
-                                    ) ?>
+                    l.loan_number,
 
-                                </td>
+                    l.principal_amount
+                        AS loan_principal,
 
+                    l.total_payable
+                        AS loan_total_payable,
 
-                                <!-- BALANCE -->
+                    l.status
+                        AS loan_status,
 
-                                <td>
+                    b.borrower_code,
 
-                                    <span
-                                        class="borrower-loan-balance"
-                                    >
+                    b.first_name,
 
-                                        ₱<?= number_format(
-                                            $loanBalance,
-                                            2
-                                        ) ?>
+                    b.middle_name,
 
-                                    </span>
+                    b.last_name,
 
-                                </td>
+                    b.email,
 
+                    b.phone,
 
-                                <!-- PAYMENT TYPE -->
+                    CONCAT(
+                        b.first_name,
+                        ' ',
+                        COALESCE(
+                            CONCAT(
+                                b.middle_name,
+                                ' '
+                            ),
+                            ''
+                        ),
+                        b.last_name
+                    ) AS borrower_name,
 
-                                <td>
+                    a.account_name,
 
-                                    <?= borrowerValue(
-                                        $paymentType
-                                    ) ?>
+                    a.account_type,
 
-                                </td>
+                    u.full_name
+                        AS created_by_name
 
+                FROM loan_payments lp
 
-                                <!-- TERM -->
+                INNER JOIN loans l
+                    ON l.id = lp.loan_id
 
-                                <td>
+                INNER JOIN borrowers b
+                    ON b.id = l.borrower_id
 
-                                    <?= borrowerValue(
-                                        $loan['term']
-                                        ?? null
-                                    ) ?>
+                INNER JOIN accounts a
+                    ON a.id = lp.account_id
 
-                                    <?= borrowerValue(
-                                        $loan[
-                                            'term_period'
-                                        ]
-                                        ?? null,
-                                        ''
-                                    ) ?>
+                LEFT JOIN users u
+                    ON u.id = lp.created_by
 
-                                </td>
+                WHERE
+                    lp.id = :id
 
+                    AND lp.business_id = :business_id
 
-                                <!-- RELEASE DATE -->
+                LIMIT 1
+            ");
 
-                                <td>
+        $stmt->execute([
+            ':id' =>
+                $id,
 
-                                    <?= borrowerValue(
-                                        $loan[
-                                            'release_date'
-                                        ]
-                                        ?? null
-                                    ) ?>
+            ':business_id' =>
+                $businessId,
+        ]);
 
-                                </td>
 
+        $collection =
+            $stmt->fetch(
+                PDO::FETCH_ASSOC
+            );
 
-                                <!-- STATUS -->
 
-                                <td>
+        if (!$collection) {
 
-                                    <span
-                                        class="status status-<?= htmlspecialchars(
-                                            $loanStatus
-                                        ) ?>"
-                                    >
+            $_SESSION['error'] =
+                'Collection record not found.';
 
-                                        <?= borrowerValue(
-                                            ucfirst(
-                                                $loanStatus
-                                            )
-                                        ) ?>
+            header(
+                'Location: index.php?url=collections'
+            );
 
-                                    </span>
+            exit;
+        }
 
-                                </td>
 
+        require APP_PATH .
+            '/views/collections/show.php';
+    }
 
-                                <!-- ACTION -->
 
-                                <td>
+    /*
+    |--------------------------------------------------------------------------
+    | VOID COLLECTION
+    |--------------------------------------------------------------------------
+    |
+    | URL:
+    |
+    | index.php?url=collections/void
+    |
+    */
 
-                                    <a
-                                        href="index.php?url=loans/show&id=<?= $loanId ?>"
-                                        class="btn btn-secondary"
-                                    >
+    public function void(): void
+    {
+        $context =
+            $this->checkAccess();
 
-                                        View
+        $businessId =
+            $context['businessId'];
 
-                                    </a>
 
-                                </td>
+        $id =
+            (int)(
+                $_POST['id']
+                ?? 0
+            );
 
 
-                            </tr>
+        if ($id <= 0) {
 
+            $_SESSION['error'] =
+                'Invalid collection ID.';
 
-                        <?php endforeach; ?>
+            header(
+                'Location: index.php?url=collections'
+            );
 
+            exit;
+        }
 
-                        </tbody>
 
+        try {
 
-                    </table>
+            $this->db->beginTransaction();
 
 
-                </div>
+            /*
+            |--------------------------------------------------------------------------
+            | GET PAYMENT
+            |--------------------------------------------------------------------------
+            */
 
+            $stmt =
+                $this->db->prepare("
+                    SELECT
 
-            <?php endif; ?>
+                        id,
 
+                        business_id,
 
-        </div>
+                        loan_id,
 
+                        account_id,
 
-    </div>
+                        amount,
 
-</div>
+                        status
 
+                    FROM loan_payments
 
-</body>
+                    WHERE
+                        id = :id
 
-</html>
+                        AND business_id = :business_id
+
+                    LIMIT 1
+
+                    FOR UPDATE
+                ");
+
+            $stmt->execute([
+                ':id' =>
+                    $id,
+
+                ':business_id' =>
+                    $businessId,
+            ]);
+
+
+            $payment =
+                $stmt->fetch(
+                    PDO::FETCH_ASSOC
+                );
+
+
+            if (!$payment) {
+
+                throw new Exception(
+                    'Collection record not found.'
+                );
+            }
+
+
+            if (
+                $payment['status']
+                ===
+                'void'
+            ) {
+
+                throw new Exception(
+                    'This collection has already been voided.'
+                );
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | VOID PAYMENT
+            |--------------------------------------------------------------------------
+            */
+
+            $voidStmt =
+                $this->db->prepare("
+                    UPDATE loan_payments
+
+                    SET
+                        status = 'void'
+
+                    WHERE
+                        id = :id
+
+                        AND business_id = :business_id
+                ");
+
+            $voidStmt->execute([
+                ':id' =>
+                    $id,
+
+                ':business_id' =>
+                    $businessId,
+            ]);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | REMOVE MONEY FROM ACCOUNT
+            |--------------------------------------------------------------------------
+            */
+
+            $accountStmt =
+                $this->db->prepare("
+                    UPDATE accounts
+
+                    SET
+                        balance =
+                            balance
+                            -
+                            :amount
+
+                    WHERE
+                        id = :account_id
+
+                        AND business_id = :business_id
+                ");
+
+            $accountStmt->execute([
+                ':amount' =>
+                    $payment['amount'],
+
+                ':account_id' =>
+                    $payment['account_id'],
+
+                ':business_id' =>
+                    $businessId,
+            ]);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | RESTORE LOAN STATUS
+            |--------------------------------------------------------------------------
+            */
+
+            $paidStmt =
+                $this->db->prepare("
+                    SELECT
+
+                        COALESCE(
+                            SUM(amount),
+                            0
+                        ) AS total_paid
+
+                    FROM loan_payments
+
+                    WHERE
+                        loan_id = :loan_id
+
+                        AND business_id = :business_id
+
+                        AND status = 'posted'
+                ");
+
+            $paidStmt->execute([
+                ':loan_id' =>
+                    $payment['loan_id'],
+
+                ':business_id' =>
+                    $businessId,
+            ]);
+
+
+            $paid =
+                (float)(
+                    $paidStmt->fetchColumn()
+                    ?? 0
+                );
+
+
+            $loanStmt =
+                $this->db->prepare("
+                    SELECT
+
+                        total_payable,
+
+                        status
+
+                    FROM loans
+
+                    WHERE
+                        id = :loan_id
+
+                        AND business_id = :business_id
+
+                    LIMIT 1
+                ");
+
+            $loanStmt->execute([
+                ':loan_id' =>
+                    $payment['loan_id'],
+
+                ':business_id' =>
+                    $businessId,
+            ]);
+
+
+            $loan =
+                $loanStmt->fetch(
+                    PDO::FETCH_ASSOC
+                );
+
+
+            if ($loan) {
+
+                $remaining =
+                    max(
+                        0,
+                        (float)$loan[
+                            'total_payable'
+                        ]
+                        -
+                        $paid
+                    );
+
+
+                if (
+                    $remaining <= 0.01
+                ) {
+
+                    $loanStatus =
+                        'completed';
+
+                } else {
+
+                    /*
+                    | Determine if loan has overdue schedules.
+                    */
+
+                    $overdueStmt =
+                        $this->db->prepare("
+                            SELECT COUNT(*)
+
+                            FROM loan_schedules
+
+                            WHERE
+                                loan_id = :loan_id
+
+                                AND status = 'overdue'
+                        ");
+
+                    $overdueStmt->execute([
+                        ':loan_id' =>
+                            $payment['loan_id'],
+                    ]);
+
+
+                    $hasOverdue =
+                        (int)(
+                            $overdueStmt->fetchColumn()
+                            ?? 0
+                        );
+
+
+                    $loanStatus =
+                        $hasOverdue > 0
+                            ? 'overdue'
+                            : 'active';
+                }
+
+
+                $updateLoanStmt =
+                    $this->db->prepare("
+                        UPDATE loans
+
+                        SET
+                            status = :status
+
+                        WHERE
+                            id = :loan_id
+
+                            AND business_id = :business_id
+                    ");
+
+                $updateLoanStmt->execute([
+                    ':status' =>
+                        $loanStatus,
+
+                    ':loan_id' =>
+                        $payment['loan_id'],
+
+                    ':business_id' =>
+                        $businessId,
+                ]);
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | REBUILD SCHEDULE PAID AMOUNTS
+            |--------------------------------------------------------------------------
+            */
+
+            $scheduleResetStmt =
+                $this->db->prepare("
+                    UPDATE loan_schedules
+
+                    SET
+                        paid_amount = 0,
+
+                        paid_date = NULL,
+
+                        status = 'pending'
+
+                    WHERE
+                        loan_id = :loan_id
+                ");
+
+            $scheduleResetStmt->execute([
+                ':loan_id' =>
+                    $payment['loan_id'],
+            ]);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | RE-APPLY ALL POSTED PAYMENTS
+            |--------------------------------------------------------------------------
+            */
+
+            $paymentsStmt =
+                $this->db->prepare("
+                    SELECT
+
+                        payment_date,
+
+                        amount
+
+                    FROM loan_payments
+
+                    WHERE
+                        loan_id = :loan_id
+
+                        AND business_id = :business_id
+
+                        AND status = 'posted'
+
+                    ORDER BY
+                        payment_date ASC,
+                        id ASC
+                ");
+
+            $paymentsStmt->execute([
+                ':loan_id' =>
+                    $payment['loan_id'],
+
+                ':business_id' =>
+                    $businessId,
+            ]);
+
+
+            $postedPayments =
+                $paymentsStmt->fetchAll(
+                    PDO::FETCH_ASSOC
+                );
+
+
+            foreach (
+                $postedPayments
+                as $postedPayment
+            ) {
+
+                $remainingPayment =
+                    (float)$postedPayment[
+                        'amount'
+                    ];
+
+
+                if (
+                    $remainingPayment
+                    <=
+                    0
+                ) {
+                    continue;
+                }
+
+
+                $schedulesStmt =
+                    $this->db->prepare("
+                        SELECT
+
+                            id,
+
+                            total_due,
+
+                            paid_amount
+
+                        FROM loan_schedules
+
+                        WHERE
+                            loan_id = :loan_id
+
+                            AND status IN (
+                                'pending',
+                                'partial',
+                                'overdue'
+                            )
+
+                        ORDER BY
+                            due_date ASC,
+                            installment_number ASC
+
+                        FOR UPDATE
+                    ");
+
+                $schedulesStmt->execute([
+                    ':loan_id' =>
+                        $payment['loan_id'],
+                ]);
+
+
+                $schedules =
+                    $schedulesStmt->fetchAll(
+                        PDO::FETCH_ASSOC
+                    );
+
+
+                foreach (
+                    $schedules
+                    as $schedule
+                ) {
+
+                    if (
+                        $remainingPayment
+                        <=
+                        0
+                    ) {
+                        break;
+                    }
+
+
+                    $due =
+                        (float)$schedule[
+                            'total_due'
+                        ];
+
+
+                    $schedulePaid =
+                        (float)$schedule[
+                            'paid_amount'
+                        ];
+
+
+                    $remainingSchedule =
+                        max(
+                            0,
+                            $due
+                            -
+                            $schedulePaid
+                        );
+
+
+                    if (
+                        $remainingSchedule
+                        <=
+                        0
+                    ) {
+                        continue;
+                    }
+
+
+                    $applied =
+                        min(
+                            $remainingPayment,
+                            $remainingSchedule
+                        );
+
+
+                    $newPaid =
+                        $schedulePaid
+                        +
+                        $applied;
+
+
+                    $scheduleStatus =
+                        $newPaid >= $due
+                            ? 'paid'
+                            : 'partial';
+
+
+                    $paidDate =
+                        $newPaid >= $due
+                            ? $postedPayment[
+                                'payment_date'
+                            ]
+                            : null;
+
+
+                    $updateScheduleStmt =
+                        $this->db->prepare("
+                            UPDATE loan_schedules
+
+                            SET
+
+                                paid_amount =
+                                    :paid_amount,
+
+                                status =
+                                    :status,
+
+                                paid_date =
+                                    :paid_date
+
+                            WHERE
+                                id = :id
+                        ");
+
+                    $updateScheduleStmt->execute([
+                        ':paid_amount' =>
+                            $newPaid,
+
+                        ':status' =>
+                            $scheduleStatus,
+
+                        ':paid_date' =>
+                            $paidDate,
+
+                        ':id' =>
+                            $schedule['id'],
+                    ]);
+
+
+                    $remainingPayment -=
+                        $applied;
+                }
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | COMMIT
+            |--------------------------------------------------------------------------
+            */
+
+            $this->db->commit();
+
+
+            $_SESSION['success'] =
+                'Collection successfully voided.';
+
+
+            header(
+                'Location: index.php?url=collections'
+            );
+
+            exit;
+
+
+        } catch (
+            Throwable $e
+        ) {
+
+            if (
+                $this->db->inTransaction()
+            ) {
+
+                $this->db->rollBack();
+            }
+
+
+            $_SESSION['error'] =
+                $e->getMessage();
+
+
+            header(
+                'Location: index.php?url=collections/show&id='
+                .
+                $id
+            );
+
+            exit;
+        }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAYMENT NUMBER GENERATOR
+    |--------------------------------------------------------------------------
+    */
+
+    private function generatePaymentNumber(
+        int $businessId
+    ): string {
+
+        $prefix =
+            'COL-'
+            .
+            date('Ymd')
+            .
+            '-';
+
+
+        $stmt =
+            $this->db->prepare("
+                SELECT
+                    payment_number
+
+                FROM loan_payments
+
+                WHERE
+                    business_id = :business_id
+
+                    AND payment_number LIKE :prefix
+
+                ORDER BY
+                    id DESC
+
+                LIMIT 1
+            ");
+
+
+        $stmt->execute([
+            ':business_id' =>
+                $businessId,
+
+            ':prefix' =>
+                $prefix . '%',
+        ]);
+
+
+        $lastNumber =
+            $stmt->fetchColumn();
+
+
+        if (!$lastNumber) {
+
+            $sequence =
+                1;
+
+        } else {
+
+            $parts =
+                explode(
+                    '-',
+                    $lastNumber
+                );
+
+
+            $sequence =
+                (int)(
+                    end($parts)
+                )
+                +
+                1;
+        }
+
+
+        return
+            $prefix
+            .
+            str_pad(
+                (string)$sequence,
+                4,
+                '0',
+                STR_PAD_LEFT
+            );
+    }
+}

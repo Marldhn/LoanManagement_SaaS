@@ -11,24 +11,70 @@
 | $user
 | $business
 | $tenantRole
+| $settings
 |
+*/
+
+
+/*
+|--------------------------------------------------------------------------
+| CURRENT URL
+|--------------------------------------------------------------------------
 */
 
 $currentUrl =
     $currentUrl
     ?? ($_GET['url'] ?? '');
 
+
+/*
+|--------------------------------------------------------------------------
+| USER
+|--------------------------------------------------------------------------
+*/
+
 $user =
     $user
     ?? ($_SESSION['user'] ?? []);
+
+
+/*
+|--------------------------------------------------------------------------
+| BUSINESS
+|--------------------------------------------------------------------------
+*/
 
 $business =
     $business
     ?? ($_SESSION['business'] ?? null);
 
+
+/*
+|--------------------------------------------------------------------------
+| TENANT ROLE
+|--------------------------------------------------------------------------
+*/
+
 $tenantRole =
     $tenantRole
     ?? ($_SESSION['tenant_role'] ?? null);
+
+
+/*
+|--------------------------------------------------------------------------
+| SETTINGS
+|--------------------------------------------------------------------------
+|
+| Settings should be passed from the controller/view.
+|
+| We also provide safe defaults so the sidebar does not
+| throw an undefined variable warning.
+|
+*/
+
+$settings =
+    $settings
+    ?? ($_SESSION['settings'] ?? []);
 
 
 /*
@@ -96,12 +142,19 @@ $displayName =
         'Administrator'
     );
 
+
 if ($displayName === '') {
 
     $displayName =
         'Administrator';
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| AVATAR LETTER
+|--------------------------------------------------------------------------
+*/
 
 $avatarLetter =
     strtoupper(
@@ -112,6 +165,12 @@ $avatarLetter =
         )
     );
 
+
+/*
+|--------------------------------------------------------------------------
+| DISPLAY ROLE
+|--------------------------------------------------------------------------
+*/
 
 $displayRole =
     $tenantRole
@@ -130,8 +189,168 @@ $displayRole =
         )
     );
 
+
+/*
+|--------------------------------------------------------------------------
+| BRAND SETTINGS
+|--------------------------------------------------------------------------
+|
+| These values come from the Settings page/database.
+|
+*/
+
+
+/*
+|--------------------------------------------------------------------------
+| BUSINESS / APPLICATION NAME
+|--------------------------------------------------------------------------
+*/
+
+$sidebarBrandName =
+    trim(
+        $settings['business_name']
+        ??
+        $settings['company_name']
+        ??
+        $business['name']
+        ??
+        'Loan Management'
+    );
+
+
+if ($sidebarBrandName === '') {
+
+    $sidebarBrandName =
+        'Loan Management';
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| BRAND TAGLINE
+|--------------------------------------------------------------------------
+*/
+
+$sidebarBrandTagline =
+    trim(
+        $settings['business_tagline']
+        ??
+        $settings['tagline']
+        ??
+        'SaaS Platform'
+    );
+
+
+if ($sidebarBrandTagline === '') {
+
+    $sidebarBrandTagline =
+        'SaaS Platform';
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| BRAND LOGO
+|--------------------------------------------------------------------------
+*/
+
+$sidebarLogo =
+    trim(
+        $settings['logo']
+        ??
+        $settings['logo_path']
+        ??
+        ''
+    );
+
+
+/*
+|--------------------------------------------------------------------------
+| LOGO URL NORMALIZATION
+|--------------------------------------------------------------------------
+|
+| If the database stores:
+|
+| uploads/settings/logo.png
+|
+| it will work as:
+|
+| ../uploads/settings/logo.png
+|
+| depending on the location of the current page.
+|
+| For your current index.php?url= routing, assets are normally
+| relative to public/.
+|
+*/
+
+
+if (
+    $sidebarLogo !== ''
+    &&
+    !str_starts_with(
+        $sidebarLogo,
+        'http://'
+    )
+    &&
+    !str_starts_with(
+        $sidebarLogo,
+        'https://'
+    )
+    &&
+    !str_starts_with(
+        $sidebarLogo,
+        '/'
+    )
+) {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Remove leading ./ if present
+    |--------------------------------------------------------------------------
+    */
+
+    $sidebarLogo =
+        ltrim(
+            $sidebarLogo,
+            './'
+        );
+
+    $sidebarLogo =
+        $sidebarLogo;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| MOBILE SIDEBAR TOGGLE
+|--------------------------------------------------------------------------
+*/
+
 ?>
 
+<button
+    type="button"
+    class="mobile-sidebar-toggle"
+    id="mobileSidebarToggle"
+    aria-label="Open navigation"
+    aria-controls="sidebar"
+    aria-expanded="false"
+>
+    <span></span>
+    <span></span>
+    <span></span>
+</button>
+
+
+<!-- ======================================================================
+     MOBILE SIDEBAR OVERLAY
+======================================================================= -->
+
+<div
+    class="sidebar-overlay"
+    id="sidebarOverlay"
+></div>
 
 
 <!-- ======================================================================
@@ -150,32 +369,70 @@ $displayRole =
 
     <div class="sidebar-brand">
 
+
+        <!-- ==============================================================
+             BRAND LOGO
+        ============================================================== -->
+
         <div class="sidebar-brand-icon">
 
-            ₱
+            <?php if ($sidebarLogo !== ''): ?>
+
+                <img
+                    src="<?= htmlspecialchars(
+                        $sidebarLogo,
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>"
+                    alt="<?= htmlspecialchars(
+                        $sidebarBrandName,
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>"
+                    class="sidebar-logo-image"
+                >
+
+            <?php else: ?>
+
+                <span class="sidebar-default-logo">
+                    ₱
+                </span>
+
+            <?php endif; ?>
 
         </div>
 
+
+        <!-- ==============================================================
+             BRAND INFORMATION
+        ============================================================== -->
 
         <div class="sidebar-brand-content">
 
             <div class="sidebar-brand-title">
 
-                Loan Management
+                <?= htmlspecialchars(
+                    $sidebarBrandName,
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) ?>
 
             </div>
 
 
             <div class="sidebar-brand-subtitle">
 
-                SaaS Platform
+                <?= htmlspecialchars(
+                    $sidebarBrandTagline,
+                    ENT_QUOTES,
+                    'UTF-8'
+                ) ?>
 
             </div>
 
         </div>
 
     </div>
-
 
 
     <!-- ==================================================================
@@ -214,7 +471,9 @@ $displayRole =
                         <?= htmlspecialchars(
                             $business['name']
                             ??
-                            'Business'
+                            'Business',
+                            ENT_QUOTES,
+                            'UTF-8'
                         ) ?>
 
                     </div>
@@ -226,7 +485,6 @@ $displayRole =
         </div>
 
     <?php endif; ?>
-
 
 
     <!-- ==================================================================
@@ -255,6 +513,8 @@ $displayRole =
             </div>
 
 
+            <!-- DASHBOARD -->
+
             <a
                 href="index.php?url=dashboard"
                 class="sidebar-link
@@ -268,15 +528,11 @@ $displayRole =
                     ▦
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Dashboard
-
                 </span>
 
             </a>
-
 
 
             <!-- BUSINESSES -->
@@ -294,15 +550,11 @@ $displayRole =
                     ◫
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Businesses
-
                 </span>
 
             </a>
-
 
 
             <!-- USERS -->
@@ -320,15 +572,11 @@ $displayRole =
                     ◉
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Users
-
                 </span>
 
             </a>
-
 
 
             <!-- ==========================================================
@@ -342,7 +590,6 @@ $displayRole =
                 </span>
 
             </div>
-
 
 
             <!-- PLANS -->
@@ -360,15 +607,11 @@ $displayRole =
                     ◆
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Plans
-
                 </span>
 
             </a>
-
 
 
             <!-- SUBSCRIPTIONS -->
@@ -386,15 +629,11 @@ $displayRole =
                     ▤
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Subscriptions
-
                 </span>
 
             </a>
-
 
 
             <!-- ==========================================================
@@ -408,7 +647,6 @@ $displayRole =
                 </span>
 
             </div>
-
 
 
             <!-- SETTINGS -->
@@ -426,15 +664,11 @@ $displayRole =
                     ⚙
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     System Settings
-
                 </span>
 
             </a>
-
 
 
             <!-- AUDIT LOGS -->
@@ -452,15 +686,11 @@ $displayRole =
                     ≡
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Audit Logs
-
                 </span>
 
             </a>
-
 
 
         <?php else: ?>
@@ -484,7 +714,6 @@ $displayRole =
             </div>
 
 
-
             <!-- DASHBOARD -->
 
             <a
@@ -500,15 +729,11 @@ $displayRole =
                     ▦
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Dashboard
-
                 </span>
 
             </a>
-
 
 
             <!-- ==========================================================
@@ -522,7 +747,6 @@ $displayRole =
                 </span>
 
             </div>
-
 
 
             <!-- BORROWERS -->
@@ -540,15 +764,11 @@ $displayRole =
                     ◉
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Borrowers
-
                 </span>
 
             </a>
-
 
 
             <!-- LOANS -->
@@ -566,15 +786,11 @@ $displayRole =
                     ₱
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Loans
-
                 </span>
 
             </a>
-
 
 
             <!-- PAYMENTS -->
@@ -592,15 +808,11 @@ $displayRole =
                     ▤
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Payments
-
                 </span>
 
             </a>
-
 
 
             <!-- COLLECTIONS -->
@@ -618,15 +830,11 @@ $displayRole =
                     ◷
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Collections
-
                 </span>
 
             </a>
-
 
 
             <!-- ==========================================================
@@ -640,7 +848,6 @@ $displayRole =
                 </span>
 
             </div>
-
 
 
             <!-- ACCOUNTS -->
@@ -658,15 +865,11 @@ $displayRole =
                     ◈
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Accounts
-
                 </span>
 
             </a>
-
 
 
             <!-- EXPENSES -->
@@ -684,15 +887,11 @@ $displayRole =
                     −
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Expenses
-
                 </span>
 
             </a>
-
 
 
             <!-- ==========================================================
@@ -706,7 +905,6 @@ $displayRole =
                 </span>
 
             </div>
-
 
 
             <!-- CATEGORIES -->
@@ -724,15 +922,11 @@ $displayRole =
                     ◫
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Categories
-
                 </span>
 
             </a>
-
 
 
             <!-- REPORTS -->
@@ -750,15 +944,11 @@ $displayRole =
                     ▥
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Reports
-
                 </span>
 
             </a>
-
 
 
             <!-- ==========================================================
@@ -777,7 +967,6 @@ $displayRole =
                 </div>
 
 
-
                 <!-- BUSINESS USERS -->
 
                 <a
@@ -793,15 +982,11 @@ $displayRole =
                         ◉
                     </span>
 
-
                     <span class="sidebar-link-text">
-
                         Users
-
                     </span>
 
                 </a>
-
 
 
                 <!-- BUSINESS SETTINGS -->
@@ -819,18 +1004,14 @@ $displayRole =
                         ⚙
                     </span>
 
-
                     <span class="sidebar-link-text">
-
                         Business Settings
-
                     </span>
 
                 </a>
 
 
             <?php endif; ?>
-
 
 
             <!-- ==========================================================
@@ -844,7 +1025,6 @@ $displayRole =
                 </span>
 
             </div>
-
 
 
             <!-- SETTINGS -->
@@ -862,22 +1042,17 @@ $displayRole =
                     ⚙
                 </span>
 
-
                 <span class="sidebar-link-text">
-
                     Settings
-
                 </span>
 
             </a>
-
 
 
         <?php endif; ?>
 
 
     </nav>
-
 
 
     <!-- ==================================================================
@@ -895,7 +1070,9 @@ $displayRole =
             <div class="sidebar-avatar">
 
                 <?= htmlspecialchars(
-                    $avatarLetter
+                    $avatarLetter,
+                    ENT_QUOTES,
+                    'UTF-8'
                 ) ?>
 
             </div>
@@ -907,7 +1084,9 @@ $displayRole =
                 <div class="sidebar-user-name">
 
                     <?= htmlspecialchars(
-                        $displayName
+                        $displayName,
+                        ENT_QUOTES,
+                        'UTF-8'
                     ) ?>
 
                 </div>
@@ -916,7 +1095,9 @@ $displayRole =
                 <div class="sidebar-user-role">
 
                     <?= htmlspecialchars(
-                        $displayRole
+                        $displayRole,
+                        ENT_QUOTES,
+                        'UTF-8'
                     ) ?>
 
                 </div>
@@ -924,9 +1105,7 @@ $displayRole =
 
             </div>
 
-
         </div>
-
 
 
         <!-- LOGOUT -->
@@ -937,16 +1116,11 @@ $displayRole =
         >
 
             <span class="sidebar-logout-icon">
-
                 ↪
-
             </span>
 
-
             <span class="sidebar-logout-text">
-
                 Logout
-
             </span>
 
         </a>
@@ -956,7 +1130,6 @@ $displayRole =
 
 
 </aside>
-
 
 
 <style>
@@ -988,10 +1161,14 @@ $displayRole =
     border-right:
         1px solid #e5e7eb;
 
-    z-index: 1000;
+    /*
+    IMPORTANT:
+    Sidebar must be ABOVE the overlay.
+    */
+
+    z-index: 1100;
 
     overflow: hidden;
-
 }
 
 
@@ -1018,7 +1195,6 @@ $displayRole =
         1px solid #f1f5f9;
 
     flex-shrink: 0;
-
 }
 
 
@@ -1028,11 +1204,15 @@ $displayRole =
 
     height: 38px;
 
+    min-width: 38px;
+
     display: flex;
 
     align-items: center;
 
     justify-content: center;
+
+    overflow: hidden;
 
     border-radius: 10px;
 
@@ -1043,7 +1223,48 @@ $displayRole =
     font-size: 18px;
 
     font-weight: 800;
+}
 
+
+/*
+|--------------------------------------------------------------------------
+| DYNAMIC LOGO
+|--------------------------------------------------------------------------
+*/
+
+.sidebar-logo-image {
+
+    display: block;
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: contain;
+
+    border-radius: 10px;
+
+    background: #ffffff;
+}
+
+
+.sidebar-default-logo {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 100%;
+
+    height: 100%;
+
+    color: #ffffff;
+
+    font-size: 18px;
+
+    font-weight: 800;
 }
 
 
@@ -1051,6 +1272,7 @@ $displayRole =
 
     min-width: 0;
 
+    flex: 1;
 }
 
 
@@ -1066,6 +1288,9 @@ $displayRole =
 
     white-space: nowrap;
 
+    overflow: hidden;
+
+    text-overflow: ellipsis;
 }
 
 
@@ -1083,6 +1308,11 @@ $displayRole =
 
     letter-spacing: .08em;
 
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
 }
 
 
@@ -1096,7 +1326,6 @@ $displayRole =
 
     padding:
         14px 14px 8px;
-
 }
 
 
@@ -1117,7 +1346,6 @@ $displayRole =
         1px solid #eef2f7;
 
     border-radius: 10px;
-
 }
 
 
@@ -1145,14 +1373,12 @@ $displayRole =
     color: #374151;
 
     font-size: 14px;
-
 }
 
 
 .sidebar-business-content {
 
     min-width: 0;
-
 }
 
 
@@ -1165,7 +1391,6 @@ $displayRole =
     font-weight: 800;
 
     letter-spacing: .08em;
-
 }
 
 
@@ -1184,7 +1409,6 @@ $displayRole =
     text-overflow: ellipsis;
 
     white-space: nowrap;
-
 }
 
 
@@ -1206,14 +1430,12 @@ $displayRole =
     overflow-y: auto;
 
     overflow-x: hidden;
-
 }
 
 
 .sidebar-nav::-webkit-scrollbar {
 
     width: 5px;
-
 }
 
 
@@ -1222,7 +1444,6 @@ $displayRole =
     background: #d1d5db;
 
     border-radius: 999px;
-
 }
 
 
@@ -1246,14 +1467,12 @@ $displayRole =
     text-transform: uppercase;
 
     letter-spacing: .09em;
-
 }
 
 
 .sidebar-section:first-child {
 
     padding-top: 8px;
-
 }
 
 
@@ -1296,7 +1515,6 @@ $displayRole =
     transition:
         background .15s ease,
         color .15s ease;
-
 }
 
 
@@ -1305,7 +1523,6 @@ $displayRole =
     background: #f8fafc;
 
     color: #111827;
-
 }
 
 
@@ -1314,7 +1531,6 @@ $displayRole =
     background: #f3f4f6;
 
     color: #111827;
-
 }
 
 
@@ -1336,7 +1552,6 @@ $displayRole =
         0 4px 4px 0;
 
     background: #111827;
-
 }
 
 
@@ -1363,7 +1578,6 @@ $displayRole =
     font-size: 15px;
 
     line-height: 1;
-
 }
 
 
@@ -1372,14 +1586,12 @@ $displayRole =
 .sidebar-link.active .sidebar-icon {
 
     color: #111827;
-
 }
 
 
 .sidebar-link-text {
 
     flex: 1;
-
 }
 
 
@@ -1400,7 +1612,6 @@ $displayRole =
     background: #ffffff;
 
     flex-shrink: 0;
-
 }
 
 
@@ -1420,7 +1631,6 @@ $displayRole =
 
     padding:
         8px 6px 12px;
-
 }
 
 
@@ -1449,7 +1659,6 @@ $displayRole =
     font-weight: 800;
 
     text-transform: uppercase;
-
 }
 
 
@@ -1458,7 +1667,6 @@ $displayRole =
     min-width: 0;
 
     flex: 1;
-
 }
 
 
@@ -1475,7 +1683,6 @@ $displayRole =
     text-overflow: ellipsis;
 
     white-space: nowrap;
-
 }
 
 
@@ -1496,7 +1703,6 @@ $displayRole =
     text-overflow: ellipsis;
 
     white-space: nowrap;
-
 }
 
 
@@ -1534,7 +1740,6 @@ $displayRole =
     transition:
         background .15s ease,
         color .15s ease;
-
 }
 
 
@@ -1543,7 +1748,6 @@ $displayRole =
     background: #fef2f2;
 
     color: #dc2626;
-
 }
 
 
@@ -1558,14 +1762,152 @@ $displayRole =
     justify-content: center;
 
     font-size: 15px;
-
 }
 
 
 .sidebar-logout-text {
 
     flex: 1;
+}
 
+
+/*
+|--------------------------------------------------------------------------
+| MOBILE SIDEBAR TOGGLE
+|--------------------------------------------------------------------------
+*/
+
+.mobile-sidebar-toggle {
+
+    display: none;
+
+    position: fixed;
+
+    top: 14px;
+
+    left: 14px;
+
+    width: 42px;
+
+    height: 42px;
+
+    padding: 0;
+
+    border:
+        1px solid #e5e7eb;
+
+    border-radius: 10px;
+
+    background: #ffffff;
+
+    box-shadow:
+        0 2px 8px
+        rgba(0, 0, 0, 0.08);
+
+    /*
+    Toggle must be above everything.
+    */
+
+    z-index: 1200;
+
+    align-items: center;
+
+    justify-content: center;
+
+    flex-direction: column;
+
+    gap: 4px;
+
+    cursor: pointer;
+
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+.mobile-sidebar-toggle span {
+
+    display: block;
+
+    width: 18px;
+
+    height: 2px;
+
+    background: #111827;
+
+    border-radius: 999px;
+
+    transition:
+        transform .2s ease,
+        opacity .2s ease;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| MOBILE TOGGLE ACTIVE
+|--------------------------------------------------------------------------
+*/
+
+.mobile-sidebar-toggle.active
+span:nth-child(1) {
+
+    transform:
+        translateY(6px)
+        rotate(45deg);
+}
+
+
+.mobile-sidebar-toggle.active
+span:nth-child(2) {
+
+    opacity: 0;
+}
+
+
+.mobile-sidebar-toggle.active
+span:nth-child(3) {
+
+    transform:
+        translateY(-6px)
+        rotate(-45deg);
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| MOBILE OVERLAY
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| Overlay is BELOW sidebar.
+|
+*/
+
+.sidebar-overlay {
+
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    background:
+        rgba(0, 0, 0, 0.35);
+
+    /*
+    BELOW SIDEBAR
+    */
+
+    z-index: 1000;
+
+    cursor: pointer;
+}
+
+
+.sidebar-overlay.active {
+
+    display: block;
 }
 
 
@@ -1588,18 +1930,64 @@ $displayRole =
 
 @media (max-width: 700px) {
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | MOBILE TOGGLE
+    |--------------------------------------------------------------------------
+    */
+
+    .mobile-sidebar-toggle {
+
+        display: flex;
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SIDEBAR
+    |--------------------------------------------------------------------------
+    */
+
     .sidebar {
 
         width: 250px;
+
+        /*
+        Start hidden.
+        */
 
         transform:
             translateX(-100%);
 
         transition:
-            transform .2s ease;
+            transform .25s ease;
+
+        /*
+        Keep sidebar ABOVE overlay.
+        */
+
+        z-index: 1100;
+
+        box-shadow:
+            4px 0 20px
+            rgba(0, 0, 0, 0.12);
+
+        /*
+        Prevent accidental horizontal overflow.
+        */
+
+        max-width: 85vw;
 
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | OPEN SIDEBAR
+    |--------------------------------------------------------------------------
+    */
 
     .sidebar.open {
 
@@ -1608,6 +1996,396 @@ $displayRole =
 
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | MOBILE BODY
+    |--------------------------------------------------------------------------
+    */
+
+    body.sidebar-mobile-open {
+
+        overflow: hidden;
+
+        /*
+        Prevent touch scrolling behind sidebar.
+        */
+
+        touch-action: none;
+
+    }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SMALL MOBILE DEVICES
+|--------------------------------------------------------------------------
+*/
+
+@media (max-width: 400px) {
+
+    .sidebar {
+
+        width: 250px;
+
+        max-width: 85vw;
+
+    }
+
+
+    .mobile-sidebar-toggle {
+
+        top: 12px;
+
+        left: 12px;
+
+        width: 40px;
+
+        height: 40px;
+
+    }
+
 }
 
 </style>
+
+
+<script>
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function () {
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ELEMENTS
+        |--------------------------------------------------------------------------
+        */
+
+        const sidebar =
+            document.getElementById(
+                'sidebar'
+            );
+
+
+        const toggle =
+            document.getElementById(
+                'mobileSidebarToggle'
+            );
+
+
+        const overlay =
+            document.getElementById(
+                'sidebarOverlay'
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SAFETY CHECK
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            !sidebar ||
+            !toggle ||
+            !overlay
+        ) {
+
+            return;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | OPEN SIDEBAR
+        |--------------------------------------------------------------------------
+        */
+
+        function openSidebar() {
+
+            sidebar.classList.add(
+                'open'
+            );
+
+            overlay.classList.add(
+                'active'
+            );
+
+            toggle.classList.add(
+                'active'
+            );
+
+            toggle.setAttribute(
+                'aria-expanded',
+                'true'
+            );
+
+            document.body.classList.add(
+                'sidebar-mobile-open'
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLOSE SIDEBAR
+        |--------------------------------------------------------------------------
+        */
+
+        function closeSidebar() {
+
+            sidebar.classList.remove(
+                'open'
+            );
+
+            overlay.classList.remove(
+                'active'
+            );
+
+            toggle.classList.remove(
+                'active'
+            );
+
+            toggle.setAttribute(
+                'aria-expanded',
+                'false'
+            );
+
+            document.body.classList.remove(
+                'sidebar-mobile-open'
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOGGLE SIDEBAR
+        |--------------------------------------------------------------------------
+        */
+
+        toggle.addEventListener(
+            'click',
+            function (event) {
+
+                event.preventDefault();
+
+                event.stopPropagation();
+
+
+                if (
+                    sidebar.classList.contains(
+                        'open'
+                    )
+                ) {
+
+                    closeSidebar();
+
+                } else {
+
+                    openSidebar();
+
+                }
+
+            }
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLOSE BY CLICKING OVERLAY
+        |--------------------------------------------------------------------------
+        */
+
+        overlay.addEventListener(
+            'click',
+            function () {
+
+                closeSidebar();
+
+            }
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SIDEBAR LINKS
+        |--------------------------------------------------------------------------
+        |
+        | Clicking a menu item should navigate normally.
+        | We only close the mobile sidebar before navigation.
+        |
+        */
+
+        sidebar
+            .querySelectorAll(
+                '.sidebar-link'
+            )
+            .forEach(
+                function (link) {
+
+                    link.addEventListener(
+                        'click',
+                        function () {
+
+                            if (
+                                window.innerWidth <= 700
+                            ) {
+
+                                closeSidebar();
+
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOGOUT
+        |--------------------------------------------------------------------------
+        */
+
+        const logout =
+            sidebar.querySelector(
+                '.sidebar-logout'
+            );
+
+
+        if (logout) {
+
+            logout.addEventListener(
+                'click',
+                function () {
+
+                    if (
+                        window.innerWidth <= 700
+                    ) {
+
+                        closeSidebar();
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ESC KEY
+        |--------------------------------------------------------------------------
+        */
+
+        document.addEventListener(
+            'keydown',
+            function (event) {
+
+                if (
+                    event.key === 'Escape'
+                    &&
+                    sidebar.classList.contains(
+                        'open'
+                    )
+                ) {
+
+                    closeSidebar();
+
+                }
+
+            }
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESIZE
+        |--------------------------------------------------------------------------
+        |
+        | When switching from mobile back to desktop,
+        | remove all mobile-only states.
+        |
+        */
+
+        window.addEventListener(
+            'resize',
+            function () {
+
+                if (
+                    window.innerWidth > 700
+                ) {
+
+                    sidebar.classList.remove(
+                        'open'
+                    );
+
+                    overlay.classList.remove(
+                        'active'
+                    );
+
+                    toggle.classList.remove(
+                        'active'
+                    );
+
+                    toggle.setAttribute(
+                        'aria-expanded',
+                        'false'
+                    );
+
+                    document.body.classList.remove(
+                        'sidebar-mobile-open'
+                    );
+
+                }
+
+            }
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | INITIAL STATE
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            window.innerWidth > 700
+        ) {
+
+            sidebar.classList.remove(
+                'open'
+            );
+
+            overlay.classList.remove(
+                'active'
+            );
+
+            toggle.classList.remove(
+                'active'
+            );
+
+            toggle.setAttribute(
+                'aria-expanded',
+                'false'
+            );
+
+            document.body.classList.remove(
+                'sidebar-mobile-open'
+            );
+
+        }
+
+    }
+);
+
+</script>

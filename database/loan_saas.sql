@@ -2,8 +2,8 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1
--- Generation Time: Aug 25, 2026 at 05:36 AM
+-- Host: 127.0.0.1:3306
+-- Generation Time: Aug 25, 2026 at 07:45 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -363,6 +363,50 @@ CREATE TABLE `subscriptions` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `system_settings`
+--
+
+CREATE TABLE `system_settings` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `business_id` bigint(20) UNSIGNED NOT NULL,
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `system_settings`
+--
+
+INSERT INTO `system_settings` (`id`, `business_id`, `setting_key`, `setting_value`, `created_at`, `updated_at`) VALUES
+(1, 1, 'system_name', 'Loan Management System', '2026-08-25 05:39:21', '2026-08-25 05:39:55'),
+(2, 1, 'system_tagline', '', '2026-08-25 05:39:21', '2026-08-25 05:39:55'),
+(3, 1, 'currency', 'PHP', '2026-08-25 05:39:21', '2026-08-25 05:39:55'),
+(4, 1, 'currency_symbol', '₱', '2026-08-25 05:39:21', '2026-08-25 05:39:55'),
+(5, 1, 'date_format', 'Y-m-d', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(6, 1, 'timezone', 'Asia/Manila', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(7, 1, 'primary_color', '#2563eb', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(8, 1, 'loan_number_prefix', 'LN', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(9, 1, 'payment_number_prefix', 'PAY', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(10, 1, 'default_interest_type', 'flat', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(11, 1, 'default_payment_type', 'installment', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(12, 1, 'default_term', '1', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(13, 1, 'default_term_period', 'months', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(14, 1, 'default_interest_rate', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(15, 1, 'default_processing_fee', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(16, 1, 'enable_penalty', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(17, 1, 'penalty_type', 'fixed', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(18, 1, 'penalty_rate', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(19, 1, 'penalty_amount', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(20, 1, 'overdue_reminders', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(21, 1, 'payment_reminders', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(22, 1, 'maintenance_mode', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
+(23, 1, 'allow_registration', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `users`
 --
 
@@ -504,6 +548,14 @@ ALTER TABLE `subscriptions`
   ADD KEY `idx_subscriptions_status` (`status`);
 
 --
+-- Indexes for table `system_settings`
+--
+ALTER TABLE `system_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_business_setting` (`business_id`,`setting_key`),
+  ADD KEY `idx_business_id` (`business_id`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -582,6 +634,12 @@ ALTER TABLE `subscriptions`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `system_settings`
+--
+ALTER TABLE `system_settings`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
+
+--
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
@@ -634,6 +692,12 @@ ALTER TABLE `loan_payments`
 ALTER TABLE `subscriptions`
   ADD CONSTRAINT `fk_subscriptions_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_subscriptions_plan` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `system_settings`
+--
+ALTER TABLE `system_settings`
+  ADD CONSTRAINT `fk_system_settings_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

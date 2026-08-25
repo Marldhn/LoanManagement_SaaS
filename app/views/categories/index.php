@@ -24,7 +24,6 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
 
 <head>
 
-```
 <meta charset="UTF-8">
 
 <meta
@@ -167,7 +166,7 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
     }
 
 </style>
-```
+
 
 </head>
 
@@ -177,7 +176,7 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
 
 <div class="main-content">
 
-```
+
 <!-- =====================================================
      NAVBAR
 ====================================================== -->
@@ -475,7 +474,7 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
     </div>
 
 </div>
-```
+
 
 </div>
 
@@ -489,7 +488,7 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
     onclick="handleCategoryModalOutsideClick(event)"
 >
 
-```
+
 <div
     class="category-modal"
     onclick="event.stopPropagation()"
@@ -647,7 +646,7 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
     </form>
 
 </div>
-```
+
 
 </div>
 

@@ -1,4 +1,33 @@
+
 <?php
+
+/*
+|--------------------------------------------------------------------------
+| COLLECTIONS INDEX VIEW
+|--------------------------------------------------------------------------
+|
+| Expected controller variables:
+|
+| $user
+| $business
+| $tenantRole
+| $collections
+| $totalCollected
+| $todayCollected
+| $monthCollected
+| $pendingAmount
+| $overdueAmount
+| $currentUrl
+|
+|--------------------------------------------------------------------------
+*/
+
+
+/*
+|--------------------------------------------------------------------------
+| AUTH / BUSINESS DATA
+|--------------------------------------------------------------------------
+*/
 
 $user =
     $user ?? Auth::user();
@@ -13,77 +42,145 @@ $currentUrl =
     $currentUrl ?? 'collections';
 
 
-$todaySummary =
-    $todaySummary ?? [];
+/*
+|--------------------------------------------------------------------------
+| COLLECTION DATA
+|--------------------------------------------------------------------------
+*/
 
-$monthSummary =
-    $monthSummary ?? [];
-
-$overdueSummary =
-    $overdueSummary ?? [];
-
-$recentPayments =
-    $recentPayments ?? [];
-
-$todayCollections =
-    $todayCollections ?? [];
+$collections =
+    is_array($collections ?? null)
+        ? $collections
+        : [];
 
 
-$todayExpected =
-    (float)(
-        $todaySummary['expected']
-        ?? 0
-    );
+/*
+|--------------------------------------------------------------------------
+| SUMMARY VALUES
+|--------------------------------------------------------------------------
+*/
 
+$totalCollected =
+    (float)($totalCollected ?? 0);
 
 $todayCollected =
-    (float)(
-        $todaySummary['collected']
-        ?? 0
-    );
-
-
-$todayRemaining =
-    (float)(
-        $todaySummary['remaining']
-        ?? 0
-    );
-
+    (float)($todayCollected ?? 0);
 
 $monthCollected =
-    (float)(
-        $monthSummary['collected']
-        ?? 0
-    );
+    (float)($monthCollected ?? 0);
 
-
-$overdueCount =
-    (int)(
-        $overdueSummary['count']
-        ?? 0
-    );
-
+$pendingAmount =
+    (float)($pendingAmount ?? 0);
 
 $overdueAmount =
-    (float)(
-        $overdueSummary['amount']
-        ?? 0
+    (float)($overdueAmount ?? 0);
+
+
+/*
+|--------------------------------------------------------------------------
+| FILTER VALUES
+|--------------------------------------------------------------------------
+*/
+
+$search =
+    $_GET['search'] ?? '';
+
+$status =
+    $_GET['status'] ?? '';
+
+$dateFrom =
+    $_GET['date_from'] ?? '';
+
+$dateTo =
+    $_GET['date_to'] ?? '';
+
+
+/*
+|--------------------------------------------------------------------------
+| HELPER
+|--------------------------------------------------------------------------
+*/
+
+function collectionValue(
+    $value,
+    $fallback = '-'
+) {
+    if (
+        $value === null ||
+        $value === ''
+    ) {
+        return $fallback;
+    }
+
+    return htmlspecialchars(
+        (string)$value,
+        ENT_QUOTES,
+        'UTF-8'
     );
+}
 
 
-$collectionRate = 0;
+function collectionMoney(
+    $value
+) {
+    return '₱' . number_format(
+        (float)$value,
+        2
+    );
+}
 
-if ($todayExpected > 0) {
 
-    $collectionRate =
-        min(
-            100,
-            (
-                $todayCollected
-                /
-                $todayExpected
-            ) * 100
+function collectionStatusClass(
+    $status
+) {
+    $status =
+        strtolower(
+            trim(
+                (string)$status
+            )
         );
+
+    switch ($status) {
+
+        case 'posted':
+        case 'paid':
+            return 'status-paid';
+
+        case 'partial':
+            return 'status-partial';
+
+        case 'pending':
+            return 'status-pending';
+
+        case 'overdue':
+            return 'status-overdue';
+
+        case 'void':
+            return 'status-void';
+
+        default:
+            return 'status-default';
+    }
+}
+
+
+function collectionStatusLabel(
+    $status
+) {
+    if (
+        $status === null ||
+        $status === ''
+    ) {
+        return '-';
+    }
+
+    return ucfirst(
+        str_replace(
+            '_',
+            ' ',
+            (string)$status
+        )
+    );
 }
 
 ?>
@@ -102,46 +199,102 @@ if ($todayExpected > 0) {
     >
 
     <title>
-        Collections | Loan Management
+        Collections
     </title>
+
 
     <link
         rel="stylesheet"
         href="assets/css/style.css"
     >
 
+
     <style>
 
-        .collection-page {
-            padding-bottom: 40px;
+        /*
+        |--------------------------------------------------------------------------
+        | PAGE
+        |--------------------------------------------------------------------------
+        */
+
+        .collections-page {
+            width: 100%;
         }
 
 
-        .collection-stats {
+        /*
+        |--------------------------------------------------------------------------
+        | HEADER
+        |--------------------------------------------------------------------------
+        */
 
+        .collections-header {
+            display: flex;
+
+            align-items: flex-start;
+
+            justify-content: space-between;
+
+            gap: 20px;
+
+            margin-bottom: 25px;
+        }
+
+
+        .collections-title h1 {
+            margin: 0 0 5px;
+
+            font-size: 27px;
+
+            font-weight: 700;
+
+            color: #111827;
+        }
+
+
+        .collections-title p {
+            margin: 0;
+
+            color: #6b7280;
+
+            font-size: 14px;
+        }
+
+
+        .collections-header-actions {
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+            flex-wrap: wrap;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUMMARY
+        |--------------------------------------------------------------------------
+        */
+
+        .collections-summary-grid {
             display: grid;
 
             grid-template-columns:
-                repeat(
-                    4,
-                    minmax(
-                        0,
-                        1fr
-                    )
-                );
+                repeat(4, minmax(0, 1fr));
 
-            gap: 18px;
+            gap: 16px;
 
-            margin-bottom: 24px;
-
+            margin-bottom: 22px;
         }
 
 
-        .collection-stat {
-
+        .collection-summary-card {
             background: #fff;
 
-            border: 1px solid #e5e7eb;
+            border:
+                1px solid #e5e7eb;
 
             border-radius: 12px;
 
@@ -149,338 +302,542 @@ if ($todayExpected > 0) {
 
             box-shadow:
                 0 2px 8px
-                rgba(
-                    0,
-                    0,
-                    0,
-                    0.04
-                );
-
+                rgba(0, 0, 0, 0.04);
         }
 
 
-        .collection-stat-label {
+        .collection-summary-header {
+            display: flex;
 
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 10px;
+
+            margin-bottom: 12px;
+        }
+
+
+        .collection-summary-title {
+            color: #6b7280;
+
+            font-size: 13px;
+
+            font-weight: 500;
+        }
+
+
+        .collection-summary-icon {
+            width: 35px;
+
+            height: 35px;
+
+            border-radius: 9px;
+
+            background: #f8fafc;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-size: 16px;
+        }
+
+
+        .collection-summary-value {
+            font-size: 23px;
+
+            line-height: 1.2;
+
+            font-weight: 700;
+
+            color: #111827;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FILTER CARD
+        |--------------------------------------------------------------------------
+        */
+
+        .collections-filter-card {
+            background: #fff;
+
+            border:
+                1px solid #e5e7eb;
+
+            border-radius: 12px;
+
+            margin-bottom: 22px;
+
+            padding: 20px;
+
+            box-shadow:
+                0 2px 8px
+                rgba(0, 0, 0, 0.04);
+        }
+
+
+        .collections-filter-form {
+            display: grid;
+
+            grid-template-columns:
+                minmax(220px, 2fr)
+                minmax(150px, 1fr)
+                minmax(150px, 1fr)
+                minmax(150px, 1fr)
+                auto;
+
+            gap: 12px;
+
+            align-items: end;
+        }
+
+
+        .collection-filter-group {
+            min-width: 0;
+        }
+
+
+        .collection-filter-label {
+            display: block;
+
+            margin-bottom: 6px;
+
+            color: #475569;
+
+            font-size: 12px;
+
+            font-weight: 600;
+        }
+
+
+        .collection-filter-input,
+        .collection-filter-select {
+            width: 100%;
+
+            height: 42px;
+
+            padding:
+                0 12px;
+
+            border:
+                1px solid #d1d5db;
+
+            border-radius: 8px;
+
+            background: #fff;
+
+            color: #111827;
+
+            font-size: 13px;
+
+            outline: none;
+        }
+
+
+        .collection-filter-input:focus,
+        .collection-filter-select:focus {
+            border-color: #2563eb;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(37, 99, 235, 0.10);
+        }
+
+
+        .collection-filter-actions {
+            display: flex;
+
+            gap: 8px;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TABLE CARD
+        |--------------------------------------------------------------------------
+        */
+
+        .collections-table-card {
+            background: #fff;
+
+            border:
+                1px solid #e5e7eb;
+
+            border-radius: 12px;
+
+            overflow: hidden;
+
+            box-shadow:
+                0 2px 8px
+                rgba(0, 0, 0, 0.04);
+        }
+
+
+        .collections-table-header {
+            padding:
+                18px 22px;
+
+            border-bottom:
+                1px solid #e5e7eb;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 15px;
+        }
+
+
+        .collections-table-header h2 {
+            margin: 0;
+
+            font-size: 17px;
+
+            font-weight: 700;
+
+            color: #111827;
+        }
+
+
+        .collections-table-header p {
+            margin: 4px 0 0;
+
+            color: #6b7280;
+
+            font-size: 13px;
+        }
+
+
+        .collections-count {
             color: #64748b;
 
             font-size: 13px;
 
-            margin-bottom: 8px;
-
+            white-space: nowrap;
         }
 
 
-        .collection-stat-value {
+        /*
+        |--------------------------------------------------------------------------
+        | TABLE
+        |--------------------------------------------------------------------------
+        */
 
-            font-size: 25px;
+        .collections-table-wrapper {
+            width: 100%;
+
+            overflow-x: auto;
+        }
+
+
+        .collections-table {
+            width: 100%;
+
+            min-width: 1250px;
+
+            border-collapse: collapse;
+        }
+
+
+        .collections-table th {
+            padding:
+                13px 14px;
+
+            background: #f8fafc;
+
+            border-bottom:
+                1px solid #e5e7eb;
+
+            color: #64748b;
+
+            font-size: 12px;
+
+            font-weight: 700;
+
+            text-align: left;
+
+            white-space: nowrap;
+        }
+
+
+        .collections-table td {
+            padding:
+                14px;
+
+            border-bottom:
+                1px solid #f1f5f9;
+
+            color: #374151;
+
+            font-size: 13px;
+
+            white-space: nowrap;
+        }
+
+
+        .collections-table tbody tr:hover {
+            background: #fafafa;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BORROWER
+        |--------------------------------------------------------------------------
+        */
+
+        .collection-borrower-name {
+            display: block;
 
             font-weight: 700;
 
             color: #111827;
 
+            margin-bottom: 3px;
         }
 
 
-        .collection-stat-description {
+        .collection-borrower-code {
+            display: block;
 
-            margin-top: 6px;
+            color: #64748b;
 
-            color: #94a3b8;
-
-            font-size: 12px;
-
+            font-size: 11px;
         }
 
 
-        .collection-grid {
+        /*
+        |--------------------------------------------------------------------------
+        | LOAN
+        |--------------------------------------------------------------------------
+        */
 
-            display: grid;
+        .collection-loan-number {
+            font-weight: 700;
 
-            grid-template-columns:
-                minmax(
-                    0,
-                    1fr
-                )
-                380px;
-
-            gap: 20px;
-
-            align-items: start;
-
+            color: #2563eb;
         }
 
 
-        .collection-card {
+        /*
+        |--------------------------------------------------------------------------
+        | MONEY
+        |--------------------------------------------------------------------------
+        */
 
-            background: #fff;
+        .collection-money {
+            font-weight: 600;
 
-            border: 1px solid #e5e7eb;
-
-            border-radius: 12px;
-
-            overflow: hidden;
-
-            box-shadow:
-                0 2px 8px
-                rgba(
-                    0,
-                    0,
-                    0,
-                    0.04
-                );
-
-            margin-bottom: 20px;
-
+            color: #111827;
         }
 
 
-        .collection-card-header {
+        .collection-money-paid {
+            font-weight: 700;
 
-            display: flex;
+            color: #15803d;
+        }
 
-            justify-content: space-between;
+
+        .collection-money-balance {
+            font-weight: 700;
+
+            color: #dc2626;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | STATUS
+        |--------------------------------------------------------------------------
+        */
+
+        .collection-status {
+            display: inline-flex;
 
             align-items: center;
 
-            gap: 15px;
+            justify-content: center;
 
-            padding: 18px 20px;
+            padding:
+                5px 9px;
 
-            border-bottom:
-                1px solid #e5e7eb;
+            border-radius: 999px;
 
+            font-size: 11px;
+
+            font-weight: 700;
+
+            white-space: nowrap;
         }
 
 
-        .collection-card-header h2 {
+        .status-paid {
+            background: #dcfce7;
 
-            margin: 0;
-
-            font-size: 17px;
-
+            color: #166534;
         }
 
 
-        .collection-card-header p {
+        .status-partial {
+            background: #fef3c7;
 
-            margin: 4px 0 0;
-
-            color: #64748b;
-
-            font-size: 12px;
-
+            color: #92400e;
         }
 
 
-        .collection-card-body {
+        .status-pending {
+            background: #dbeafe;
 
-            padding: 20px;
-
+            color: #1d4ed8;
         }
 
 
-        .collection-progress {
+        .status-overdue {
+            background: #fee2e2;
 
-            margin-top: 15px;
-
+            color: #b91c1c;
         }
 
 
-        .collection-progress-header {
+        .status-void {
+            background: #f1f5f9;
+
+            color: #475569;
+        }
+
+
+        .status-default {
+            background: #f1f5f9;
+
+            color: #475569;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ACTIONS
+        |--------------------------------------------------------------------------
+        */
+
+        .collection-actions {
+            display: flex;
+
+            align-items: center;
+
+            gap: 7px;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMPTY STATE
+        |--------------------------------------------------------------------------
+        */
+
+        .collections-empty {
+            padding:
+                60px 25px;
+
+            text-align: center;
+        }
+
+
+        .collections-empty-icon {
+            width: 58px;
+
+            height: 58px;
+
+            margin:
+                0 auto 15px;
+
+            border-radius: 50%;
+
+            background: #f1f5f9;
 
             display: flex;
 
-            justify-content: space-between;
+            align-items: center;
 
-            margin-bottom: 7px;
+            justify-content: center;
 
-            font-size: 12px;
-
-            color: #64748b;
-
+            font-size: 23px;
         }
 
 
-        .collection-progress-bar {
+        .collections-empty h3 {
+            margin:
+                0 0 8px;
 
-            height: 9px;
+            font-size: 17px;
 
-            background: #e5e7eb;
-
-            border-radius: 999px;
-
-            overflow: hidden;
-
+            color: #111827;
         }
 
 
-        .collection-progress-fill {
+        .collections-empty p {
+            margin: 0;
 
-            height: 100%;
-
-            background: #2563eb;
-
-            border-radius: 999px;
-
-        }
-
-
-        .collection-actions {
-
-            display: grid;
-
-            grid-template-columns:
-                1fr
-                1fr;
-
-            gap: 10px;
-
-        }
-
-
-        .collection-action {
-
-            display: block;
-
-            padding: 14px;
-
-            border: 1px solid #e5e7eb;
-
-            border-radius: 9px;
-
-            text-decoration: none;
-
-            color: #1f2937;
-
-            transition: 0.2s ease;
-
-        }
-
-
-        .collection-action:hover {
-
-            background: #f8fafc;
-
-            border-color: #cbd5e1;
-
-        }
-
-
-        .collection-action-title {
-
-            font-weight: 600;
+            color: #6b7280;
 
             font-size: 14px;
-
         }
 
 
-        .collection-action-text {
+        /*
+        |--------------------------------------------------------------------------
+        | RESPONSIVE
+        |--------------------------------------------------------------------------
+        */
 
-            margin-top: 4px;
+        @media (max-width: 1200px) {
 
-            font-size: 12px;
-
-            color: #64748b;
-
-        }
-
-
-        .collection-table-wrapper {
-
-            overflow-x: auto;
-
-        }
-
-
-        .collection-table {
-
-            width: 100%;
-
-            border-collapse: collapse;
-
-        }
-
-
-        .collection-table th,
-        .collection-table td {
-
-            padding: 12px 16px;
-
-            border-bottom:
-                1px solid #f1f5f9;
-
-            text-align: left;
-
-            white-space: nowrap;
-
-        }
-
-
-        .collection-table th {
-
-            background: #f8fafc;
-
-            color: #64748b;
-
-            font-size: 12px;
-
-        }
-
-
-        .collection-table td {
-
-            font-size: 13px;
-
-        }
-
-
-        .collection-empty {
-
-            padding: 35px;
-
-            text-align: center;
-
-            color: #64748b;
-
-        }
-
-
-        .collection-danger {
-
-            color: #dc2626;
-
-            font-weight: 600;
-
-        }
-
-
-        .collection-success {
-
-            color: #16a34a;
-
-            font-weight: 600;
-
-        }
-
-
-        @media (max-width: 1100px) {
-
-            .collection-stats {
-
+            .collections-summary-grid {
                 grid-template-columns:
-                    repeat(
-                        2,
-                        1fr
-                    );
-
+                    repeat(2, minmax(0, 1fr));
             }
 
 
-            .collection-grid {
+            .collections-filter-form {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
 
+        }
+
+
+        @media (max-width: 800px) {
+
+            .collections-header {
+                flex-direction: column;
+            }
+
+
+            .collections-header-actions {
+                width: 100%;
+            }
+
+
+            .collections-filter-form {
                 grid-template-columns: 1fr;
+            }
 
+
+            .collection-filter-actions {
+                width: 100%;
+            }
+
+
+            .collection-filter-actions .btn {
+                flex: 1;
             }
 
         }
@@ -488,17 +845,13 @@ if ($todayExpected > 0) {
 
         @media (max-width: 600px) {
 
-            .collection-stats {
-
+            .collections-summary-grid {
                 grid-template-columns: 1fr;
-
             }
 
 
-            .collection-actions {
-
-                grid-template-columns: 1fr;
-
+            .collections-title h1 {
+                font-size: 22px;
             }
 
         }
@@ -513,6 +866,12 @@ if ($todayExpected > 0) {
 
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| SIDEBAR
+|--------------------------------------------------------------------------
+*/
+
 require APP_PATH .
     '/views/layouts/sidebar.php';
 
@@ -522,7 +881,11 @@ require APP_PATH .
 <div class="main-content">
 
 
-    <!-- NAVBAR -->
+    <!--
+    |--------------------------------------------------------------------------
+    | NAVBAR
+    |--------------------------------------------------------------------------
+    -->
 
     <nav class="navbar">
 
@@ -537,7 +900,7 @@ require APP_PATH .
 
             <span class="user-name">
 
-                <?= htmlspecialchars(
+                <?= collectionValue(
                     $user['full_name']
                     ?? $user['username']
                     ?? 'User'
@@ -548,7 +911,7 @@ require APP_PATH .
 
             <span class="badge">
 
-                <?= htmlspecialchars(
+                <?= collectionValue(
                     $tenantRole
                     ?? 'User'
                 ) ?>
@@ -560,33 +923,36 @@ require APP_PATH .
     </nav>
 
 
-    <div class="container collection-page">
+    <div class="container collections-page">
 
 
-        <!-- HEADER -->
+        <!--
+        |--------------------------------------------------------------------------
+        | PAGE HEADER
+        |--------------------------------------------------------------------------
+        -->
 
-        <div class="page-header">
+        <div class="collections-header">
 
-            <div>
+
+            <div class="collections-title">
 
                 <h1>
-                    Collection Dashboard
+                    Collections
                 </h1>
 
                 <p>
-
-                    Monitor today's collections,
-                    payments, and overdue accounts.
-
+                    Record and monitor loan payments and collections.
                 </p>
 
             </div>
 
 
-            <div>
+            <div class="collections-header-actions">
+
 
                 <a
-                    href="index.php?url=loans/payment"
+                    href="index.php?url=collections/create"
                     class="btn btn-primary"
                 >
 
@@ -594,738 +960,896 @@ require APP_PATH .
 
                 </a>
 
+
+                <a
+                    href="index.php?url=loans"
+                    class="btn btn-secondary"
+                >
+
+                    View Loans
+
+                </a>
+
+
             </div>
+
 
         </div>
 
 
-        <!-- STATISTICS -->
+        <!--
+        |--------------------------------------------------------------------------
+        | SUMMARY CARDS
+        |--------------------------------------------------------------------------
+        -->
 
-        <div class="collection-stats">
+        <div class="collections-summary-grid">
 
 
-            <div class="collection-stat">
+            <!-- TOTAL COLLECTED -->
 
-                <div class="collection-stat-label">
+            <div class="collection-summary-card">
 
-                    Today's Expected
+                <div class="collection-summary-header">
+
+                    <span class="collection-summary-title">
+
+                        Total Collected
+
+                    </span>
+
+
+                    <span class="collection-summary-icon">
+
+                        ₱
+
+                    </span>
 
                 </div>
 
-                <div class="collection-stat-value">
 
-                    ₱<?= number_format(
-                        $todayExpected,
-                        2
+                <div class="collection-summary-value">
+
+                    <?= collectionMoney(
+                        $totalCollected
                     ) ?>
-
-                </div>
-
-                <div class="collection-stat-description">
-
-                    Amount scheduled for collection today
 
                 </div>
 
             </div>
 
 
-            <div class="collection-stat">
+            <!-- TODAY -->
 
-                <div class="collection-stat-label">
+            <div class="collection-summary-card">
 
-                    Collected Today
+                <div class="collection-summary-header">
+
+                    <span class="collection-summary-title">
+
+                        Collected Today
+
+                    </span>
+
+
+                    <span class="collection-summary-icon">
+
+                        📅
+
+                    </span>
 
                 </div>
 
-                <div class="collection-stat-value">
 
-                    ₱<?= number_format(
-                        $todayCollected,
-                        2
+                <div class="collection-summary-value">
+
+                    <?= collectionMoney(
+                        $todayCollected
                     ) ?>
-
-                </div>
-
-                <div class="collection-stat-description">
-
-                    Payments received today
 
                 </div>
 
             </div>
 
 
-            <div class="collection-stat">
+            <!-- MONTH -->
 
-                <div class="collection-stat-label">
+            <div class="collection-summary-card">
 
-                    Remaining Today
+                <div class="collection-summary-header">
+
+                    <span class="collection-summary-title">
+
+                        Collected This Month
+
+                    </span>
+
+
+                    <span class="collection-summary-icon">
+
+                        📊
+
+                    </span>
 
                 </div>
 
-                <div class="collection-stat-value">
 
-                    ₱<?= number_format(
-                        $todayRemaining,
-                        2
+                <div class="collection-summary-value">
+
+                    <?= collectionMoney(
+                        $monthCollected
                     ) ?>
-
-                </div>
-
-                <div class="collection-stat-description">
-
-                    Amount still expected today
 
                 </div>
 
             </div>
 
 
-            <div class="collection-stat">
+            <!-- OVERDUE -->
 
-                <div class="collection-stat-label">
+            <div class="collection-summary-card">
 
-                    Overdue
+                <div class="collection-summary-header">
+
+                    <span class="collection-summary-title">
+
+                        Overdue Amount
+
+                    </span>
+
+
+                    <span class="collection-summary-icon">
+
+                        ⚠
+
+                    </span>
 
                 </div>
 
-                <div class="collection-stat-value collection-danger">
 
-                    ₱<?= number_format(
-                        $overdueAmount,
-                        2
+                <div class="collection-summary-value">
+
+                    <?= collectionMoney(
+                        $overdueAmount
                     ) ?>
 
                 </div>
 
-                <div class="collection-stat-description">
+            </div>
+
+
+        </div>
+
+
+        <!--
+        |--------------------------------------------------------------------------
+        | FILTERS
+        |--------------------------------------------------------------------------
+        -->
+
+        <div class="collections-filter-card">
+
+
+            <form
+                method="GET"
+                action="index.php"
+                class="collections-filter-form"
+            >
+
+
+                <input
+                    type="hidden"
+                    name="url"
+                    value="collections"
+                >
+
+
+                <!-- SEARCH -->
+
+                <div class="collection-filter-group">
+
+                    <label
+                        class="collection-filter-label"
+                        for="collection-search"
+                    >
+
+                        Search
+
+                    </label>
+
+
+                    <input
+                        type="text"
+                        id="collection-search"
+                        name="search"
+                        class="collection-filter-input"
+                        value="<?= collectionValue(
+                            $search,
+                            ''
+                        ) ?>"
+                        placeholder="Borrower, loan number, payment number..."
+                    >
+
+                </div>
+
+
+                <!-- STATUS -->
+
+                <div class="collection-filter-group">
+
+                    <label
+                        class="collection-filter-label"
+                        for="collection-status"
+                    >
+
+                        Status
+
+                    </label>
+
+
+                    <select
+                        id="collection-status"
+                        name="status"
+                        class="collection-filter-select"
+                    >
+
+                        <option
+                            value=""
+                        >
+                            All Statuses
+                        </option>
+
+
+                        <option
+                            value="posted"
+                            <?= $status === 'posted'
+                                ? 'selected'
+                                : '' ?>
+                        >
+                            Posted
+                        </option>
+
+
+                        <option
+                            value="void"
+                            <?= $status === 'void'
+                                ? 'selected'
+                                : '' ?>
+                        >
+                            Void
+                        </option>
+
+
+                    </select>
+
+                </div>
+
+
+                <!-- DATE FROM -->
+
+                <div class="collection-filter-group">
+
+                    <label
+                        class="collection-filter-label"
+                        for="collection-date-from"
+                    >
+
+                        Date From
+
+                    </label>
+
+
+                    <input
+                        type="date"
+                        id="collection-date-from"
+                        name="date_from"
+                        class="collection-filter-input"
+                        value="<?= collectionValue(
+                            $dateFrom,
+                            ''
+                        ) ?>"
+                    >
+
+                </div>
+
+
+                <!-- DATE TO -->
+
+                <div class="collection-filter-group">
+
+                    <label
+                        class="collection-filter-label"
+                        for="collection-date-to"
+                    >
+
+                        Date To
+
+                    </label>
+
+
+                    <input
+                        type="date"
+                        id="collection-date-to"
+                        name="date_to"
+                        class="collection-filter-input"
+                        value="<?= collectionValue(
+                            $dateTo,
+                            ''
+                        ) ?>"
+                    >
+
+                </div>
+
+
+                <!-- BUTTONS -->
+
+                <div class="collection-filter-actions">
+
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+
+                        Filter
+
+                    </button>
+
+
+                    <a
+                        href="index.php?url=collections"
+                        class="btn btn-secondary"
+                    >
+
+                        Reset
+
+                    </a>
+
+
+                </div>
+
+
+            </form>
+
+
+        </div>
+
+
+        <!--
+        |--------------------------------------------------------------------------
+        | COLLECTION TABLE
+        |--------------------------------------------------------------------------
+        -->
+
+        <div class="collections-table-card">
+
+
+            <div class="collections-table-header">
+
+
+                <div>
+
+                    <h2>
+                        Payment Collections
+                    </h2>
+
+
+                    <p>
+                        Recorded payments for your business
+                    </p>
+
+                </div>
+
+
+                <div class="collections-count">
 
                     <?= number_format(
-                        $overdueCount
+                        count($collections)
                     ) ?>
 
-                    overdue installments
+                    record(s)
 
                 </div>
+
 
             </div>
 
 
-        </div>
+            <?php if (
+                empty($collections)
+            ): ?>
 
 
-        <div class="collection-grid">
+                <!--
+                |--------------------------------------------------------------------------
+                | EMPTY STATE
+                |--------------------------------------------------------------------------
+                -->
+
+                <div class="collections-empty">
 
 
-            <!-- LEFT -->
+                    <div class="collections-empty-icon">
 
-            <div>
-
-
-                <!-- TODAY'S COLLECTION -->
-
-                <div class="collection-card">
-
-                    <div class="collection-card-header">
-
-                        <div>
-
-                            <h2>
-                                Today's Collections
-                            </h2>
-
-                            <p>
-                                Installments due today
-                            </p>
-
-                        </div>
-
-
-                        <a
-                            href="index.php?url=collections/today"
-                            class="btn btn-secondary"
-                        >
-
-                            View All
-
-                        </a>
+                        💰
 
                     </div>
 
 
-                    <?php if (
-                        empty(
-                            $todayCollections
-                        )
-                    ): ?>
+                    <h3>
+                        No Collections Found
+                    </h3>
 
 
-                        <div class="collection-empty">
-
-                            No collections are due today.
-
-                        </div>
+                    <p>
+                        No payment collections match your current filters.
+                    </p>
 
 
-                    <?php else: ?>
+                    <br>
 
 
-                        <div
-                            class="collection-table-wrapper"
-                        >
+                    <a
+                        href="index.php?url=collections/create"
+                        class="btn btn-primary"
+                    >
 
-                            <table
-                                class="collection-table"
-                            >
+                        + Record Payment
 
-                                <thead>
-
-                                    <tr>
-
-                                        <th>
-                                            Borrower
-                                        </th>
-
-                                        <th>
-                                            Loan
-                                        </th>
-
-                                        <th>
-                                            Due
-                                        </th>
-
-                                        <th>
-                                            Balance
-                                        </th>
-
-                                        <th>
-                                            Action
-                                        </th>
-
-                                    </tr>
-
-                                </thead>
+                    </a>
 
 
-                                <tbody>
+                </div>
 
 
-                                <?php foreach (
-                                    array_slice(
-                                        $todayCollections,
-                                        0,
-                                        10
+            <?php else: ?>
+
+
+                <div class="collections-table-wrapper">
+
+
+                    <table class="collections-table">
+
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Payment #
+                                </th>
+
+                                <th>
+                                    Borrower
+                                </th>
+
+                                <th>
+                                    Loan #
+                                </th>
+
+                                <th>
+                                    Due Date
+                                </th>
+
+                                <th>
+                                    Payment Date
+                                </th>
+
+                                <th>
+                                    Principal
+                                </th>
+
+                                <th>
+                                    Interest
+                                </th>
+
+                                <th>
+                                    Penalty
+                                </th>
+
+                                <th>
+                                    Amount
+                                </th>
+
+                                <th>
+                                    Account
+                                </th>
+
+                                <th>
+                                    Status
+                                </th>
+
+                                <th>
+                                    Action
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+
+                        <?php foreach (
+                            $collections
+                            as $collection
+                        ): ?>
+
+
+                            <?php
+
+                            /*
+                            |--------------------------------------------------------------------------
+                            | PAYMENT VALUES
+                            |--------------------------------------------------------------------------
+                            */
+
+                            $paymentId =
+                                (int)(
+                                    $collection['id']
+                                    ?? 0
+                                );
+
+
+                            $paymentNumber =
+                                $collection[
+                                    'payment_number'
+                                ]
+                                ?? '-';
+
+
+                            $borrowerName =
+                                trim(
+                                    (
+                                        $collection[
+                                            'first_name'
+                                        ]
+                                        ?? ''
                                     )
-                                    as $item
-                                ): ?>
+                                    . ' ' .
+                                    (
+                                        $collection[
+                                            'middle_name'
+                                        ]
+                                        ?? ''
+                                    )
+                                    . ' ' .
+                                    (
+                                        $collection[
+                                            'last_name'
+                                        ]
+                                        ?? ''
+                                    )
+                                );
 
 
-                                    <tr>
+                            if (
+                                $borrowerName === ''
+                            ) {
 
-                                        <td>
+                                $borrowerName =
+                                    $collection[
+                                        'borrower_name'
+                                    ]
+                                    ?? 'Unknown Borrower';
 
-                                            <strong>
+                            }
 
-                                                <?= htmlspecialchars(
-                                                    trim(
-                                                        $item[
-                                                            'borrower_name'
-                                                        ]
-                                                        ?? ''
-                                                    )
-                                                ) ?>
 
-                                            </strong>
+                            $borrowerCode =
+                                $collection[
+                                    'borrower_code'
+                                ]
+                                ?? '-';
 
-                                        </td>
 
+                            $loanNumber =
+                                $collection[
+                                    'loan_number'
+                                ]
+                                ?? '-';
 
-                                        <td>
 
-                                            <?= htmlspecialchars(
-                                                $item[
-                                                    'loan_number'
-                                                ]
-                                                ?? '-'
-                                            ) ?>
+                            $scheduleDueDate =
+                                $collection[
+                                    'due_date'
+                                ]
+                                ?? null;
 
-                                        </td>
 
+                            $paymentDate =
+                                $collection[
+                                    'payment_date'
+                                ]
+                                ?? null;
 
-                                        <td>
 
-                                            <?= htmlspecialchars(
-                                                $item[
-                                                    'due_date'
-                                                ]
-                                                ?? '-'
-                                            ) ?>
+                            $principalAmount =
+                                (float)(
+                                    $collection[
+                                        'principal_amount'
+                                    ]
+                                    ?? 0
+                                );
 
-                                        </td>
 
+                            $interestAmount =
+                                (float)(
+                                    $collection[
+                                        'interest_amount'
+                                    ]
+                                    ?? 0
+                                );
 
-                                        <td class="collection-danger">
 
-                                            ₱<?= number_format(
-                                                (float)(
-                                                    $item[
-                                                        'balance'
-                                                    ]
-                                                    ?? 0
-                                                ),
-                                                2
-                                            ) ?>
+                            $penaltyAmount =
+                                (float)(
+                                    $collection[
+                                        'penalty_amount'
+                                    ]
+                                    ?? 0
+                                );
 
-                                        </td>
 
+                            $amount =
+                                (float)(
+                                    $collection[
+                                        'amount'
+                                    ]
+                                    ?? 0
+                                );
 
-                                        <td>
 
-                                            <a
-                                                href="index.php?url=loans/payment&id=<?= (int)(
-                                                    $item[
-                                                        'loan_id'
-                                                    ]
-                                                    ?? 0
-                                                ) ?>"
-                                                class="btn btn-primary"
-                                            >
+                            $accountName =
+                                $collection[
+                                    'account_name'
+                                ]
+                                ?? '-';
 
-                                                Pay
 
-                                            </a>
+                            $paymentStatus =
+                                $collection[
+                                    'status'
+                                ]
+                                ?? 'posted';
 
-                                        </td>
 
-                                    </tr>
+                            ?>
 
 
-                                <?php endforeach; ?>
+                            <tr>
 
 
-                                </tbody>
+                                <!-- PAYMENT NUMBER -->
 
-                            </table>
+                                <td>
 
-                        </div>
+                                    <strong>
 
+                                        <?= collectionValue(
+                                            $paymentNumber
+                                        ) ?>
 
-                    <?php endif; ?>
+                                    </strong>
 
+                                </td>
 
-                </div>
 
+                                <!-- BORROWER -->
 
-                <!-- RECENT PAYMENTS -->
+                                <td>
 
-                <div class="collection-card">
+                                    <span
+                                        class="collection-borrower-name"
+                                    >
 
-                    <div class="collection-card-header">
+                                        <?= collectionValue(
+                                            $borrowerName
+                                        ) ?>
 
-                        <div>
+                                    </span>
 
-                            <h2>
-                                Recent Payments
-                            </h2>
 
-                            <p>
-                                Latest recorded payments
-                            </p>
+                                    <span
+                                        class="collection-borrower-code"
+                                    >
 
-                        </div>
+                                        <?= collectionValue(
+                                            $borrowerCode
+                                        ) ?>
 
+                                    </span>
 
-                        <a
-                            href="index.php?url=collections/payments"
-                            class="btn btn-secondary"
-                        >
+                                </td>
 
-                            View All
 
-                        </a>
+                                <!-- LOAN -->
 
-                    </div>
+                                <td>
 
+                                    <span
+                                        class="collection-loan-number"
+                                    >
 
-                    <?php if (
-                        empty(
-                            $recentPayments
-                        )
-                    ): ?>
+                                        <?= collectionValue(
+                                            $loanNumber
+                                        ) ?>
 
+                                    </span>
 
-                        <div class="collection-empty">
+                                </td>
 
-                            No payments recorded yet.
 
-                        </div>
+                                <!-- DUE DATE -->
 
+                                <td>
 
-                    <?php else: ?>
-
-
-                        <div
-                            class="collection-table-wrapper"
-                        >
-
-                            <table
-                                class="collection-table"
-                            >
-
-                                <thead>
-
-                                    <tr>
-
-                                        <th>
-                                            Date
-                                        </th>
-
-                                        <th>
-                                            Borrower
-                                        </th>
-
-                                        <th>
-                                            Loan
-                                        </th>
-
-                                        <th>
-                                            Amount
-                                        </th>
-
-                                    </tr>
-
-                                </thead>
-
-
-                                <tbody>
-
-
-                                <?php foreach (
-                                    $recentPayments
-                                    as $payment
-                                ): ?>
-
-
-                                    <tr>
-
-                                        <td>
-
-                                            <?= htmlspecialchars(
-                                                $payment[
-                                                    'payment_date'
-                                                ]
-                                                ?? '-'
-                                            ) ?>
-
-                                        </td>
-
-
-                                        <td>
-
-                                            <?= htmlspecialchars(
-                                                $payment[
-                                                    'borrower_name'
-                                                ]
-                                                ?? '-'
-                                            ) ?>
-
-                                        </td>
-
-
-                                        <td>
-
-                                            <?= htmlspecialchars(
-                                                $payment[
-                                                    'loan_number'
-                                                ]
-                                                ?? '-'
-                                            ) ?>
-
-                                        </td>
-
-
-                                        <td class="collection-success">
-
-                                            ₱<?= number_format(
-                                                (float)(
-                                                    $payment[
-                                                        'amount'
-                                                    ]
-                                                    ?? 0
-                                                ),
-                                                2
-                                            ) ?>
-
-                                        </td>
-
-                                    </tr>
-
-
-                                <?php endforeach; ?>
-
-
-                                </tbody>
-
-                            </table>
-
-                        </div>
-
-
-                    <?php endif; ?>
-
-
-                </div>
-
-
-            </div>
-
-
-            <!-- RIGHT -->
-
-            <div>
-
-
-                <!-- COLLECTION PROGRESS -->
-
-                <div class="collection-card">
-
-                    <div class="collection-card-header">
-
-                        <div>
-
-                            <h2>
-                                Today's Progress
-                            </h2>
-
-                            <p>
-                                Collection performance
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="collection-card-body">
-
-
-                        <div
-                            style="
-                                font-size:30px;
-                                font-weight:700;
-                            "
-                        >
-
-                            <?= number_format(
-                                $collectionRate,
-                                1
-                            ) ?>%
-
-                        </div>
-
-
-                        <div
-                            style="
-                                color:#64748b;
-                                font-size:13px;
-                                margin-top:4px;
-                            "
-                        >
-
-                            Collection rate
-
-                        </div>
-
-
-                        <div class="collection-progress">
-
-                            <div
-                                class="collection-progress-header"
-                            >
-
-                                <span>
-
-                                    ₱<?= number_format(
-                                        $todayCollected,
-                                        2
+                                    <?= collectionValue(
+                                        $scheduleDueDate
                                     ) ?>
 
-                                </span>
+                                </td>
 
 
-                                <span>
+                                <!-- PAYMENT DATE -->
 
-                                    ₱<?= number_format(
-                                        $todayExpected,
-                                        2
+                                <td>
+
+                                    <?= collectionValue(
+                                        $paymentDate
                                     ) ?>
 
-                                </span>
-
-                            </div>
+                                </td>
 
 
-                            <div
-                                class="collection-progress-bar"
-                            >
+                                <!-- PRINCIPAL -->
 
-                                <div
-                                    class="collection-progress-fill"
-                                    style="
-                                        width:
-                                        <?= $collectionRate ?>%;
-                                    "
-                                ></div>
+                                <td>
 
-                            </div>
+                                    <span
+                                        class="collection-money"
+                                    >
 
-                        </div>
+                                        <?= collectionMoney(
+                                            $principalAmount
+                                        ) ?>
+
+                                    </span>
+
+                                </td>
 
 
-                    </div>
+                                <!-- INTEREST -->
+
+                                <td>
+
+                                    <span
+                                        class="collection-money"
+                                    >
+
+                                        <?= collectionMoney(
+                                            $interestAmount
+                                        ) ?>
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- PENALTY -->
+
+                                <td>
+
+                                    <span
+                                        class="collection-money"
+                                    >
+
+                                        <?= collectionMoney(
+                                            $penaltyAmount
+                                        ) ?>
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- TOTAL AMOUNT -->
+
+                                <td>
+
+                                    <span
+                                        class="collection-money-paid"
+                                    >
+
+                                        <?= collectionMoney(
+                                            $amount
+                                        ) ?>
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- ACCOUNT -->
+
+                                <td>
+
+                                    <?= collectionValue(
+                                        $accountName
+                                    ) ?>
+
+                                </td>
+
+
+                                <!-- STATUS -->
+
+                                <td>
+
+                                    <span
+                                        class="collection-status <?= collectionStatusClass(
+                                            $paymentStatus
+                                        ) ?>"
+                                    >
+
+                                        <?= collectionValue(
+                                            collectionStatusLabel(
+                                                $paymentStatus
+                                            )
+                                        ) ?>
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- ACTION -->
+
+                                <td>
+
+                                    <div
+                                        class="collection-actions"
+                                    >
+
+
+                                        <a
+                                            href="index.php?url=collections/show&id=<?= $paymentId ?>"
+                                            class="btn btn-secondary"
+                                        >
+
+                                            View
+
+                                        </a>
+
+
+                                    </div>
+
+                                </td>
+
+
+                            </tr>
+
+
+                        <?php endforeach; ?>
+
+
+                        </tbody>
+
+
+                    </table>
+
 
                 </div>
 
 
-                <!-- QUICK ACTIONS -->
-
-                <div class="collection-card">
-
-                    <div class="collection-card-header">
-
-                        <div>
-
-                            <h2>
-                                Quick Actions
-                            </h2>
-
-                            <p>
-                                Collection management
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="collection-card-body">
-
-
-                        <div class="collection-actions">
-
-
-                            <a
-                                href="index.php?url=collections/today"
-                                class="collection-action"
-                            >
-
-                                <div
-                                    class="collection-action-title"
-                                >
-
-                                    Today's Collections
-
-                                </div>
-
-                                <div
-                                    class="collection-action-text"
-                                >
-
-                                    View installments due today.
-
-                                </div>
-
-                            </a>
-
-
-                            <a
-                                href="index.php?url=loans/payment"
-                                class="collection-action"
-                            >
-
-                                <div
-                                    class="collection-action-title"
-                                >
-
-                                    Record Payment
-
-                                </div>
-
-                                <div
-                                    class="collection-action-text"
-                                >
-
-                                    Record a borrower payment.
-
-                                </div>
-
-                            </a>
-
-
-                            <a
-                                href="index.php?url=collections/payments"
-                                class="collection-action"
-                            >
-
-                                <div
-                                    class="collection-action-title"
-                                >
-
-                                    Payment History
-
-                                </div>
-
-                                <div
-                                    class="collection-action-text"
-                                >
-
-                                    Review recorded payments.
-
-                                </div>
-
-                            </a>
-
-
-                            <a
-                                href="index.php?url=collections/overdue"
-                                class="collection-action"
-                            >
-
-                                <div
-                                    class="collection-action-title"
-                                >
-
-                                    Overdue Loans
-
-                                </div>
-
-                                <div
-                                    class="collection-action-text"
-                                >
-
-                                    Review overdue installments.
-
-                                </div>
-
-                            </a>
-
-
-                        </div>
-
-
-                    </div>
-
-                </div>
-
-
-            </div>
+            <?php endif; ?>
 
 
         </div>
 
 
     </div>
+
 
 </div>
 

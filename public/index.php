@@ -1,3 +1,4 @@
+
 <?php
 
 /*
@@ -53,8 +54,9 @@ require_once APP_PATH . '/controllers/BorrowerController.php';
 require_once APP_PATH . '/controllers/AccountController.php';
 require_once APP_PATH . '/controllers/LoanController.php';
 require_once APP_PATH . '/controllers/CategoryController.php';
-
+require_once APP_PATH . '/controllers/CollectionController.php';
 require_once APP_PATH . '/controllers/ReportController.php';
+require_once APP_PATH . '/controllers/SettingsController.php';
 
 
 /*
@@ -67,8 +69,8 @@ require_once APP_PATH . '/models/Borrower.php';
 require_once APP_PATH . '/models/Loan.php';
 require_once APP_PATH . '/models/Account.php';
 require_once APP_PATH . '/models/Expense.php';
-
-
+require_once APP_PATH . '/models/Category.php';
+    require_once APP_PATH . '/models/Setting.php';
 /*
 |--------------------------------------------------------------------------
 | Get Requested URL
@@ -689,8 +691,7 @@ switch ($url) {
         break;
 
 
-
-          /*
+    /*
     |--------------------------------------------------------------------------
     | COLLECTIONS
     |--------------------------------------------------------------------------
@@ -708,7 +709,6 @@ switch ($url) {
         break;
 
 
-
     case 'collections/view':
 
         $controller = new CollectionController();
@@ -718,6 +718,71 @@ switch ($url) {
         break;
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | SETTINGS
+    |--------------------------------------------------------------------------
+    |
+    | SaaS business/system settings.
+    |
+    | The settings page can be used for things such as:
+    |
+    | - Business logo
+    | - Business name
+    | - Business email
+    | - Business phone
+    | - Business address
+    | - Currency
+    | - Date format
+    | - Timezone
+    | - Loan settings
+    | - Collection settings
+    | - Receipt settings
+    | - Other tenant-specific configuration
+    |
+    */
+
+    case 'settings':
+
+        $controller = new SettingsController();
+
+        $controller->index();
+
+        break;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE SETTINGS
+    |--------------------------------------------------------------------------
+    */
+
+    case 'settings/update':
+
+        $controller = new SettingsController();
+
+        $controller->update();
+
+        break;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SETTINGS LOGO UPLOAD
+    |--------------------------------------------------------------------------
+    |
+    | If your SettingsController handles the logo upload separately,
+    | this route can be used for it.
+    |
+    */
+
+    case 'settings/logo':
+
+        $controller = new SettingsController();
+
+        $controller->updateLogo();
+
+        break;
 
 
     /*
@@ -735,4 +800,5 @@ switch ($url) {
         echo '<p>The requested page does not exist.</p>';
 
         break;
+
 }
