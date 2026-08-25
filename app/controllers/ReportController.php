@@ -268,6 +268,10 @@ class ReportController
         |--------------------------------------------------------------------------
         | BORROWER SUMMARY
         |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        | Your database table is `borrowers`.
+        |
         */
 
         $stmt =
@@ -293,7 +297,7 @@ class ReportController
                         END
                     ) AS inactive_borrowers
 
-                FROM loan_borrowers
+                FROM borrowers
 
                 WHERE business_id = ?
                 "
@@ -353,7 +357,7 @@ class ReportController
                 INNER JOIN loans l
                     ON l.id = lp.loan_id
 
-                LEFT JOIN loan_borrowers lb
+                LEFT JOIN borrowers lb
                     ON lb.id = l.borrower_id
 
                 WHERE lp.business_id = ?
@@ -411,7 +415,7 @@ class ReportController
 
                 FROM loans l
 
-                LEFT JOIN loan_borrowers lb
+                LEFT JOIN borrowers lb
                     ON lb.id = l.borrower_id
 
                 WHERE l.business_id = ?

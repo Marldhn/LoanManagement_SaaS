@@ -53,6 +53,7 @@ require_once APP_PATH . '/controllers/BorrowerController.php';
 require_once APP_PATH . '/controllers/AccountController.php';
 require_once APP_PATH . '/controllers/LoanController.php';
 require_once APP_PATH . '/controllers/CategoryController.php';
+
 require_once APP_PATH . '/controllers/ReportController.php';
 
 
@@ -94,9 +95,10 @@ $url = trim($url, '/');
 
 switch ($url) {
 
+
     /*
     |--------------------------------------------------------------------------
-    | Authentication
+    | AUTHENTICATION
     |--------------------------------------------------------------------------
     */
 
@@ -129,7 +131,7 @@ switch ($url) {
 
     /*
     |--------------------------------------------------------------------------
-    | Dashboard
+    | DASHBOARD
     |--------------------------------------------------------------------------
     */
 
@@ -144,7 +146,7 @@ switch ($url) {
 
     /*
     |--------------------------------------------------------------------------
-    | Business Users
+    | BUSINESS USERS
     |--------------------------------------------------------------------------
     */
 
@@ -177,7 +179,67 @@ switch ($url) {
 
     /*
     |--------------------------------------------------------------------------
-    | Borrowers
+    | CHANGE PASSWORD MODAL / FORM
+    |--------------------------------------------------------------------------
+    */
+
+    case 'business-users/change-password':
+
+        $controller = new BusinessUserController();
+
+        $controller->changePassword();
+
+        break;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE PASSWORD
+    |--------------------------------------------------------------------------
+    */
+
+    case 'business-users/update-password':
+
+        $controller = new BusinessUserController();
+
+        $controller->updatePassword();
+
+        break;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | DISABLE BUSINESS USER
+    |--------------------------------------------------------------------------
+    */
+
+    case 'business-users/disable':
+
+        $controller = new BusinessUserController();
+
+        $controller->disable();
+
+        break;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ENABLE BUSINESS USER
+    |--------------------------------------------------------------------------
+    */
+
+    case 'business-users/enable':
+
+        $controller = new BusinessUserController();
+
+        $controller->enable();
+
+        break;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | BORROWERS
     |--------------------------------------------------------------------------
     */
 
@@ -235,18 +297,18 @@ switch ($url) {
         break;
 
 
-        case 'borrowers/details':
+    case 'borrowers/details':
 
-    $controller = new BorrowerController();
+        $controller = new BorrowerController();
 
-    $controller->details();
+        $controller->details();
 
-    break;
+        break;
 
 
     /*
     |--------------------------------------------------------------------------
-    | Categories
+    | CATEGORIES
     |--------------------------------------------------------------------------
     */
 
@@ -306,7 +368,7 @@ switch ($url) {
 
     /*
     |--------------------------------------------------------------------------
-    | Loans
+    | LOANS
     |--------------------------------------------------------------------------
     */
 
@@ -336,14 +398,6 @@ switch ($url) {
 
         break;
 
-
- case 'payments':
-
-    $controller = new LoanController();
-
-    $controller->payments();
-
-    break;
 
     case 'loans/show':
 
@@ -377,6 +431,39 @@ switch ($url) {
         $controller = new LoanController();
 
         $controller->delete();
+
+        break;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | LOAN PAYMENTS
+    |--------------------------------------------------------------------------
+    */
+
+    case 'payments':
+
+        $controller = new LoanController();
+
+        $controller->payments();
+
+        break;
+
+
+    case 'loans/payment':
+
+        $controller = new LoanController();
+
+        $controller->payment();
+
+        break;
+
+
+    case 'loans/payment/store':
+
+        $controller = new LoanController();
+
+        $controller->storePayment();
 
         break;
 
@@ -428,7 +515,7 @@ switch ($url) {
 
     /*
     |--------------------------------------------------------------------------
-    | Expenses
+    | EXPENSES
     |--------------------------------------------------------------------------
     */
 
@@ -488,7 +575,7 @@ switch ($url) {
 
     /*
     |--------------------------------------------------------------------------
-    | Accounts
+    | ACCOUNTS
     |--------------------------------------------------------------------------
     */
 
@@ -557,7 +644,7 @@ switch ($url) {
 
     /*
     |--------------------------------------------------------------------------
-    | Adjust Account Balance
+    | ADJUST ACCOUNT BALANCE
     |--------------------------------------------------------------------------
     */
 
@@ -572,7 +659,7 @@ switch ($url) {
 
     /*
     |--------------------------------------------------------------------------
-    | Transfer Account Balance
+    | TRANSFER ACCOUNT BALANCE
     |--------------------------------------------------------------------------
     */
 
@@ -585,30 +672,15 @@ switch ($url) {
         break;
 
 
-
-case 'loans/payment':
-
-    $controller = new LoanController();
-
-    $controller->payment();
-
-    break;
-
-
-case 'loans/payment/store':
-
-    $controller = new LoanController();
-
-    $controller->storePayment();
-
-    break;
-
- /*
+    /*
     |--------------------------------------------------------------------------
     | REPORTS
     |--------------------------------------------------------------------------
     */
-      case 'reports/index':
+
+    case 'reports':
+
+    case 'reports/index':
 
         $controller = new ReportController();
 
@@ -616,9 +688,41 @@ case 'loans/payment/store':
 
         break;
 
+
+
+          /*
+    |--------------------------------------------------------------------------
+    | COLLECTIONS
+    |--------------------------------------------------------------------------
+    |
+    | Collection management is separate from individual loan payments.
+    |
+    */
+
+    case 'collections':
+
+        $controller = new CollectionController();
+
+        $controller->index();
+
+        break;
+
+
+
+    case 'collections/view':
+
+        $controller = new CollectionController();
+
+        $controller->view();
+
+        break;
+
+
+
+
     /*
     |--------------------------------------------------------------------------
-    | Default / 404
+    | DEFAULT / 404
     |--------------------------------------------------------------------------
     */
 

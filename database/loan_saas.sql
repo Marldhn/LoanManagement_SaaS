@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 24, 2026 at 11:59 PM
+-- Generation Time: Aug 25, 2026 at 05:36 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -385,7 +385,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `username`, `email`, `password`, `full_name`, `role`, `status`, `created_at`, `updated_at`) VALUES
 (1, 'superadmin', 'superadmin@gmail.com', '$2y$10$r7wubJjlYNzs7Hwvf3UVQO6CiInOxL00.dLwHFxJK11FJiRX7xTUe', 'System Administrator', 'super_admin', 'approved', '2026-08-20 22:36:25', '2026-08-20 22:41:15'),
 (2, 'mrubinos', 'mrubinos@azpired.net', '$2y$10$LkgWVckDDNPU0znd7oFXpOov73A6ZJe/Vf0LVV7VIQT.0fio2KN5a', 'Marldohn Rubinos', 'admin', 'approved', '2026-08-21 00:28:50', '2026-08-21 00:28:50'),
-(3, 'sardillo', 'ardilloshelou@gmail.com', '$2y$10$DDlROKvh1.OvHpQDKCip2uQXtr3Jr.A6..hep7b0y3/IP0XW9GBLq', 'March Shelou Ardillo', 'staff', 'approved', '2026-08-21 01:08:35', '2026-08-21 01:08:35'),
+(3, 'sardillo', 'ardilloshelou@gmail.com', '$2y$10$hmZOuZgv/DmnSkJuJjYNN.a7jyE0r9ELnmd04dHuSK.s9zk3/Bclq', 'March Shelou Ardillo', 'staff', 'approved', '2026-08-21 01:08:35', '2026-08-24 23:22:56'),
 (4, 'mardonio1104', 'marldohncrubinos11@gmail.com', '$2y$10$E2rsODQgncoWsy5sBF9LuuHn6Fq.NWlY0NumDhgf.iyLdYX1FSXoa', 'March Shelou', 'admin', 'approved', '2026-08-21 01:19:55', '2026-08-21 01:19:55'),
 (5, 'drubinos', 'drubinos@gmail.com', '$2y$10$bZ78GqH5dGy4UbvpAeKcz.VZqheopHr4ZZtXsVMqsJVBWFNM5A9KO', 'Dondi Rubinos', 'admin', 'approved', '2026-08-22 01:31:34', '2026-08-22 01:31:34');
 

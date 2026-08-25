@@ -13,19 +13,22 @@ $user =
 
 $business =
     $business
+    ?? Auth::business()
     ?? [];
 
 
 $businessId =
     (int) (
         $businessId
+        ?? Auth::businessId()
         ?? 0
     );
 
 
 $tenantRole =
     $tenantRole
-    ?? Auth::tenantRole();
+    ?? Auth::tenantRole()
+    ?? 'User';
 
 
 $totalBorrowers =
@@ -80,7 +83,8 @@ $totalLiabilities =
 $netBalance =
     (float) (
         $netBalance
-        ?? (
+        ??
+        (
             $totalAssets
             -
             $totalLiabilities
@@ -104,48 +108,64 @@ $recentLoans =
 |--------------------------------------------------------------------------
 */
 
-function dashboardMoney(float $amount): string
-{
-    return '₱' .
-        number_format(
-            $amount,
-            2
-        );
+if (!function_exists('dashboardMoney')) {
+
+    function dashboardMoney(
+        float $amount
+    ): string {
+
+        return '₱' .
+            number_format(
+                $amount,
+                2
+            );
+    }
+
 }
 
 
-function dashboardStatusClass(
-    string $status
-): string {
+if (!function_exists('dashboardStatusClass')) {
 
-    return match (
-        strtolower($status)
-    ) {
+    function dashboardStatusClass(
+        string $status
+    ): string {
 
-        'active' =>
-            'status-active',
+        return match (
+            strtolower(trim($status))
+        ) {
 
-        'approved' =>
-            'status-approved',
+            'active' =>
+                'dashboard-status-active',
 
-        'pending' =>
-            'status-pending',
+            'approved' =>
+                'dashboard-status-approved',
 
-        'completed' =>
-            'status-completed',
+            'pending' =>
+                'dashboard-status-pending',
 
-        'overdue' =>
-            'status-overdue',
+            'completed' =>
+                'dashboard-status-completed',
 
-        'cancelled',
-        'rejected' =>
-            'status-danger',
+            'overdue' =>
+                'dashboard-status-overdue',
 
-        default =>
-            'status-default'
-    };
+            'cancelled',
+            'rejected' =>
+                'dashboard-status-danger',
+
+            default =>
+                'dashboard-status-default'
+        };
+    }
+
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| DISPLAY DATA
+|--------------------------------------------------------------------------
+*/
 
 $userName =
     $user['full_name']
@@ -166,7 +186,7 @@ $role =
     ??
     $user['role']
     ??
-    'Administrator';
+    'User';
 
 ?>
 
@@ -198,11 +218,11 @@ $role =
 
         /*
         |--------------------------------------------------------------------------
-        | DASHBOARD
+        | DASHBOARD PAGE
         |--------------------------------------------------------------------------
         */
 
-        .dashboard-page {
+        .lm-dashboard {
 
             width: 100%;
 
@@ -211,31 +231,41 @@ $role =
 
         /*
         |--------------------------------------------------------------------------
-        | WELCOME
+        | WELCOME HEADER
         |--------------------------------------------------------------------------
         */
 
-        .dashboard-welcome {
+        .lm-dashboard-header {
+
+            display: flex;
+
+            align-items: flex-start;
+
+            justify-content: space-between;
+
+            gap: 20px;
 
             margin-bottom: 28px;
 
         }
 
 
-        .dashboard-welcome h1 {
+        .lm-dashboard-heading h1 {
 
             margin: 0;
 
+            color: #111827;
+
             font-size: 28px;
 
-            font-weight: 700;
+            font-weight: 750;
 
-            color: #111827;
+            letter-spacing: -.025em;
 
         }
 
 
-        .dashboard-welcome p {
+        .lm-dashboard-heading p {
 
             margin: 7px 0 0;
 
@@ -246,13 +276,40 @@ $role =
         }
 
 
+        .lm-dashboard-date {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            padding: 9px 13px;
+
+            border: 1px solid #e5e7eb;
+
+            border-radius: 10px;
+
+            background: #ffffff;
+
+            color: #6b7280;
+
+            font-size: 12px;
+
+            font-weight: 600;
+
+            white-space: nowrap;
+
+        }
+
+
         /*
         |--------------------------------------------------------------------------
-        | STAT CARDS
+        | KPI GRID
         |--------------------------------------------------------------------------
         */
 
-        .dashboard-stats {
+        .lm-kpi-grid {
 
             display: grid;
 
@@ -262,58 +319,60 @@ $role =
                     minmax(0, 1fr)
                 );
 
-            gap: 18px;
+            gap: 16px;
 
-            margin-bottom: 24px;
+            margin-bottom: 22px;
 
         }
 
 
-        .dashboard-stat {
+        .lm-kpi-card {
+
+            position: relative;
+
+            overflow: hidden;
+
+            padding: 20px;
 
             background: #ffffff;
 
             border: 1px solid #e5e7eb;
 
-            border-radius: 16px;
-
-            padding: 21px;
-
-            min-width: 0;
+            border-radius: 15px;
 
             box-shadow:
-                0 2px 8px
+                0 2px 7px
                 rgba(
                     0,
                     0,
                     0,
-                    .04
+                    .035
                 );
 
             transition:
-                transform .2s ease,
-                box-shadow .2s ease;
+                transform .18s ease,
+                box-shadow .18s ease;
 
         }
 
 
-        .dashboard-stat:hover {
+        .lm-kpi-card:hover {
 
             transform: translateY(-2px);
 
             box-shadow:
-                0 8px 22px
+                0 8px 20px
                 rgba(
                     0,
                     0,
                     0,
-                    .08
+                    .07
                 );
 
         }
 
 
-        .dashboard-stat-top {
+        .lm-kpi-top {
 
             display: flex;
 
@@ -321,20 +380,16 @@ $role =
 
             justify-content: space-between;
 
-            gap: 12px;
-
-            margin-bottom: 15px;
+            margin-bottom: 17px;
 
         }
 
 
-        .dashboard-stat-icon {
+        .lm-kpi-icon {
 
             width: 42px;
 
             height: 42px;
-
-            border-radius: 12px;
 
             display: flex;
 
@@ -342,67 +397,71 @@ $role =
 
             justify-content: center;
 
+            border-radius: 11px;
+
             background: #f3f4f6;
 
             color: #374151;
 
-            font-size: 18px;
-
-            font-weight: 700;
-
-        }
-
-
-        .dashboard-stat-label {
-
-            color: #6b7280;
-
-            font-size: 13px;
-
-            font-weight: 600;
-
-        }
-
-
-        .dashboard-stat-value {
-
-            color: #111827;
-
-            font-size: 26px;
+            font-size: 16px;
 
             font-weight: 750;
 
+        }
+
+
+        .lm-kpi-label {
+
+            color: #6b7280;
+
+            font-size: 12px;
+
+            font-weight: 650;
+
+        }
+
+
+        .lm-kpi-value {
+
+            color: #111827;
+
+            font-size: 25px;
+
             line-height: 1.2;
+
+            font-weight: 750;
+
+            letter-spacing: -.02em;
 
             word-break: break-word;
 
         }
 
 
-        .dashboard-stat-description {
+        .lm-kpi-description {
+
+            margin-top: 6px;
 
             color: #9ca3af;
 
-            font-size: 12px;
-
-            margin-top: 7px;
+            font-size: 11px;
 
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | PANELS
+        | MAIN GRID
         |--------------------------------------------------------------------------
         */
 
-        .dashboard-grid {
+        .lm-main-grid {
 
             display: grid;
 
             grid-template-columns:
                 minmax(0, 1.35fr)
-                minmax(300px, .9fr);
+                minmax(300px, .85fr);
 
             gap: 20px;
 
@@ -411,78 +470,238 @@ $role =
         }
 
 
-        .dashboard-panel {
+        /*
+        |--------------------------------------------------------------------------
+        | PANEL
+        |--------------------------------------------------------------------------
+        */
+
+        .lm-panel {
 
             background: #ffffff;
 
-            border: 1px solid #e5e7eb;
+            border:
+                1px solid #e5e7eb;
 
-            border-radius: 16px;
+            border-radius: 15px;
 
             overflow: hidden;
 
             box-shadow:
-                0 2px 8px
+                0 2px 7px
                 rgba(
                     0,
                     0,
                     0,
-                    .04
+                    .035
                 );
 
         }
 
 
-        .dashboard-panel-header {
+        .lm-panel-header {
+
+            display: flex;
+
+            align-items: flex-start;
+
+            justify-content: space-between;
+
+            gap: 15px;
 
             padding: 19px 20px;
 
             border-bottom:
-                1px solid #f0f0f0;
+                1px solid #f0f1f3;
 
         }
 
 
-        .dashboard-panel-header h2 {
+        .lm-panel-title {
 
             margin: 0;
 
             color: #111827;
 
-            font-size: 18px;
+            font-size: 17px;
 
             font-weight: 700;
 
         }
 
 
-        .dashboard-panel-header p {
+        .lm-panel-subtitle {
 
             margin: 5px 0 0;
 
-            color: #6b7280;
+            color: #9ca3af;
 
-            font-size: 13px;
+            font-size: 12px;
 
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | ACCOUNTS
+        | LOAN PORTFOLIO
         |--------------------------------------------------------------------------
         */
 
-        .account-list {
+        .lm-portfolio {
 
-            display: flex;
-
-            flex-direction: column;
+            padding: 20px;
 
         }
 
 
-        .account-item {
+        .lm-portfolio-main {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 20px;
+
+            padding-bottom: 20px;
+
+            border-bottom:
+                1px solid #f0f1f3;
+
+        }
+
+
+        .lm-portfolio-label {
+
+            color: #6b7280;
+
+            font-size: 12px;
+
+            font-weight: 600;
+
+        }
+
+
+        .lm-portfolio-value {
+
+            margin-top: 5px;
+
+            color: #111827;
+
+            font-size: 27px;
+
+            font-weight: 750;
+
+        }
+
+
+        .lm-portfolio-description {
+
+            margin-top: 4px;
+
+            color: #9ca3af;
+
+            font-size: 11px;
+
+        }
+
+
+        .lm-portfolio-icon {
+
+            width: 52px;
+
+            height: 52px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            border-radius: 14px;
+
+            background: #f3f4f6;
+
+            color: #374151;
+
+            font-size: 19px;
+
+            font-weight: 750;
+
+        }
+
+
+        .lm-loan-breakdown {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    3,
+                    minmax(0, 1fr)
+                );
+
+            gap: 10px;
+
+            padding-top: 16px;
+
+        }
+
+
+        .lm-loan-breakdown-item {
+
+            padding: 13px;
+
+            background: #f9fafb;
+
+            border-radius: 11px;
+
+        }
+
+
+        .lm-loan-breakdown-label {
+
+            color: #9ca3af;
+
+            font-size: 10px;
+
+            font-weight: 650;
+
+            text-transform: uppercase;
+
+            letter-spacing: .03em;
+
+        }
+
+
+        .lm-loan-breakdown-value {
+
+            margin-top: 5px;
+
+            color: #111827;
+
+            font-size: 17px;
+
+            font-weight: 750;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FINANCIAL OVERVIEW
+        |--------------------------------------------------------------------------
+        */
+
+        .lm-financial-body {
+
+            padding: 20px;
+
+        }
+
+
+        .lm-financial-item {
 
             display: flex;
 
@@ -492,7 +711,85 @@ $role =
 
             gap: 15px;
 
-            padding: 16px 20px;
+            padding: 14px 0;
+
+            border-bottom:
+                1px solid #f0f1f3;
+
+        }
+
+
+        .lm-financial-item:first-child {
+
+            padding-top: 0;
+
+        }
+
+
+        .lm-financial-item:last-child {
+
+            padding-bottom: 0;
+
+            border-bottom: none;
+
+        }
+
+
+        .lm-financial-label {
+
+            color: #6b7280;
+
+            font-size: 12px;
+
+        }
+
+
+        .lm-financial-value {
+
+            color: #111827;
+
+            font-size: 14px;
+
+            font-weight: 700;
+
+            text-align: right;
+
+        }
+
+
+        .lm-financial-value.net {
+
+            font-size: 16px;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ACCOUNT SECTION
+        |--------------------------------------------------------------------------
+        */
+
+        .lm-account-list {
+
+            display: flex;
+
+            flex-direction: column;
+
+        }
+
+
+        .lm-account {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 15px;
+
+            padding: 15px 20px;
 
             border-bottom:
                 1px solid #f3f4f6;
@@ -500,14 +797,14 @@ $role =
         }
 
 
-        .account-item:last-child {
+        .lm-account:last-child {
 
             border-bottom: none;
 
         }
 
 
-        .account-left {
+        .lm-account-left {
 
             display: flex;
 
@@ -520,19 +817,13 @@ $role =
         }
 
 
-        .account-icon {
+        .lm-account-icon {
 
-            width: 42px;
+            width: 39px;
 
-            height: 42px;
+            height: 39px;
 
-            min-width: 42px;
-
-            border-radius: 11px;
-
-            background: #f3f4f6;
-
-            color: #374151;
+            min-width: 39px;
 
             display: flex;
 
@@ -540,25 +831,33 @@ $role =
 
             justify-content: center;
 
-            font-weight: 700;
+            border-radius: 10px;
+
+            background: #f3f4f6;
+
+            color: #374151;
+
+            font-size: 14px;
+
+            font-weight: 750;
 
         }
 
 
-        .account-info {
+        .lm-account-details {
 
             min-width: 0;
 
         }
 
 
-        .account-name {
+        .lm-account-name {
 
             color: #111827;
 
-            font-size: 14px;
+            font-size: 13px;
 
-            font-weight: 600;
+            font-weight: 650;
 
             overflow: hidden;
 
@@ -569,24 +868,24 @@ $role =
         }
 
 
-        .account-type {
+        .lm-account-type {
 
             margin-top: 3px;
 
             color: #9ca3af;
 
-            font-size: 12px;
+            font-size: 11px;
 
             text-transform: capitalize;
 
         }
 
 
-        .account-balance {
+        .lm-account-balance {
 
             color: #111827;
 
-            font-size: 14px;
+            font-size: 13px;
 
             font-weight: 700;
 
@@ -595,7 +894,7 @@ $role =
         }
 
 
-        .account-total {
+        .lm-account-footer {
 
             display: flex;
 
@@ -603,9 +902,7 @@ $role =
 
             justify-content: space-between;
 
-            gap: 15px;
-
-            padding: 17px 20px;
+            padding: 15px 20px;
 
             background: #f9fafb;
 
@@ -615,90 +912,33 @@ $role =
         }
 
 
-        .account-total-label {
+        .lm-account-footer-label {
 
             color: #6b7280;
+
+            font-size: 11px;
+
+        }
+
+
+        .lm-account-footer-value {
+
+            color: #111827;
 
             font-size: 13px;
 
-        }
-
-
-        .account-total-value {
-
-            color: #111827;
-
-            font-weight: 700;
+            font-weight: 750;
 
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | FINANCIAL SUMMARY
+        | RECENT LOANS TABLE
         |--------------------------------------------------------------------------
         */
 
-        .financial-summary {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(
-                    2,
-                    minmax(0, 1fr)
-                );
-
-            gap: 12px;
-
-            padding: 20px;
-
-        }
-
-
-        .financial-item {
-
-            padding: 16px;
-
-            border:
-                1px solid #e5e7eb;
-
-            border-radius: 12px;
-
-        }
-
-
-        .financial-label {
-
-            color: #6b7280;
-
-            font-size: 12px;
-
-            margin-bottom: 7px;
-
-        }
-
-
-        .financial-value {
-
-            color: #111827;
-
-            font-size: 18px;
-
-            font-weight: 700;
-
-            word-break: break-word;
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | LOAN TABLE
-        |--------------------------------------------------------------------------
-        */
-
-        .loan-table-wrapper {
+        .lm-table-wrapper {
 
             width: 100%;
 
@@ -709,7 +949,7 @@ $role =
         }
 
 
-        .loan-table {
+        .lm-table {
 
             width: 100%;
 
@@ -720,46 +960,63 @@ $role =
         }
 
 
-        .loan-table th {
+        .lm-table th {
 
-            padding: 13px 20px;
+            padding:
+                12px 20px;
 
             background: #f9fafb;
 
             color: #6b7280;
 
+            font-size: 10px;
+
+            font-weight: 750;
+
             text-align: left;
-
-            font-size: 11px;
-
-            font-weight: 700;
 
             text-transform: uppercase;
 
-            letter-spacing: .04em;
+            letter-spacing: .045em;
 
             white-space: nowrap;
 
         }
 
 
-        .loan-table td {
+        .lm-table td {
 
-            padding: 15px 20px;
+            padding:
+                15px 20px;
+
+            color: #4b5563;
+
+            font-size: 12px;
 
             border-top:
                 1px solid #f3f4f6;
 
-            color: #374151;
-
-            font-size: 13px;
-
             white-space: nowrap;
 
         }
 
 
-        .loan-number {
+        .lm-table tbody tr {
+
+            transition:
+                background .15s ease;
+
+        }
+
+
+        .lm-table tbody tr:hover {
+
+            background: #fafafa;
+
+        }
+
+
+        .lm-loan-number {
 
             color: #111827;
 
@@ -768,7 +1025,7 @@ $role =
         }
 
 
-        .borrower-name {
+        .lm-borrower {
 
             color: #111827;
 
@@ -777,41 +1034,44 @@ $role =
         }
 
 
-        .loan-amount {
+        .lm-amount {
 
             color: #111827;
 
-            font-weight: 600;
+            font-weight: 650;
 
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | STATUS
+        | STATUS BADGES
         |--------------------------------------------------------------------------
         */
 
-        .loan-status {
+        .lm-status {
 
             display: inline-flex;
 
             align-items: center;
 
-            padding: 5px 9px;
+            justify-content: center;
+
+            padding:
+                5px 9px;
 
             border-radius: 999px;
 
-            font-size: 11px;
+            font-size: 10px;
 
-            font-weight: 700;
+            font-weight: 750;
 
             text-transform: capitalize;
 
         }
 
 
-        .status-active {
+        .dashboard-status-active {
 
             background: #ecfdf5;
 
@@ -820,7 +1080,7 @@ $role =
         }
 
 
-        .status-approved {
+        .dashboard-status-approved {
 
             background: #eff6ff;
 
@@ -829,7 +1089,7 @@ $role =
         }
 
 
-        .status-pending {
+        .dashboard-status-pending {
 
             background: #fffbeb;
 
@@ -838,7 +1098,7 @@ $role =
         }
 
 
-        .status-completed {
+        .dashboard-status-completed {
 
             background: #f0fdf4;
 
@@ -847,7 +1107,7 @@ $role =
         }
 
 
-        .status-overdue {
+        .dashboard-status-overdue {
 
             background: #fff7ed;
 
@@ -856,7 +1116,7 @@ $role =
         }
 
 
-        .status-danger {
+        .dashboard-status-danger {
 
             background: #fef2f2;
 
@@ -865,7 +1125,7 @@ $role =
         }
 
 
-        .status-default {
+        .dashboard-status-default {
 
             background: #f3f4f6;
 
@@ -880,7 +1140,7 @@ $role =
         |--------------------------------------------------------------------------
         */
 
-        .dashboard-empty {
+        .lm-empty {
 
             padding: 35px 20px;
 
@@ -888,7 +1148,7 @@ $role =
 
             color: #9ca3af;
 
-            font-size: 14px;
+            font-size: 12px;
 
         }
 
@@ -899,7 +1159,7 @@ $role =
         |--------------------------------------------------------------------------
         */
 
-        .business-info {
+        .lm-business-grid {
 
             display: grid;
 
@@ -909,48 +1169,51 @@ $role =
                     minmax(0, 1fr)
                 );
 
-            gap: 14px;
+            gap: 12px;
 
             padding: 20px;
 
         }
 
 
-        .business-info-item {
+        .lm-business-item {
 
-            padding: 16px;
+            padding: 15px;
 
             background: #f9fafb;
 
-            border-radius: 12px;
+            border:
+                1px solid #f0f1f3;
+
+            border-radius: 11px;
 
         }
 
 
-        .business-info-label {
+        .lm-business-label {
+
+            margin-bottom: 6px;
 
             color: #9ca3af;
 
-            font-size: 10px;
+            font-size: 9px;
 
-            font-weight: 700;
+            font-weight: 750;
 
             text-transform: uppercase;
 
             letter-spacing: .05em;
 
-            margin-bottom: 6px;
-
         }
 
 
-        .business-info-value {
+        .lm-business-value {
 
             color: #111827;
 
-            font-size: 14px;
+            font-size: 13px;
 
-            font-weight: 600;
+            font-weight: 650;
 
             word-break: break-word;
 
@@ -959,13 +1222,13 @@ $role =
 
         /*
         |--------------------------------------------------------------------------
-        | TABLET
+        | RESPONSIVE - TABLET
         |--------------------------------------------------------------------------
         */
 
         @media (max-width: 1100px) {
 
-            .dashboard-stats {
+            .lm-kpi-grid {
 
                 grid-template-columns:
                     repeat(
@@ -976,7 +1239,7 @@ $role =
             }
 
 
-            .dashboard-grid {
+            .lm-main-grid {
 
                 grid-template-columns: 1fr;
 
@@ -987,38 +1250,47 @@ $role =
 
         /*
         |--------------------------------------------------------------------------
-        | MOBILE
+        | RESPONSIVE - MOBILE
         |--------------------------------------------------------------------------
         */
 
         @media (max-width: 650px) {
 
-            .dashboard-welcome {
+            .lm-dashboard-header {
+
+                flex-direction: column;
 
                 margin-bottom: 20px;
 
             }
 
 
-            .dashboard-welcome h1 {
+            .lm-dashboard-heading h1 {
 
                 font-size: 23px;
 
             }
 
 
-            .dashboard-stats {
+            .lm-dashboard-date {
+
+                display: none;
+
+            }
+
+
+            .lm-kpi-grid {
 
                 grid-template-columns: 1fr;
 
                 gap: 12px;
 
-                margin-bottom: 16px;
+                margin-bottom: 15px;
 
             }
 
 
-            .dashboard-stat {
+            .lm-kpi-card {
 
                 padding: 17px;
 
@@ -1027,14 +1299,14 @@ $role =
             }
 
 
-            .dashboard-stat-value {
+            .lm-kpi-value {
 
                 font-size: 23px;
 
             }
 
 
-            .dashboard-grid {
+            .lm-main-grid {
 
                 gap: 15px;
 
@@ -1043,69 +1315,69 @@ $role =
             }
 
 
-            .dashboard-panel {
+            .lm-panel {
 
                 border-radius: 13px;
 
             }
 
 
-            .dashboard-panel-header {
+            .lm-panel-header {
 
                 padding: 16px;
 
             }
 
 
-            .dashboard-panel-header h2 {
+            .lm-panel-title {
 
                 font-size: 16px;
 
             }
 
 
-            .account-item {
+            .lm-portfolio {
 
-                padding: 14px 16px;
-
-            }
-
-
-            .account-icon {
-
-                width: 38px;
-
-                height: 38px;
-
-                min-width: 38px;
+                padding: 16px;
 
             }
 
 
-            .account-name {
+            .lm-portfolio-value {
 
-                max-width: 150px;
-
-            }
-
-
-            .account-balance {
-
-                font-size: 13px;
+                font-size: 23px;
 
             }
 
 
-            .financial-summary {
+            .lm-loan-breakdown {
 
-                grid-template-columns: 1fr;
-
-                padding: 15px;
+                grid-template-columns:
+                    repeat(
+                        2,
+                        minmax(0, 1fr)
+                    );
 
             }
 
 
-            .business-info {
+            .lm-account {
+
+                padding:
+                    14px 16px;
+
+            }
+
+
+            .lm-account-footer {
+
+                padding:
+                    14px 16px;
+
+            }
+
+
+            .lm-business-grid {
 
                 grid-template-columns: 1fr;
 
@@ -1118,34 +1390,27 @@ $role =
 
         /*
         |--------------------------------------------------------------------------
-        | VERY SMALL PHONES
+        | VERY SMALL DEVICES
         |--------------------------------------------------------------------------
         */
 
         @media (max-width: 400px) {
 
-            .dashboard-welcome h1 {
+            .lm-loan-breakdown {
+
+                grid-template-columns: 1fr;
+
+            }
+
+
+            .lm-kpi-value {
 
                 font-size: 21px;
 
             }
 
 
-            .dashboard-stat-value {
-
-                font-size: 21px;
-
-            }
-
-
-            .account-item {
-
-                align-items: flex-start;
-
-            }
-
-
-            .account-balance {
+            .lm-account-balance {
 
                 font-size: 12px;
 
@@ -1210,60 +1475,72 @@ require APP_PATH .
 
 
     <!-- =====================================================
-         CONTENT
+         DASHBOARD CONTENT
     ====================================================== -->
 
-    <div class="container dashboard-page">
+    <div class="container lm-dashboard">
 
 
         <!-- =================================================
-             WELCOME
+             HEADER
         ================================================== -->
 
-        <div class="dashboard-welcome">
+        <div class="lm-dashboard-header">
 
-            <h1>
+            <div class="lm-dashboard-heading">
 
-                Welcome,
-                <?= htmlspecialchars(
-                    $userName
-                ) ?>
+                <h1>
 
-            </h1>
+                    Welcome back,
+                    <?= htmlspecialchars(
+                        $userName
+                    ) ?>
+
+                </h1>
 
 
-            <p>
+                <p>
 
-                <?= htmlspecialchars(
-                    $businessName
-                ) ?>
+                    Here's an overview of
+                    <?= htmlspecialchars(
+                        $businessName
+                    ) ?>
 
-            </p>
+                </p>
+
+            </div>
+
+
+            <div class="lm-dashboard-date">
+
+                <?= date('M d, Y') ?>
+
+            </div>
 
         </div>
 
 
         <!-- =================================================
-             MAIN STATISTICS
+             KPI CARDS
         ================================================== -->
 
-        <div class="dashboard-stats">
+        <div class="lm-kpi-grid">
 
 
             <!-- BORROWERS -->
 
-            <div class="dashboard-stat">
+            <div class="lm-kpi-card">
 
-                <div class="dashboard-stat-top">
+                <div class="lm-kpi-top">
 
-                    <div class="dashboard-stat-label">
+                    <div class="lm-kpi-label">
 
                         Total Borrowers
 
                     </div>
 
 
-                    <div class="dashboard-stat-icon">
+                    <div class="lm-kpi-icon">
 
                         B
 
@@ -1272,7 +1549,7 @@ require APP_PATH .
                 </div>
 
 
-                <div class="dashboard-stat-value">
+                <div class="lm-kpi-value">
 
                     <?= number_format(
                         $totalBorrowers
@@ -1281,7 +1558,7 @@ require APP_PATH .
                 </div>
 
 
-                <div class="dashboard-stat-description">
+                <div class="lm-kpi-description">
 
                     Registered borrowers
 
@@ -1292,18 +1569,18 @@ require APP_PATH .
 
             <!-- ACTIVE LOANS -->
 
-            <div class="dashboard-stat">
+            <div class="lm-kpi-card">
 
-                <div class="dashboard-stat-top">
+                <div class="lm-kpi-top">
 
-                    <div class="dashboard-stat-label">
+                    <div class="lm-kpi-label">
 
                         Active Loans
 
                     </div>
 
 
-                    <div class="dashboard-stat-icon">
+                    <div class="lm-kpi-icon">
 
                         L
 
@@ -1312,7 +1589,7 @@ require APP_PATH .
                 </div>
 
 
-                <div class="dashboard-stat-value">
+                <div class="lm-kpi-value">
 
                     <?= number_format(
                         $activeLoans
@@ -1321,7 +1598,7 @@ require APP_PATH .
                 </div>
 
 
-                <div class="dashboard-stat-description">
+                <div class="lm-kpi-description">
 
                     Currently active loans
 
@@ -1332,18 +1609,18 @@ require APP_PATH .
 
             <!-- OUTSTANDING -->
 
-            <div class="dashboard-stat">
+            <div class="lm-kpi-card">
 
-                <div class="dashboard-stat-top">
+                <div class="lm-kpi-top">
 
-                    <div class="dashboard-stat-label">
+                    <div class="lm-kpi-label">
 
-                        Outstanding Loans
+                        Outstanding Balance
 
                     </div>
 
 
-                    <div class="dashboard-stat-icon">
+                    <div class="lm-kpi-icon">
 
                         ₱
 
@@ -1352,7 +1629,7 @@ require APP_PATH .
                 </div>
 
 
-                <div class="dashboard-stat-value">
+                <div class="lm-kpi-value">
 
                     <?= dashboardMoney(
                         $outstandingBalance
@@ -1361,9 +1638,9 @@ require APP_PATH .
                 </div>
 
 
-                <div class="dashboard-stat-description">
+                <div class="lm-kpi-description">
 
-                    Total payable of active loans
+                    Remaining loan balance
 
                 </div>
 
@@ -1372,18 +1649,18 @@ require APP_PATH .
 
             <!-- AVAILABLE FUNDS -->
 
-            <div class="dashboard-stat">
+            <div class="lm-kpi-card">
 
-                <div class="dashboard-stat-top">
+                <div class="lm-kpi-top">
 
-                    <div class="dashboard-stat-label">
+                    <div class="lm-kpi-label">
 
                         Available Funds
 
                     </div>
 
 
-                    <div class="dashboard-stat-icon">
+                    <div class="lm-kpi-icon">
 
                         ₱
 
@@ -1392,7 +1669,7 @@ require APP_PATH .
                 </div>
 
 
-                <div class="dashboard-stat-value">
+                <div class="lm-kpi-value">
 
                     <?= dashboardMoney(
                         $totalFunds
@@ -1401,9 +1678,9 @@ require APP_PATH .
                 </div>
 
 
-                <div class="dashboard-stat-description">
+                <div class="lm-kpi-description">
 
-                    Active asset account balances
+                    Active account balances
 
                 </div>
 
@@ -1414,123 +1691,236 @@ require APP_PATH .
 
 
         <!-- =================================================
-             ACCOUNTS + FINANCIAL SUMMARY
+             PORTFOLIO + FINANCIAL
         ================================================== -->
 
-        <div class="dashboard-grid">
+        <div class="lm-main-grid">
 
 
             <!-- =================================================
-                 BUSINESS ACCOUNTS
+                 LOAN PORTFOLIO
             ================================================== -->
 
-            <div class="dashboard-panel">
+            <div class="lm-panel">
 
 
-                <div class="dashboard-panel-header">
+                <div class="lm-panel-header">
 
-                    <h2>
+                    <div>
 
-                        Business Accounts
+                        <h2 class="lm-panel-title">
 
-                    </h2>
+                            Loan Portfolio
+
+                        </h2>
 
 
-                    <p>
+                        <p class="lm-panel-subtitle">
 
-                        Current balances of your active accounts
+                            Current lending activity
 
-                    </p>
+                        </p>
+
+                    </div>
 
                 </div>
 
 
-                <?php if (
-                    !empty($accounts)
-                ): ?>
+                <div class="lm-portfolio">
 
 
-                    <div class="account-list">
+                    <div class="lm-portfolio-main">
 
 
-                        <?php foreach (
-                            $accounts
-                            as $account
-                        ): ?>
+                        <div>
 
+                            <div class="lm-portfolio-label">
 
-                            <div class="account-item">
-
-
-                                <div class="account-left">
-
-
-                                    <div class="account-icon">
-
-                                        ₱
-
-                                    </div>
-
-
-                                    <div class="account-info">
-
-                                        <div class="account-name">
-
-                                            <?= htmlspecialchars(
-                                                $account['account_name']
-                                                ??
-                                                'Unnamed Account'
-                                            ) ?>
-
-                                        </div>
-
-
-                                        <div class="account-type">
-
-                                            <?= htmlspecialchars(
-                                                $account['account_type']
-                                                ??
-                                                'Account'
-                                            ) ?>
-
-                                        </div>
-
-                                    </div>
-
-                                </div>
-
-
-                                <div class="account-balance">
-
-                                    <?= dashboardMoney(
-                                        (float) (
-                                            $account['balance']
-                                            ??
-                                            0
-                                        )
-                                    ) ?>
-
-                                </div>
+                                Outstanding Balance
 
                             </div>
 
 
-                        <?php endforeach; ?>
+                            <div class="lm-portfolio-value">
+
+                                <?= dashboardMoney(
+                                    $outstandingBalance
+                                ) ?>
+
+                            </div>
+
+
+                            <div class="lm-portfolio-description">
+
+                                Total amount currently outstanding
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="lm-portfolio-icon">
+
+                            ₱
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="lm-loan-breakdown">
+
+
+                        <div class="lm-loan-breakdown-item">
+
+                            <div class="lm-loan-breakdown-label">
+
+                                Active Loans
+
+                            </div>
+
+
+                            <div class="lm-loan-breakdown-value">
+
+                                <?= number_format(
+                                    $activeLoans
+                                ) ?>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="lm-loan-breakdown-item">
+
+                            <div class="lm-loan-breakdown-label">
+
+                                Borrowers
+
+                            </div>
+
+
+                            <div class="lm-loan-breakdown-value">
+
+                                <?= number_format(
+                                    $totalBorrowers
+                                ) ?>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="lm-loan-breakdown-item">
+
+                            <div class="lm-loan-breakdown-label">
+
+                                Accounts
+
+                            </div>
+
+
+                            <div class="lm-loan-breakdown-value">
+
+                                <?= number_format(
+                                    $totalAccounts
+                                ) ?>
+
+                            </div>
+
+                        </div>
 
 
                     </div>
 
 
-                    <div class="account-total">
+                </div>
 
-                        <span class="account-total-label">
+            </div>
+
+
+            <!-- =================================================
+                 FINANCIAL OVERVIEW
+            ================================================== -->
+
+            <div class="lm-panel">
+
+
+                <div class="lm-panel-header">
+
+                    <div>
+
+                        <h2 class="lm-panel-title">
+
+                            Financial Overview
+
+                        </h2>
+
+
+                        <p class="lm-panel-subtitle">
+
+                            Current business position
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <div class="lm-financial-body">
+
+
+                    <div class="lm-financial-item">
+
+                        <span class="lm-financial-label">
+
+                            Total Assets
+
+                        </span>
+
+
+                        <span class="lm-financial-value">
+
+                            <?= dashboardMoney(
+                                $totalAssets
+                            ) ?>
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="lm-financial-item">
+
+                        <span class="lm-financial-label">
+
+                            Total Liabilities
+
+                        </span>
+
+
+                        <span class="lm-financial-value">
+
+                            <?= dashboardMoney(
+                                $totalLiabilities
+                            ) ?>
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="lm-financial-item">
+
+                        <span class="lm-financial-label">
 
                             Available Funds
 
                         </span>
 
 
-                        <span class="account-total-value">
+                        <span class="lm-financial-value">
 
                             <?= dashboardMoney(
                                 $totalFunds
@@ -1541,134 +1931,182 @@ require APP_PATH .
                     </div>
 
 
-                <?php else: ?>
+                    <div class="lm-financial-item">
+
+                        <span class="lm-financial-label">
+
+                            Net Balance
+
+                        </span>
 
 
-                    <div class="dashboard-empty">
+                        <span class="lm-financial-value net">
 
-                        No active accounts found.
+                            <?= dashboardMoney(
+                                $netBalance
+                            ) ?>
+
+                        </span>
 
                     </div>
 
 
-                <?php endif; ?>
-
+                </div>
 
             </div>
 
 
-            <!-- =================================================
-                 FINANCIAL SUMMARY
-            ================================================== -->
-
-            <div class="dashboard-panel">
+        </div>
 
 
-                <div class="dashboard-panel-header">
+        <!-- =================================================
+             BUSINESS ACCOUNTS
+        ================================================== -->
 
-                    <h2>
+        <div
+            class="lm-panel"
+            style="margin-bottom:20px;"
+        >
 
-                        Financial Summary
+
+            <div class="lm-panel-header">
+
+                <div>
+
+                    <h2 class="lm-panel-title">
+
+                        Business Accounts
 
                     </h2>
 
 
-                    <p>
+                    <p class="lm-panel-subtitle">
 
-                        Current business position
+                        Current balances of active accounts
 
                     </p>
 
                 </div>
 
 
-                <div class="financial-summary">
+                <div class="lm-panel-subtitle">
+
+                    <?= number_format(
+                        $totalAccounts
+                    ) ?>
+                    accounts
+
+                </div>
+
+            </div>
 
 
-                    <div class="financial-item">
+            <?php if (!empty($accounts)): ?>
 
-                        <div class="financial-label">
 
-                            Total Accounts
+                <div class="lm-account-list">
+
+
+                    <?php foreach (
+                        $accounts
+                        as $account
+                    ): ?>
+
+
+                        <div class="lm-account">
+
+
+                            <div class="lm-account-left">
+
+
+                                <div class="lm-account-icon">
+
+                                    ₱
+
+                                </div>
+
+
+                                <div class="lm-account-details">
+
+                                    <div class="lm-account-name">
+
+                                        <?= htmlspecialchars(
+                                            $account['account_name']
+                                            ??
+                                            'Unnamed Account'
+                                        ) ?>
+
+                                    </div>
+
+
+                                    <div class="lm-account-type">
+
+                                        <?= htmlspecialchars(
+                                            $account['account_type']
+                                            ??
+                                            'Account'
+                                        ) ?>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="lm-account-balance">
+
+                                <?= dashboardMoney(
+                                    (float) (
+                                        $account['balance']
+                                        ??
+                                        0
+                                    )
+                                ) ?>
+
+                            </div>
+
 
                         </div>
 
 
-                        <div class="financial-value">
-
-                            <?= number_format(
-                                $totalAccounts
-                            ) ?>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="financial-item">
-
-                        <div class="financial-label">
-
-                            Total Assets
-
-                        </div>
-
-
-                        <div class="financial-value">
-
-                            <?= dashboardMoney(
-                                $totalAssets
-                            ) ?>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="financial-item">
-
-                        <div class="financial-label">
-
-                            Liabilities
-
-                        </div>
-
-
-                        <div class="financial-value">
-
-                            <?= dashboardMoney(
-                                $totalLiabilities
-                            ) ?>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="financial-item">
-
-                        <div class="financial-label">
-
-                            Net Balance
-
-                        </div>
-
-
-                        <div class="financial-value">
-
-                            <?= dashboardMoney(
-                                $netBalance
-                            ) ?>
-
-                        </div>
-
-                    </div>
+                    <?php endforeach; ?>
 
 
                 </div>
 
 
-            </div>
+                <div class="lm-account-footer">
+
+                    <span class="lm-account-footer-label">
+
+                        Total Available Funds
+
+                    </span>
+
+
+                    <span class="lm-account-footer-value">
+
+                        <?= dashboardMoney(
+                            $totalFunds
+                        ) ?>
+
+                    </span>
+
+                </div>
+
+
+            <?php else: ?>
+
+
+                <div class="lm-empty">
+
+                    No active business accounts found.
+
+                </div>
+
+
+            <?php endif; ?>
 
 
         </div>
@@ -1678,36 +2116,48 @@ require APP_PATH .
              RECENT LOANS
         ================================================== -->
 
-        <div class="dashboard-panel">
+        <div class="lm-panel">
 
 
-            <div class="dashboard-panel-header">
+            <div class="lm-panel-header">
 
-                <h2>
+                <div>
 
-                    Recent Loans
+                    <h2 class="lm-panel-title">
 
-                </h2>
+                        Recent Loans
+
+                    </h2>
 
 
-                <p>
+                    <p class="lm-panel-subtitle">
 
-                    Latest loan records
+                        Latest loan records in the system
 
-                </p>
+                    </p>
+
+                </div>
+
+
+                <a
+                    href="index.php?url=loans/index"
+                    class="btn btn-primary"
+                >
+
+                    View Loans
+
+                </a>
 
             </div>
 
 
-            <?php if (
-                !empty($recentLoans)
-            ): ?>
+            <?php if (!empty($recentLoans)): ?>
 
 
-                <div class="loan-table-wrapper">
+                <div class="lm-table-wrapper">
 
 
-                    <table class="loan-table">
+                    <table class="lm-table">
 
 
                         <thead>
@@ -1752,12 +2202,24 @@ require APP_PATH .
                             ): ?>
 
 
+                                <?php
+
+                                $loanStatus =
+                                    $loan['status']
+                                    ??
+                                    'pending';
+
+                                ?>
+
+
                                 <tr>
 
 
                                     <td>
 
-                                        <span class="loan-number">
+                                        <span
+                                            class="lm-loan-number"
+                                        >
 
                                             <?= htmlspecialchars(
                                                 $loan['loan_number']
@@ -1772,7 +2234,9 @@ require APP_PATH .
 
                                     <td>
 
-                                        <span class="borrower-name">
+                                        <span
+                                            class="lm-borrower"
+                                        >
 
                                             <?= htmlspecialchars(
                                                 $loan['borrower_name']
@@ -1798,28 +2262,15 @@ require APP_PATH .
 
                                     <td>
 
-                                        <span class="loan-amount">
+                                        <span
+                                            class="lm-amount"
+                                        >
 
                                             <?= dashboardMoney(
                                                 (float) (
-                                                    $loan['principal_amount']
-                                                    ??
-                                                    0
-                                                )
-                                            ) ?>
-
-                                        </span>
-
-                                    </td>
-
-
-                                    <td>
-
-                                        <span class="loan-amount">
-
-                                            <?= dashboardMoney(
-                                                (float) (
-                                                    $loan['total_payable']
+                                                    $loan[
+                                                        'principal_amount'
+                                                    ]
                                                     ??
                                                     0
                                                 )
@@ -1833,19 +2284,38 @@ require APP_PATH .
                                     <td>
 
                                         <span
-                                            class="loan-status <?= htmlspecialchars(
-                                                dashboardStatusClass(
-                                                    $loan['status']
+                                            class="lm-amount"
+                                        >
+
+                                            <?= dashboardMoney(
+                                                (float) (
+                                                    $loan[
+                                                        'total_payable'
+                                                    ]
                                                     ??
-                                                    ''
+                                                    0
+                                                )
+                                            ) ?>
+
+                                        </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <span
+                                            class="lm-status <?= htmlspecialchars(
+                                                dashboardStatusClass(
+                                                    $loanStatus
                                                 )
                                             ) ?>"
                                         >
 
                                             <?= htmlspecialchars(
-                                                $loan['status']
-                                                ??
-                                                'unknown'
+                                                ucfirst(
+                                                    $loanStatus
+                                                )
                                             ) ?>
 
                                         </span>
@@ -1871,7 +2341,7 @@ require APP_PATH .
             <?php else: ?>
 
 
-                <div class="dashboard-empty">
+                <div class="lm-empty">
 
                     No loans have been created yet.
 
@@ -1889,42 +2359,46 @@ require APP_PATH .
         ================================================== -->
 
         <div
-            class="dashboard-panel"
+            class="lm-panel"
             style="margin-top:20px;"
         >
 
 
-            <div class="dashboard-panel-header">
+            <div class="lm-panel-header">
 
-                <h2>
+                <div>
 
-                    Business Information
+                    <h2 class="lm-panel-title">
 
-                </h2>
+                        Business Information
+
+                    </h2>
 
 
-                <p>
+                    <p class="lm-panel-subtitle">
 
-                    Current business information
+                        Current account and business details
 
-                </p>
+                    </p>
+
+                </div>
 
             </div>
 
 
-            <div class="business-info">
+            <div class="lm-business-grid">
 
 
-                <div class="business-info-item">
+                <div class="lm-business-item">
 
-                    <div class="business-info-label">
+                    <div class="lm-business-label">
 
                         Business
 
                     </div>
 
 
-                    <div class="business-info-value">
+                    <div class="lm-business-value">
 
                         <?= htmlspecialchars(
                             $businessName
@@ -1935,16 +2409,16 @@ require APP_PATH .
                 </div>
 
 
-                <div class="business-info-item">
+                <div class="lm-business-item">
 
-                    <div class="business-info-label">
+                    <div class="lm-business-label">
 
                         Business ID
 
                     </div>
 
 
-                    <div class="business-info-value">
+                    <div class="lm-business-value">
 
                         <?= htmlspecialchars(
                             (string) $businessId
@@ -1955,16 +2429,16 @@ require APP_PATH .
                 </div>
 
 
-                <div class="business-info-item">
+                <div class="lm-business-item">
 
-                    <div class="business-info-label">
+                    <div class="lm-business-label">
 
                         Your Role
 
                     </div>
 
 
-                    <div class="business-info-value">
+                    <div class="lm-business-value">
 
                         <?= htmlspecialchars(
                             $role

@@ -2,48 +2,29 @@
 
 class BusinessUserController
 {
-    /**
-     * Display business users.
-     */
-    public function index(): void
+    /*
+    |--------------------------------------------------------------------------
+    | AUTHORIZATION HELPER
+    |--------------------------------------------------------------------------
+    */
+
+    private function checkAccess(): void
     {
         Auth::startSession();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Authentication
-        |--------------------------------------------------------------------------
-        */
 
         if (!Auth::check()) {
             header('Location: index.php?url=auth/login');
             exit;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Super Admin should not use this page
-        |--------------------------------------------------------------------------
-        */
-
         if (Auth::isSuperAdmin()) {
             header('Location: index.php?url=dashboard');
             exit;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Only business owner/admin can manage users
-        |--------------------------------------------------------------------------
-        */
-
         $tenantRole = Auth::tenantRole();
 
-        if (!in_array(
-            $tenantRole,
-            ['owner', 'admin'],
-            true
-        )) {
+        if (!in_array($tenantRole, ['owner', 'admin'], true)) {
             http_response_code(403);
 
             echo '<h1>403 - Access Denied</h1>';
@@ -51,18 +32,22 @@ class BusinessUserController
 
             exit;
         }
+    }
 
-        $businessId = Auth::businessId();
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET BUSINESS USER
+    |--------------------------------------------------------------------------
+    */
+
+    private function getBusinessUser(int $businessUserId): ?array
+    {
+        $businessId = (int) Auth::businessId();
 
         $db = Database::getInstance();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Get users belonging to this business
-        |--------------------------------------------------------------------------
-        */
-
-        $sql = "
+        $stmt = $db->prepare("
             SELECT
                 bu.id AS business_user_id,
                 bu.business_id,
@@ -83,12 +68,63 @@ class BusinessUserController
             INNER JOIN users u
                 ON u.id = bu.user_id
 
+            WHERE bu.id = :business_user_id
+            AND bu.business_id = :business_id
+
+            LIMIT 1
+        ");
+
+        $stmt->execute([
+            ':business_user_id' => $businessUserId,
+            ':business_id' => $businessId
+        ]);
+
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $user ?: null;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | INDEX
+    |--------------------------------------------------------------------------
+    */
+
+    public function index(): void
+    {
+        $this->checkAccess();
+
+        $businessId = (int) Auth::businessId();
+
+        $db = Database::getInstance();
+
+        $stmt = $db->prepare("
+            SELECT
+                bu.id AS business_user_id,
+                bu.business_id,
+                bu.user_id,
+
+                bu.role AS tenant_role,
+                bu.status AS membership_status,
+
+                u.username,
+                u.email,
+                u.full_name,
+                u.role AS system_role,
+                u.status AS user_status,
+
+                bu.created_at
+
+            FROM business_users bu
+
+            INNER JOIN users u
+                ON u.id = bu.user_id
+
             WHERE bu.business_id = :business_id
 
             ORDER BY bu.id DESC
-        ";
-
-        $stmt = $db->prepare($sql);
+        ");
 
         $stmt->execute([
             ':business_id' => $businessId
@@ -100,105 +136,40 @@ class BusinessUserController
     }
 
 
-    /**
-     * Display create user form.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE
+    |--------------------------------------------------------------------------
+    */
+
     public function create(): void
     {
-        Auth::startSession();
-
-        if (!Auth::check()) {
-            header('Location: index.php?url=auth/login');
-            exit;
-        }
-
-        if (Auth::isSuperAdmin()) {
-            header('Location: index.php?url=dashboard');
-            exit;
-        }
-
-        $tenantRole = Auth::tenantRole();
-
-        if (!in_array(
-            $tenantRole,
-            ['owner', 'admin'],
-            true
-        )) {
-            http_response_code(403);
-
-            echo '<h1>403 - Access Denied</h1>';
-            exit;
-        }
+        $this->checkAccess();
 
         require APP_PATH . '/views/business_users/create.php';
     }
 
 
-    /**
-     * Store a new business user.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | STORE
+    |--------------------------------------------------------------------------
+    */
+
     public function store(): void
     {
-        Auth::startSession();
-
-        if (!Auth::check()) {
-            header('Location: index.php?url=auth/login');
-            exit;
-        }
-
-        if (Auth::isSuperAdmin()) {
-            header('Location: index.php?url=dashboard');
-            exit;
-        }
-
-        $tenantRole = Auth::tenantRole();
-
-        if (!in_array(
-            $tenantRole,
-            ['owner', 'admin'],
-            true
-        )) {
-            http_response_code(403);
-
-            echo '<h1>403 - Access Denied</h1>';
-            exit;
-        }
+        $this->checkAccess();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: index.php?url=business-users');
             exit;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Get submitted data
-        |--------------------------------------------------------------------------
-        */
-
-        $username = trim(
-            $_POST['username'] ?? ''
-        );
-
-        $email = trim(
-            $_POST['email'] ?? ''
-        );
-
-        $fullName = trim(
-            $_POST['full_name'] ?? ''
-        );
-
+        $username = trim($_POST['username'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $fullName = trim($_POST['full_name'] ?? '');
         $password = $_POST['password'] ?? '';
-
-        $role = trim(
-            $_POST['role'] ?? 'staff'
-        );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validation
-        |--------------------------------------------------------------------------
-        */
+        $role = trim($_POST['role'] ?? 'staff');
 
         $allowedRoles = [
             'admin',
@@ -224,7 +195,6 @@ class BusinessUserController
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-
             $_SESSION['error'] =
                 'Please enter a valid email address.';
 
@@ -236,7 +206,6 @@ class BusinessUserController
         }
 
         if (strlen($password) < 8) {
-
             $_SESSION['error'] =
                 'Password must be at least 8 characters.';
 
@@ -248,7 +217,6 @@ class BusinessUserController
         }
 
         if (!in_array($role, $allowedRoles, true)) {
-
             $_SESSION['error'] =
                 'Invalid user role selected.';
 
@@ -259,15 +227,13 @@ class BusinessUserController
             exit;
         }
 
-
-        $businessId = Auth::businessId();
+        $businessId = (int) Auth::businessId();
 
         $db = Database::getInstance();
 
-
         /*
         |--------------------------------------------------------------------------
-        | Check username
+        | CHECK USERNAME
         |--------------------------------------------------------------------------
         */
 
@@ -283,7 +249,6 @@ class BusinessUserController
         ]);
 
         if ($stmt->fetch()) {
-
             $_SESSION['error'] =
                 'Username is already in use.';
 
@@ -297,7 +262,7 @@ class BusinessUserController
 
         /*
         |--------------------------------------------------------------------------
-        | Check email
+        | CHECK EMAIL
         |--------------------------------------------------------------------------
         */
 
@@ -313,7 +278,6 @@ class BusinessUserController
         ]);
 
         if ($stmt->fetch()) {
-
             $_SESSION['error'] =
                 'Email address is already in use.';
 
@@ -327,7 +291,7 @@ class BusinessUserController
 
         /*
         |--------------------------------------------------------------------------
-        | Password Hash
+        | HASH PASSWORD
         |--------------------------------------------------------------------------
         */
 
@@ -339,7 +303,7 @@ class BusinessUserController
 
         /*
         |--------------------------------------------------------------------------
-        | Start Transaction
+        | TRANSACTION
         |--------------------------------------------------------------------------
         */
 
@@ -349,7 +313,7 @@ class BusinessUserController
 
             /*
             |--------------------------------------------------------------------------
-            | Create User
+            | CREATE USER
             |--------------------------------------------------------------------------
             */
 
@@ -373,9 +337,9 @@ class BusinessUserController
             ");
 
             $stmt->execute([
-                ':username'  => $username,
-                ':email'     => $email,
-                ':password'  => $hashedPassword,
+                ':username' => $username,
+                ':email' => $email,
+                ':password' => $hashedPassword,
                 ':full_name' => $fullName
             ]);
 
@@ -384,7 +348,7 @@ class BusinessUserController
 
             /*
             |--------------------------------------------------------------------------
-            | Create Business Membership
+            | CREATE BUSINESS MEMBERSHIP
             |--------------------------------------------------------------------------
             */
 
@@ -405,23 +369,15 @@ class BusinessUserController
 
             $stmt->execute([
                 ':business_id' => $businessId,
-                ':user_id'     => $userId,
-                ':role'        => $role
+                ':user_id' => $userId,
+                ':role' => $role
             ]);
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Commit
-            |--------------------------------------------------------------------------
-            */
-
             $db->commit();
-
 
             $_SESSION['success'] =
                 'User created successfully.';
-
 
             header(
                 'Location: index.php?url=business-users'
@@ -431,12 +387,6 @@ class BusinessUserController
 
         } catch (Throwable $e) {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Rollback
-            |--------------------------------------------------------------------------
-            */
-
             if ($db->inTransaction()) {
                 $db->rollBack();
             }
@@ -444,14 +394,8 @@ class BusinessUserController
             $_SESSION['error'] =
                 'Unable to create user.';
 
-            /*
-             * For development only.
-             * Remove later in production.
-             */
-
             $_SESSION['error_details'] =
                 $e->getMessage();
-
 
             header(
                 'Location: index.php?url=business-users/create'
@@ -459,5 +403,457 @@ class BusinessUserController
 
             exit;
         }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE PASSWORD
+    |
+    | This is used by the modal.
+    | No current password is required.
+    |--------------------------------------------------------------------------
+    */
+
+    public function updatePassword(): void
+    {
+        $this->checkAccess();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+        $businessUserId = (int) (
+            $_POST['business_user_id'] ?? 0
+        );
+
+        $password = $_POST['password'] ?? '';
+
+        $confirmPassword = $_POST[
+            'password_confirmation'
+        ] ?? '';
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATE USER ID
+        |--------------------------------------------------------------------------
+        */
+
+        if ($businessUserId <= 0) {
+            $_SESSION['error'] =
+                'Invalid user.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET BUSINESS USER
+        |--------------------------------------------------------------------------
+        */
+
+        $businessUser = $this->getBusinessUser(
+            $businessUserId
+        );
+
+        if (!$businessUser) {
+            $_SESSION['error'] =
+                'User not found.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CURRENT USER
+        |--------------------------------------------------------------------------
+        */
+
+        $currentUser = Auth::user();
+
+        $currentUserId = (int) (
+            $currentUser['id'] ?? 0
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PREVENT CHANGING OWN PASSWORD
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            (int) $businessUser['user_id']
+            ===
+            $currentUserId
+        ) {
+            $_SESSION['error'] =
+                'You cannot change your own password from the user management page.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PROTECT OWNER
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            ($businessUser['tenant_role'] ?? '')
+            ===
+            'owner'
+        ) {
+            $_SESSION['error'] =
+                'The business owner password cannot be changed from this page.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PASSWORD VALIDATION
+        |--------------------------------------------------------------------------
+        */
+
+        if ($password === '') {
+            $_SESSION['error'] =
+                'Please enter the new password.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+        if (strlen($password) < 8) {
+            $_SESSION['error'] =
+                'Password must be at least 8 characters.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+        if ($password !== $confirmPassword) {
+            $_SESSION['error'] =
+                'Passwords do not match.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | HASH NEW PASSWORD
+        |--------------------------------------------------------------------------
+        */
+
+        $hashedPassword = password_hash(
+            $password,
+            PASSWORD_DEFAULT
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE PASSWORD
+        |--------------------------------------------------------------------------
+        */
+
+        $db = Database::getInstance();
+
+        $stmt = $db->prepare("
+            UPDATE users
+
+            SET password = :password
+
+            WHERE id = :user_id
+
+            LIMIT 1
+        ");
+
+        $stmt->execute([
+            ':password' => $hashedPassword,
+            ':user_id' => (int) $businessUser['user_id']
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUCCESS
+        |--------------------------------------------------------------------------
+        */
+
+        $_SESSION['success'] =
+            'Password changed successfully for '
+            . ($businessUser['full_name'] ?? 'the user')
+            . '.';
+
+
+        header(
+            'Location: index.php?url=business-users'
+        );
+
+        exit;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | DISABLE USER
+    |--------------------------------------------------------------------------
+    */
+
+    public function disable(): void
+    {
+        $this->checkAccess();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+        $businessUserId = (int) (
+            $_POST['business_user_id'] ?? 0
+        );
+
+        $businessUser = $this->getBusinessUser(
+            $businessUserId
+        );
+
+        if (!$businessUser) {
+            $_SESSION['error'] =
+                'User not found.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CURRENT USER
+        |--------------------------------------------------------------------------
+        */
+
+        $currentUser = Auth::user();
+
+        $currentUserId = (int) (
+            $currentUser['id'] ?? 0
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PREVENT SELF-DISABLE
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            (int) $businessUser['user_id']
+            ===
+            $currentUserId
+        ) {
+            $_SESSION['error'] =
+                'You cannot disable your own account.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PROTECT OWNER
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            ($businessUser['tenant_role'] ?? '')
+            ===
+            'owner'
+        ) {
+            $_SESSION['error'] =
+                'The business owner cannot be disabled.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DISABLE
+        |--------------------------------------------------------------------------
+        */
+
+        $db = Database::getInstance();
+
+        $stmt = $db->prepare("
+            UPDATE business_users
+
+            SET status = 'inactive'
+
+            WHERE id = :business_user_id
+            AND business_id = :business_id
+
+            LIMIT 1
+        ");
+
+        $stmt->execute([
+            ':business_user_id' => $businessUserId,
+            ':business_id' => (int) Auth::businessId()
+        ]);
+
+
+        $_SESSION['success'] =
+            'User disabled successfully.';
+
+        header(
+            'Location: index.php?url=business-users'
+        );
+
+        exit;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ENABLE USER
+    |--------------------------------------------------------------------------
+    */
+
+    public function enable(): void
+    {
+        $this->checkAccess();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+        $businessUserId = (int) (
+            $_POST['business_user_id'] ?? 0
+        );
+
+        $businessUser = $this->getBusinessUser(
+            $businessUserId
+        );
+
+        if (!$businessUser) {
+            $_SESSION['error'] =
+                'User not found.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PROTECT OWNER
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            ($businessUser['tenant_role'] ?? '')
+            ===
+            'owner'
+        ) {
+            $_SESSION['error'] =
+                'The business owner does not need to be enabled.';
+
+            header(
+                'Location: index.php?url=business-users'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ENABLE
+        |--------------------------------------------------------------------------
+        */
+
+        $db = Database::getInstance();
+
+        $stmt = $db->prepare("
+            UPDATE business_users
+
+            SET status = 'active'
+
+            WHERE id = :business_user_id
+            AND business_id = :business_id
+
+            LIMIT 1
+        ");
+
+        $stmt->execute([
+            ':business_user_id' => $businessUserId,
+            ':business_id' => (int) Auth::businessId()
+        ]);
+
+
+        $_SESSION['success'] =
+            'User enabled successfully.';
+
+        header(
+            'Location: index.php?url=business-users'
+        );
+
+        exit;
     }
 }
