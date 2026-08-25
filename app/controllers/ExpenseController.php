@@ -1,13 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 require_once APP_PATH . '/models/Expense.php';
-require_once APP_PATH . '/models/Category.php';
 
 
 class ExpenseController
 {
-    private $expense;
-    private $category;
+    private Expense $expense;
 
 
     /*
@@ -19,8 +19,6 @@ class ExpenseController
     public function __construct()
     {
         $this->expense = new Expense();
-
-        $this->category = new Category();
     }
 
 
@@ -30,11 +28,14 @@ class ExpenseController
     |--------------------------------------------------------------------------
     */
 
-    private function getBusinessId()
+    private function getBusinessId(): int
     {
-        return $_SESSION['user']['business_id']
+        return (int)(
+            $_SESSION['user']['business_id']
             ?? $_SESSION['business_id']
-            ?? null;
+            ?? $_SESSION['business']['id']
+            ?? 0
+        );
     }
 
 
@@ -44,11 +45,13 @@ class ExpenseController
     |--------------------------------------------------------------------------
     */
 
-    private function getUserId()
+    private function getUserId(): int
     {
-        return $_SESSION['user']['id']
+        return (int)(
+            $_SESSION['user']['id']
             ?? $_SESSION['user_id']
-            ?? null;
+            ?? 0
+        );
     }
 
 
@@ -58,23 +61,65 @@ class ExpenseController
     |--------------------------------------------------------------------------
     */
 
-    public function index()
+    public function index(): void
     {
-        $businessId = $this->getBusinessId();
+        $businessId =
+            $this->getBusinessId();
 
-        if (!$businessId) {
+
+        if ($businessId <= 0) {
+
             die('Business ID not found.');
         }
 
-        $expenses = $this->expense->getAll(
-            $businessId
+
+        $expenses =
+            $this->expense->getAll(
+                $businessId
+            );
+
+
+        $totalExpenses =
+            $this->expense->getTotal(
+                $businessId
+            );
+
+
+        $categories =
+            $this->expense->getCategories(
+                $businessId
+            );
+
+
+        $accounts =
+            $this->expense->getAccounts(
+                $businessId
+            );
+
+
+        $user =
+            $_SESSION['user'] ?? [];
+
+
+        $success =
+            $_SESSION['success'] ?? null;
+
+        $error =
+            $_SESSION['error'] ?? null;
+
+
+        unset(
+            $_SESSION['success'],
+            $_SESSION['error']
         );
 
-        $totalExpenses = $this->expense->getTotal(
-            $businessId
-        );
 
-        require APP_PATH . '/views/expenses/index.php';
+        $currentUrl =
+            $_GET['url'] ?? 'expenses';
+
+
+        require APP_PATH .
+            '/views/expenses/index.php';
     }
 
 
@@ -82,21 +127,20 @@ class ExpenseController
     |--------------------------------------------------------------------------
     | Create
     |--------------------------------------------------------------------------
+    |
+    | The create form is now handled by the modal on index.php.
+    |
+    | This method is kept so old links don't break.
+    |
     */
 
-    public function create()
+    public function create(): void
     {
-        $businessId = $this->getBusinessId();
-
-        if (!$businessId) {
-            die('Business ID not found.');
-        }
-
-        $categories = $this->expense->getCategories(
-            $businessId
+        header(
+            'Location: index.php?url=expenses'
         );
 
-        require APP_PATH . '/views/expenses/create.php';
+        exit;
     }
 
 
@@ -106,37 +150,81 @@ class ExpenseController
     |--------------------------------------------------------------------------
     */
 
-    public function store()
+    public function store(): void
     {
-        $businessId = $this->getBusinessId();
+        $businessId =
+            $this->getBusinessId();
 
-        $userId = $this->getUserId();
+        $userId =
+            $this->getUserId();
 
-        if (!$businessId) {
-            die('Business ID not found.');
+
+        if ($businessId <= 0) {
+
+            $_SESSION['error'] =
+                'Business ID not found.';
+
+            header(
+                'Location: index.php?url=expenses'
+            );
+
+            exit;
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | Validate Required Fields
+        | Get Input
         |--------------------------------------------------------------------------
         */
 
-        $description = trim(
-            $_POST['description'] ?? ''
-        );
+        $description =
+            trim(
+                $_POST['description'] ?? ''
+            );
 
-        $amount = $_POST['amount'] ?? '';
 
-        $expenseDate = $_POST['expense_date'] ?? '';
+        $amount =
+            str_replace(
+                ',',
+                '',
+                trim(
+                    (string)(
+                        $_POST['amount'] ?? ''
+                    )
+                )
+            );
 
-        $categoryId = $_POST['category_id'] ?? null;
 
-        $notes = trim(
-            $_POST['notes'] ?? ''
-        );
+        $expenseDate =
+            trim(
+                $_POST['expense_date'] ?? ''
+            );
 
+
+        $categoryId =
+            (int)(
+                $_POST['category_id'] ?? 0
+            );
+
+
+        $accountId =
+            (int)(
+                $_POST['account_id'] ?? 0
+            );
+
+
+        $notes =
+            trim(
+                $_POST['notes'] ?? ''
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Description
+        |--------------------------------------------------------------------------
+        */
 
         if ($description === '') {
 
@@ -144,29 +232,41 @@ class ExpenseController
                 'Expense description is required.';
 
             header(
-                'Location: index.php?url=expenses/create'
+                'Location: index.php?url=expenses'
             );
 
             exit;
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Amount
+        |--------------------------------------------------------------------------
+        */
+
         if (
             $amount === ''
             || !is_numeric($amount)
-            || $amount <= 0
+            || (float)$amount <= 0
         ) {
 
             $_SESSION['error'] =
                 'Please enter a valid expense amount.';
 
             header(
-                'Location: index.php?url=expenses/create'
+                'Location: index.php?url=expenses'
             );
 
             exit;
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Date
+        |--------------------------------------------------------------------------
+        */
 
         if ($expenseDate === '') {
 
@@ -174,7 +274,26 @@ class ExpenseController
                 'Expense date is required.';
 
             header(
-                'Location: index.php?url=expenses/create'
+                'Location: index.php?url=expenses'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate Account
+        |--------------------------------------------------------------------------
+        */
+
+        if ($accountId <= 0) {
+
+            $_SESSION['error'] =
+                'Please select the account used for this expense.';
+
+            header(
+                'Location: index.php?url=expenses'
             );
 
             exit;
@@ -187,27 +306,49 @@ class ExpenseController
         |--------------------------------------------------------------------------
         */
 
-        $success = $this->expense->create([
-            'business_id'  => $businessId,
-            'category_id'  => $categoryId,
-            'description'  => $description,
-            'amount'       => $amount,
-            'expense_date' => $expenseDate,
-            'notes'        => $notes,
-            'status'       => 'active',
-            'created_by'   => $userId
-        ]);
+        try {
 
+            $expenseId =
+                $this->expense->create([
+                    'business_id' =>
+                        $businessId,
 
-        if ($success) {
+                    'category_id' =>
+                        $categoryId > 0
+                            ? $categoryId
+                            : null,
+
+                    'account_id' =>
+                        $accountId,
+
+                    'description' =>
+                        $description,
+
+                    'amount' =>
+                        (float)$amount,
+
+                    'expense_date' =>
+                        $expenseDate,
+
+                    'notes' =>
+                        $notes,
+
+                    'status' =>
+                        'active',
+
+                    'created_by' =>
+                        $userId
+                ]);
+
 
             $_SESSION['success'] =
-                'Expense created successfully.';
+                'Expense created successfully. Account balance has been deducted.';
 
-        } else {
+
+        } catch (Throwable $e) {
 
             $_SESSION['error'] =
-                'Failed to create expense.';
+                $e->getMessage();
         }
 
 
@@ -225,17 +366,22 @@ class ExpenseController
     |--------------------------------------------------------------------------
     */
 
-    public function edit()
+    public function edit(): void
     {
-        $businessId = $this->getBusinessId();
+        $businessId =
+            $this->getBusinessId();
 
-        if (!$businessId) {
-            die('Business ID not found.');
-        }
 
-        $id = $_GET['id'] ?? null;
+        $id =
+            (int)(
+                $_GET['id'] ?? 0
+            );
 
-        if (!$id) {
+
+        if (
+            $businessId <= 0
+            || $id <= 0
+        ) {
 
             header(
                 'Location: index.php?url=expenses'
@@ -245,28 +391,40 @@ class ExpenseController
         }
 
 
-        $expense = $this->expense->find(
-            $id,
-            $businessId
-        );
+        $expense =
+            $this->expense->find(
+                $id,
+                $businessId
+            );
 
 
         if (!$expense) {
 
-            http_response_code(404);
+            $_SESSION['error'] =
+                'Expense not found.';
 
-            echo '<h1>404 - Expense Not Found</h1>';
+            header(
+                'Location: index.php?url=expenses'
+            );
 
             exit;
         }
 
 
-        $categories = $this->expense->getCategories(
-            $businessId
-        );
+        $categories =
+            $this->expense->getCategories(
+                $businessId
+            );
 
 
-        require APP_PATH . '/views/expenses/edit.php';
+        $accounts =
+            $this->expense->getAccounts(
+                $businessId
+            );
+
+
+        require APP_PATH .
+            '/views/expenses/edit.php';
     }
 
 
@@ -276,19 +434,25 @@ class ExpenseController
     |--------------------------------------------------------------------------
     */
 
-    public function update()
+    public function update(): void
     {
-        $businessId = $this->getBusinessId();
-
-        if (!$businessId) {
-            die('Business ID not found.');
-        }
+        $businessId =
+            $this->getBusinessId();
 
 
-        $id = $_POST['id'] ?? null;
+        $id =
+            (int)(
+                $_POST['id'] ?? 0
+            );
 
 
-        if (!$id) {
+        if (
+            $businessId <= 0
+            || $id <= 0
+        ) {
+
+            $_SESSION['error'] =
+                'Invalid expense.';
 
             header(
                 'Location: index.php?url=expenses'
@@ -298,21 +462,50 @@ class ExpenseController
         }
 
 
-        $description = trim(
-            $_POST['description'] ?? ''
-        );
+        $description =
+            trim(
+                $_POST['description'] ?? ''
+            );
 
-        $amount = $_POST['amount'] ?? '';
 
-        $expenseDate = $_POST['expense_date'] ?? '';
+        $amount =
+            str_replace(
+                ',',
+                '',
+                trim(
+                    (string)(
+                        $_POST['amount'] ?? ''
+                    )
+                )
+            );
 
-        $categoryId = $_POST['category_id'] ?? null;
 
-        $notes = trim(
-            $_POST['notes'] ?? ''
-        );
+        $expenseDate =
+            trim(
+                $_POST['expense_date'] ?? ''
+            );
 
-        $status = $_POST['status'] ?? 'active';
+
+        $categoryId =
+            (int)(
+                $_POST['category_id'] ?? 0
+            );
+
+
+        $accountId =
+            (int)(
+                $_POST['account_id'] ?? 0
+            );
+
+
+        $notes =
+            trim(
+                $_POST['notes'] ?? ''
+            );
+
+
+        $status =
+            $_POST['status'] ?? 'active';
 
 
         /*
@@ -328,7 +521,7 @@ class ExpenseController
 
             header(
                 'Location: index.php?url=expenses/edit&id='
-                . urlencode($id)
+                . $id
             );
 
             exit;
@@ -338,7 +531,7 @@ class ExpenseController
         if (
             $amount === ''
             || !is_numeric($amount)
-            || $amount <= 0
+            || (float)$amount <= 0
         ) {
 
             $_SESSION['error'] =
@@ -346,7 +539,7 @@ class ExpenseController
 
             header(
                 'Location: index.php?url=expenses/edit&id='
-                . urlencode($id)
+                . $id
             );
 
             exit;
@@ -360,10 +553,36 @@ class ExpenseController
 
             header(
                 'Location: index.php?url=expenses/edit&id='
-                . urlencode($id)
+                . $id
             );
 
             exit;
+        }
+
+
+        if ($accountId <= 0) {
+
+            $_SESSION['error'] =
+                'Please select an account.';
+
+            header(
+                'Location: index.php?url=expenses/edit&id='
+                . $id
+            );
+
+            exit;
+        }
+
+
+        if (
+            !in_array(
+                $status,
+                ['active', 'void'],
+                true
+            )
+        ) {
+
+            $status = 'active';
         }
 
 
@@ -373,29 +592,46 @@ class ExpenseController
         |--------------------------------------------------------------------------
         */
 
-        $success = $this->expense->update(
-            $id,
-            $businessId,
-            [
-                'category_id'  => $categoryId,
-                'description'  => $description,
-                'amount'       => $amount,
-                'expense_date' => $expenseDate,
-                'notes'        => $notes,
-                'status'       => $status
-            ]
-        );
+        try {
 
+            $this->expense->update(
+                $id,
+                $businessId,
+                [
+                    'category_id' =>
+                        $categoryId > 0
+                            ? $categoryId
+                            : null,
 
-        if ($success) {
+                    'account_id' =>
+                        $accountId,
+
+                    'description' =>
+                        $description,
+
+                    'amount' =>
+                        (float)$amount,
+
+                    'expense_date' =>
+                        $expenseDate,
+
+                    'notes' =>
+                        $notes,
+
+                    'status' =>
+                        $status
+                ]
+            );
+
 
             $_SESSION['success'] =
                 'Expense updated successfully.';
 
-        } else {
+
+        } catch (Throwable $e) {
 
             $_SESSION['error'] =
-                'Failed to update expense.';
+                $e->getMessage();
         }
 
 
@@ -413,19 +649,27 @@ class ExpenseController
     |--------------------------------------------------------------------------
     */
 
-    public function delete()
+    public function delete(): void
     {
-        $businessId = $this->getBusinessId();
-
-        if (!$businessId) {
-            die('Business ID not found.');
-        }
+        $businessId =
+            $this->getBusinessId();
 
 
-        $id = $_GET['id'] ?? null;
+        $id =
+            (int)(
+                $_GET['id']
+                ?? $_POST['id']
+                ?? 0
+            );
 
 
-        if (!$id) {
+        if (
+            $businessId <= 0
+            || $id <= 0
+        ) {
+
+            $_SESSION['error'] =
+                'Invalid expense.';
 
             header(
                 'Location: index.php?url=expenses'
@@ -435,21 +679,22 @@ class ExpenseController
         }
 
 
-        $success = $this->expense->delete(
-            $id,
-            $businessId
-        );
+        try {
 
+            $this->expense->delete(
+                $id,
+                $businessId
+            );
 
-        if ($success) {
 
             $_SESSION['success'] =
-                'Expense deleted successfully.';
+                'Expense deleted successfully. Account balance has been restored.';
 
-        } else {
+
+        } catch (Throwable $e) {
 
             $_SESSION['error'] =
-                'Failed to delete expense.';
+                $e->getMessage();
         }
 
 

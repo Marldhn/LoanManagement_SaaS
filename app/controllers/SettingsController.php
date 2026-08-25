@@ -5,6 +5,12 @@ class SettingsController
     private Setting $setting;
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | CONSTRUCTOR
+    |--------------------------------------------------------------------------
+    */
+
     public function __construct()
     {
         $this->setting = new Setting();
@@ -19,6 +25,12 @@ class SettingsController
 
     private function checkAccess(): array
     {
+        /*
+        |--------------------------------------------------------------------------
+        | AUTHENTICATION
+        |--------------------------------------------------------------------------
+        */
+
         if (!Auth::check()) {
 
             header(
@@ -29,6 +41,12 @@ class SettingsController
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | BUSINESS ID
+        |--------------------------------------------------------------------------
+        */
+
         $businessId =
             (int)(
                 $_SESSION['business_id']
@@ -36,12 +54,25 @@ class SettingsController
             );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | USER ID
+        |--------------------------------------------------------------------------
+        */
+
         $userId =
             (int)(
-                $_SESSION['user_id']
+                $_SESSION['user']['id']
+                ?? $_SESSION['user_id']
                 ?? 0
             );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | BUSINESS CHECK
+        |--------------------------------------------------------------------------
+        */
 
         if ($businessId <= 0) {
 
@@ -53,13 +84,31 @@ class SettingsController
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | CURRENT USER
+        |--------------------------------------------------------------------------
+        */
+
         $user =
             Auth::user();
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | CURRENT BUSINESS
+        |--------------------------------------------------------------------------
+        */
+
         $business =
             Auth::business();
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | TENANT ROLE
+        |--------------------------------------------------------------------------
+        */
 
         $tenantRole =
             Auth::tenantRole();
@@ -69,6 +118,9 @@ class SettingsController
         |--------------------------------------------------------------------------
         | SETTINGS PERMISSIONS
         |--------------------------------------------------------------------------
+        |
+        | Only owners and admins can access system settings.
+        |
         */
 
         $allowedRoles = [
@@ -95,12 +147,27 @@ class SettingsController
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | RETURN CONTEXT
+        |--------------------------------------------------------------------------
+        */
+
         return [
-            'business_id' => $businessId,
-            'user_id' => $userId,
-            'user' => $user,
-            'business' => $business,
-            'tenantRole' => $tenantRole
+            'business_id' =>
+                $businessId,
+
+            'user_id' =>
+                $userId,
+
+            'user' =>
+                $user,
+
+            'business' =>
+                $business,
+
+            'tenantRole' =>
+                $tenantRole
         ];
     }
 
@@ -113,13 +180,89 @@ class SettingsController
 
     public function index(): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | ACCESS
+        |--------------------------------------------------------------------------
+        */
+
         $context =
             $this->checkAccess();
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | BUSINESS ID
+        |--------------------------------------------------------------------------
+        */
+
         $businessId =
             $context['business_id'];
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOAD CURRENT BUSINESS DIRECTLY FROM DATABASE
+        |--------------------------------------------------------------------------
+        |
+        | This prevents stale business information from the session
+        | from being displayed after an update.
+        |
+        */
+
+        $db =
+            Database::getInstance();
+
+
+        $businessStatement =
+            $db->prepare(
+                "
+                SELECT
+                    id,
+                    name,
+                    slug,
+                    email,
+                    phone,
+                    address,
+                    logo,
+                    status
+                FROM businesses
+                WHERE id = :business_id
+                LIMIT 1
+                "
+            );
+
+
+        $businessStatement->execute([
+            ':business_id' =>
+                $businessId
+        ]);
+
+
+        $databaseBusiness =
+            $businessStatement->fetch(
+                PDO::FETCH_ASSOC
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | USE DATABASE BUSINESS
+        |--------------------------------------------------------------------------
+        */
+
+        if ($databaseBusiness) {
+
+            $business =
+                $databaseBusiness;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOAD SETTINGS
+        |--------------------------------------------------------------------------
+        */
 
         $settings =
             $this->setting->all(
@@ -134,6 +277,12 @@ class SettingsController
         */
 
         $defaults = [
+
+            /*
+            |--------------------------------------------------------------------------
+            | GENERAL
+            |--------------------------------------------------------------------------
+            */
 
             'system_name' =>
                 'Loan Management System',
@@ -153,6 +302,13 @@ class SettingsController
             'timezone' =>
                 'Asia/Manila',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | BRANDING
+            |--------------------------------------------------------------------------
+            */
+
             'sidebar_logo' =>
                 '',
 
@@ -165,11 +321,25 @@ class SettingsController
             'primary_color' =>
                 '#2563eb',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | LOAN NUMBERING
+            |--------------------------------------------------------------------------
+            */
+
             'loan_number_prefix' =>
                 'LN',
 
             'payment_number_prefix' =>
                 'PAY',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | LOAN DEFAULTS
+            |--------------------------------------------------------------------------
+            */
 
             'default_interest_type' =>
                 'flat',
@@ -189,6 +359,13 @@ class SettingsController
             'default_processing_fee' =>
                 '0',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | PENALTY
+            |--------------------------------------------------------------------------
+            */
+
             'enable_penalty' =>
                 '0',
 
@@ -201,19 +378,68 @@ class SettingsController
             'penalty_amount' =>
                 '0',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | SYSTEM
+            |--------------------------------------------------------------------------
+            */
+
             'maintenance_mode' =>
                 '0',
 
             'allow_registration' =>
                 '1',
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | REMINDERS
+            |--------------------------------------------------------------------------
+            */
+
             'overdue_reminders' =>
                 '1',
 
             'payment_reminders' =>
-                '1'
+                '1',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | NOTIFICATIONS
+            |--------------------------------------------------------------------------
+            */
+
+            'email_notifications' =>
+                '1',
+
+            'payment_notifications' =>
+                '1',
+
+            'overdue_notifications' =>
+                '1',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | SECURITY
+            |--------------------------------------------------------------------------
+            */
+
+            'session_timeout' =>
+                '120',
+
+            'login_attempts' =>
+                '5'
         ];
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | MERGE DEFAULTS
+        |--------------------------------------------------------------------------
+        */
 
         $settings =
             array_merge(
@@ -222,8 +448,33 @@ class SettingsController
             );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | MAKE CONTEXT AVAILABLE TO VIEW
+        |--------------------------------------------------------------------------
+        */
+
         extract($context);
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | OVERRIDE BUSINESS WITH DATABASE VERSION
+        |--------------------------------------------------------------------------
+        */
+
+        if ($databaseBusiness) {
+
+            $business =
+                $databaseBusiness;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOAD VIEW
+        |--------------------------------------------------------------------------
+        */
 
         require APP_PATH .
             '/views/settings/index.php';
@@ -238,13 +489,31 @@ class SettingsController
 
     public function update(): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | ACCESS
+        |--------------------------------------------------------------------------
+        */
+
         $context =
             $this->checkAccess();
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | BUSINESS ID
+        |--------------------------------------------------------------------------
+        */
+
         $businessId =
             $context['business_id'];
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | REQUEST METHOD
+        |--------------------------------------------------------------------------
+        */
 
         if (
             ($_SERVER['REQUEST_METHOD'] ?? 'GET')
@@ -258,6 +527,276 @@ class SettingsController
             exit;
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | DATABASE
+        |--------------------------------------------------------------------------
+        */
+
+        $db =
+            Database::getInstance();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BUSINESS INFORMATION
+        |--------------------------------------------------------------------------
+        */
+
+        $businessName =
+            trim(
+                $_POST['name']
+                ?? ''
+            );
+
+
+        $businessSlug =
+            trim(
+                $_POST['slug']
+                ?? ''
+            );
+
+
+        $businessEmail =
+            trim(
+                $_POST['email']
+                ?? ''
+            );
+
+
+        $businessPhone =
+            trim(
+                $_POST['phone']
+                ?? ''
+            );
+
+
+        $businessAddress =
+            trim(
+                $_POST['address']
+                ?? ''
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATE BUSINESS NAME
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $businessName === ''
+        ) {
+
+            $_SESSION['error'] =
+                'Business name is required.';
+
+            header(
+                'Location: index.php?url=settings'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATE BUSINESS SLUG
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $businessSlug === ''
+        ) {
+
+            $_SESSION['error'] =
+                'Business slug is required.';
+
+            header(
+                'Location: index.php?url=settings'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLEAN BUSINESS SLUG
+        |--------------------------------------------------------------------------
+        */
+
+        $businessSlug =
+            strtolower(
+                preg_replace(
+                    '/[^a-zA-Z0-9\-]/',
+                    '-',
+                    $businessSlug
+                )
+            );
+
+
+        $businessSlug =
+            trim(
+                $businessSlug,
+                '-'
+            );
+
+
+        if (
+            $businessSlug === ''
+        ) {
+
+            $_SESSION['error'] =
+                'Business slug is invalid.';
+
+            header(
+                'Location: index.php?url=settings'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CHECK SLUG DUPLICATE
+        |--------------------------------------------------------------------------
+        */
+
+        $slugStatement =
+            $db->prepare(
+                "
+                SELECT id
+                FROM businesses
+                WHERE slug = :slug
+                  AND id != :business_id
+                LIMIT 1
+                "
+            );
+
+
+        $slugStatement->execute([
+
+            ':slug' =>
+                $businessSlug,
+
+            ':business_id' =>
+                $businessId
+        ]);
+
+
+        if (
+            $slugStatement->fetchColumn()
+        ) {
+
+            $_SESSION['error'] =
+                'Business slug is already in use.';
+
+            header(
+                'Location: index.php?url=settings'
+            );
+
+            exit;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE BUSINESS INFORMATION
+        |--------------------------------------------------------------------------
+        */
+
+        $businessStatement =
+            $db->prepare(
+                "
+                UPDATE businesses
+                SET
+                    name = :name,
+                    slug = :slug,
+                    email = :email,
+                    phone = :phone,
+                    address = :address
+                WHERE id = :business_id
+                "
+            );
+
+
+        $businessStatement->execute([
+
+            ':name' =>
+                $businessName,
+
+            ':slug' =>
+                $businessSlug,
+
+            ':email' =>
+                $businessEmail !== ''
+                    ? $businessEmail
+                    : null,
+
+            ':phone' =>
+                $businessPhone !== ''
+                    ? $businessPhone
+                    : null,
+
+            ':address' =>
+                $businessAddress !== ''
+                    ? $businessAddress
+                    : null,
+
+            ':business_id' =>
+                $businessId
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REFRESH BUSINESS SESSION
+        |--------------------------------------------------------------------------
+        |
+        | Auth::business() reads from $_SESSION['business'].
+        | Therefore the session must be updated after changing
+        | the business information in the database.
+        |
+        */
+
+        $currentBusinessStatus =
+            $_SESSION['business']['status']
+            ?? 'active';
+
+
+        $_SESSION['business'] = [
+
+            'id' =>
+                $businessId,
+
+            'name' =>
+                $businessName,
+
+            'slug' =>
+                $businessSlug,
+
+            'email' =>
+                $businessEmail,
+
+            'phone' =>
+                $businessPhone,
+
+            'address' =>
+                $businessAddress,
+
+            'status' =>
+                $currentBusinessStatus
+        ];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | COLLECT SETTINGS
+        |--------------------------------------------------------------------------
+        */
 
         $settings = [
 
@@ -344,9 +883,12 @@ class SettingsController
                 ?? 'installment',
 
             'default_term' =>
-                (int)(
-                    $_POST['default_term']
-                    ?? 1
+                max(
+                    1,
+                    (int)(
+                        $_POST['default_term']
+                        ?? 1
+                    )
                 ),
 
             'default_term_period' =>
@@ -354,21 +896,27 @@ class SettingsController
                 ?? 'months',
 
             'default_interest_rate' =>
-                (float)(
-                    $_POST['default_interest_rate']
-                    ?? 0
+                max(
+                    0,
+                    (float)(
+                        $_POST['default_interest_rate']
+                        ?? 0
+                    )
                 ),
 
             'default_processing_fee' =>
-                (float)(
-                    $_POST['default_processing_fee']
-                    ?? 0
+                max(
+                    0,
+                    (float)(
+                        $_POST['default_processing_fee']
+                        ?? 0
+                    )
                 ),
 
 
             /*
             |--------------------------------------------------------------------------
-            | COLLECTION
+            | COLLECTION / PENALTY
             |--------------------------------------------------------------------------
             */
 
@@ -384,21 +932,55 @@ class SettingsController
                 ?? 'fixed',
 
             'penalty_rate' =>
-                (float)(
-                    $_POST['penalty_rate']
-                    ?? 0
+                max(
+                    0,
+                    (float)(
+                        $_POST['penalty_rate']
+                        ?? 0
+                    )
                 ),
 
             'penalty_amount' =>
-                (float)(
-                    $_POST['penalty_amount']
-                    ?? 0
+                max(
+                    0,
+                    (float)(
+                        $_POST['penalty_amount']
+                        ?? 0
+                    )
                 ),
 
 
             /*
             |--------------------------------------------------------------------------
             | NOTIFICATIONS
+            |--------------------------------------------------------------------------
+            */
+
+            'email_notifications' =>
+                isset(
+                    $_POST['email_notifications']
+                )
+                    ? '1'
+                    : '0',
+
+            'payment_notifications' =>
+                isset(
+                    $_POST['payment_notifications']
+                )
+                    ? '1'
+                    : '0',
+
+            'overdue_notifications' =>
+                isset(
+                    $_POST['overdue_notifications']
+                )
+                    ? '1'
+                    : '0',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | BACKWARD COMPATIBILITY
             |--------------------------------------------------------------------------
             */
 
@@ -435,13 +1017,51 @@ class SettingsController
                     $_POST['allow_registration']
                 )
                     ? '1'
-                    : '0'
+                    : '0',
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | SECURITY - SESSION TIMEOUT
+            |--------------------------------------------------------------------------
+            */
+
+            'session_timeout' =>
+                max(
+                    5,
+                    min(
+                        1440,
+                        (int)(
+                            $_POST['session_timeout']
+                            ?? 120
+                        )
+                    )
+                ),
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | SECURITY - LOGIN ATTEMPTS
+            |--------------------------------------------------------------------------
+            */
+
+            'login_attempts' =>
+                max(
+                    1,
+                    min(
+                        20,
+                        (int)(
+                            $_POST['login_attempts']
+                            ?? 5
+                        )
+                    )
+                )
         ];
 
 
         /*
         |--------------------------------------------------------------------------
-        | VALIDATE COLOR
+        | VALIDATE PRIMARY COLOR
         |--------------------------------------------------------------------------
         */
 
@@ -459,7 +1079,7 @@ class SettingsController
 
         /*
         |--------------------------------------------------------------------------
-        | TIMEZONE
+        | VALIDATE TIMEZONE
         |--------------------------------------------------------------------------
         */
 
@@ -478,7 +1098,318 @@ class SettingsController
 
         /*
         |--------------------------------------------------------------------------
-        | SAVE
+        | VALIDATE SESSION TIMEOUT
+        |--------------------------------------------------------------------------
+        */
+
+        $settings['session_timeout'] =
+            max(
+                5,
+                min(
+                    1440,
+                    (int)(
+                        $settings['session_timeout']
+                    )
+                )
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATE LOGIN ATTEMPTS
+        |--------------------------------------------------------------------------
+        */
+
+        $settings['login_attempts'] =
+            max(
+                1,
+                min(
+                    20,
+                    (int)(
+                        $settings['login_attempts']
+                    )
+                )
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOGO UPLOAD
+        |--------------------------------------------------------------------------
+        |
+        | Supports:
+        |
+        | name="logo"
+        |
+        */
+
+        if (
+            isset(
+                $_FILES['logo']
+            )
+            &&
+            (
+                $_FILES['logo']['error']
+                !== UPLOAD_ERR_NO_FILE
+            )
+        ) {
+
+            $file =
+                $_FILES['logo'];
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | UPLOAD ERROR
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                $file['error']
+                !== UPLOAD_ERR_OK
+            ) {
+
+                $_SESSION['error'] =
+                    'Logo upload failed.';
+
+                header(
+                    'Location: index.php?url=settings'
+                );
+
+                exit;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | FILE SIZE
+            |--------------------------------------------------------------------------
+            */
+
+            $maxSize =
+                2 * 1024 * 1024;
+
+
+            if (
+                $file['size']
+                > $maxSize
+            ) {
+
+                $_SESSION['error'] =
+                    'Logo must not exceed 2MB.';
+
+                header(
+                    'Location: index.php?url=settings'
+                );
+
+                exit;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | MIME TYPE
+            |--------------------------------------------------------------------------
+            */
+
+            $finfo =
+                new finfo(
+                    FILEINFO_MIME_TYPE
+                );
+
+
+            $mime =
+                $finfo->file(
+                    $file['tmp_name']
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | ALLOWED IMAGE TYPES
+            |--------------------------------------------------------------------------
+            */
+
+            $allowed = [
+
+                'image/jpeg' =>
+                    'jpg',
+
+                'image/png' =>
+                    'png',
+
+                'image/webp' =>
+                    'webp'
+            ];
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | MIME VALIDATION
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                !isset(
+                    $allowed[$mime]
+                )
+            ) {
+
+                $_SESSION['error'] =
+                    'Only JPG, PNG, and WEBP logos are allowed.';
+
+                header(
+                    'Location: index.php?url=settings'
+                );
+
+                exit;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | UPLOAD DIRECTORY
+            |--------------------------------------------------------------------------
+            */
+
+            $uploadDirectory =
+                PUBLIC_PATH .
+                '/uploads/settings/logo';
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CREATE DIRECTORY
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                !is_dir(
+                    $uploadDirectory
+                )
+            ) {
+
+                if (
+                    !mkdir(
+                        $uploadDirectory,
+                        0755,
+                        true
+                    )
+                ) {
+
+                    $_SESSION['error'] =
+                        'Unable to create logo upload directory.';
+
+                    header(
+                        'Location: index.php?url=settings'
+                    );
+
+                    exit;
+                }
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | FILE NAME
+            |--------------------------------------------------------------------------
+            */
+
+            $fileName =
+                'business_' .
+                $businessId .
+                '_' .
+                time() .
+                '.' .
+                $allowed[$mime];
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | DESTINATION
+            |--------------------------------------------------------------------------
+            */
+
+            $destination =
+                $uploadDirectory .
+                '/' .
+                $fileName;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | MOVE FILE
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                !move_uploaded_file(
+                    $file['tmp_name'],
+                    $destination
+                )
+            ) {
+
+                $_SESSION['error'] =
+                    'Unable to save logo.';
+
+                header(
+                    'Location: index.php?url=settings'
+                );
+
+                exit;
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | SAVE LOGO PATH
+            |--------------------------------------------------------------------------
+            */
+
+            $logoPath =
+                'uploads/settings/logo/' .
+                $fileName;
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | SAVE LOGO TO SETTINGS
+            |--------------------------------------------------------------------------
+            */
+
+            $this->setting->set(
+                $businessId,
+                'sidebar_logo',
+                $logoPath
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REMOVE LOGO
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            isset(
+                $_POST['remove_logo']
+            )
+            &&
+            $_POST['remove_logo'] === '1'
+        ) {
+
+            $this->setting->set(
+                $businessId,
+                'sidebar_logo',
+                ''
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SAVE SETTINGS
         |--------------------------------------------------------------------------
         */
 
@@ -490,13 +1421,19 @@ class SettingsController
 
         /*
         |--------------------------------------------------------------------------
-        | SUCCESS
+        | SUCCESS MESSAGE
         |--------------------------------------------------------------------------
         */
 
         $_SESSION['success'] =
             'System settings updated successfully.';
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | REDIRECT
+        |--------------------------------------------------------------------------
+        */
 
         header(
             'Location: index.php?url=settings'
@@ -508,19 +1445,40 @@ class SettingsController
 
     /*
     |--------------------------------------------------------------------------
-    | LOGO UPLOAD
+    | UPLOAD LOGO
     |--------------------------------------------------------------------------
+    |
+    | Kept for backward compatibility.
+    |
     */
 
     public function uploadLogo(): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | ACCESS
+        |--------------------------------------------------------------------------
+        */
+
         $context =
             $this->checkAccess();
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | BUSINESS ID
+        |--------------------------------------------------------------------------
+        */
+
         $businessId =
             $context['business_id'];
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | REQUEST METHOD
+        |--------------------------------------------------------------------------
+        */
 
         if (
             ($_SERVER['REQUEST_METHOD'] ?? 'GET')
@@ -535,11 +1493,31 @@ class SettingsController
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | SUPPORT BOTH FIELD NAMES
+        |--------------------------------------------------------------------------
+        */
+
         if (
-            !isset(
+            isset(
+                $_FILES['logo']
+            )
+        ) {
+
+            $file =
+                $_FILES['logo'];
+
+        } elseif (
+            isset(
                 $_FILES['sidebar_logo']
             )
         ) {
+
+            $file =
+                $_FILES['sidebar_logo'];
+
+        } else {
 
             $_SESSION['error'] =
                 'Please select a logo file.';
@@ -552,9 +1530,11 @@ class SettingsController
         }
 
 
-        $file =
-            $_FILES['sidebar_logo'];
-
+        /*
+        |--------------------------------------------------------------------------
+        | UPLOAD ERROR
+        |--------------------------------------------------------------------------
+        */
 
         if (
             $file['error']
@@ -574,7 +1554,7 @@ class SettingsController
 
         /*
         |--------------------------------------------------------------------------
-        | SIZE
+        | FILE SIZE
         |--------------------------------------------------------------------------
         */
 
@@ -600,7 +1580,7 @@ class SettingsController
 
         /*
         |--------------------------------------------------------------------------
-        | MIME
+        | MIME TYPE
         |--------------------------------------------------------------------------
         */
 
@@ -616,13 +1596,30 @@ class SettingsController
             );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | ALLOWED IMAGE TYPES
+        |--------------------------------------------------------------------------
+        */
+
         $allowed = [
 
-            'image/jpeg' => 'jpg',
-            'image/png'  => 'png',
-            'image/webp' => 'webp'
+            'image/jpeg' =>
+                'jpg',
+
+            'image/png' =>
+                'png',
+
+            'image/webp' =>
+                'webp'
         ];
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | MIME VALIDATION
+        |--------------------------------------------------------------------------
+        */
 
         if (
             !isset(
@@ -643,7 +1640,7 @@ class SettingsController
 
         /*
         |--------------------------------------------------------------------------
-        | DIRECTORY
+        | UPLOAD DIRECTORY
         |--------------------------------------------------------------------------
         */
 
@@ -652,17 +1649,35 @@ class SettingsController
             '/uploads/settings/logo';
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | CREATE DIRECTORY
+        |--------------------------------------------------------------------------
+        */
+
         if (
             !is_dir(
                 $uploadDirectory
             )
         ) {
 
-            mkdir(
-                $uploadDirectory,
-                0755,
-                true
-            );
+            if (
+                !mkdir(
+                    $uploadDirectory,
+                    0755,
+                    true
+                )
+            ) {
+
+                $_SESSION['error'] =
+                    'Unable to create logo upload directory.';
+
+                header(
+                    'Location: index.php?url=settings'
+                );
+
+                exit;
+            }
         }
 
 
@@ -681,11 +1696,23 @@ class SettingsController
             $allowed[$mime];
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | DESTINATION
+        |--------------------------------------------------------------------------
+        */
+
         $destination =
             $uploadDirectory .
             '/' .
             $fileName;
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | MOVE FILE
+        |--------------------------------------------------------------------------
+        */
 
         if (
             !move_uploaded_file(
@@ -707,7 +1734,7 @@ class SettingsController
 
         /*
         |--------------------------------------------------------------------------
-        | SAVE PATH
+        | SAVE LOGO PATH
         |--------------------------------------------------------------------------
         */
 
@@ -723,9 +1750,21 @@ class SettingsController
         );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | SUCCESS
+        |--------------------------------------------------------------------------
+        */
+
         $_SESSION['success'] =
             'Logo updated successfully.';
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | REDIRECT
+        |--------------------------------------------------------------------------
+        */
 
         header(
             'Location: index.php?url=settings'
