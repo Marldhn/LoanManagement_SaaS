@@ -1273,9 +1273,8 @@ class SettingsController
             */
 
             $uploadDirectory =
-                PUBLIC_PATH .
-                '/uploads/settings/logo';
-
+    dirname(__DIR__, 2) .
+    '/public/uploads/settings/logo';
 
             /*
             |--------------------------------------------------------------------------
@@ -1638,47 +1637,47 @@ class SettingsController
         }
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | UPLOAD DIRECTORY
-        |--------------------------------------------------------------------------
-        */
+       /*
+|--------------------------------------------------------------------------
+| UPLOAD DIRECTORY
+|--------------------------------------------------------------------------
+*/
 
-        $uploadDirectory =
-            PUBLIC_PATH .
-            '/uploads/settings/logo';
+$uploadDirectory =
+    dirname(__DIR__, 2) .
+    '/public/uploads/settings/logo';
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | CREATE DIRECTORY
-        |--------------------------------------------------------------------------
-        */
+/*
+|--------------------------------------------------------------------------
+| CREATE DIRECTORY
+|--------------------------------------------------------------------------
+*/
 
-        if (
-            !is_dir(
-                $uploadDirectory
-            )
-        ) {
+if (
+    !is_dir(
+        $uploadDirectory
+    )
+) {
 
-            if (
-                !mkdir(
-                    $uploadDirectory,
-                    0755,
-                    true
-                )
-            ) {
+    if (
+        !mkdir(
+            $uploadDirectory,
+            0755,
+            true
+        )
+    ) {
 
-                $_SESSION['error'] =
-                    'Unable to create logo upload directory.';
+        $_SESSION['error'] =
+            'Unable to create logo upload directory.';
 
-                header(
-                    'Location: index.php?url=settings'
-                );
+        header(
+            'Location: index.php?url=settings'
+        );
 
-                exit;
-            }
-        }
+        exit;
+    }
+}
 
 
         /*

@@ -1,3 +1,4 @@
+
 <?php
 
 $user = $user ?? Auth::user();
@@ -24,11 +25,6 @@ $accounts = is_array($accounts ?? null)
 |--------------------------------------------------------------------------
 | ACCOUNT SUMMARY
 |--------------------------------------------------------------------------
-|
-| Calculate directly from the accounts loaded by the controller.
-| This prevents the cards from showing 0 when the controller does
-| not explicitly pass totalAssets / totalLiabilities.
-|
 */
 
 $totalAccounts = count($accounts);
@@ -43,31 +39,16 @@ $totalIncome = 0.00;
 
 $totalExpenses = 0.00;
 
-$totalFunds = 0.00;
-
 
 foreach ($accounts as $account) {
 
-    $accountType =
-        strtolower(
-            trim(
-                $account['account_type']
-                ?? $account['type']
-                ?? ''
-            )
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | BALANCE
-    |--------------------------------------------------------------------------
-    |
-    | Support both possible column names:
-    | balance
-    | current_balance
-    |
-    */
+    $accountType = strtolower(
+        trim(
+            $account['account_type']
+            ?? $account['type']
+            ?? ''
+        )
+    );
 
     $balance = (float)(
         $account['balance']
@@ -76,68 +57,23 @@ foreach ($accounts as $account) {
     );
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | TOTAL FUNDS
-    |--------------------------------------------------------------------------
-    |
-    | Total funds represents the balances of asset accounts.
-    |
-    */
-
     if ($accountType === 'asset') {
 
         $totalAssets += $balance;
 
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | LIABILITIES
-    |--------------------------------------------------------------------------
-    */
-
-    elseif ($accountType === 'liability') {
+    } elseif ($accountType === 'liability') {
 
         $totalLiabilities += $balance;
 
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | EQUITY
-    |--------------------------------------------------------------------------
-    */
-
-    elseif ($accountType === 'equity') {
+    } elseif ($accountType === 'equity') {
 
         $totalEquity += $balance;
 
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | INCOME
-    |--------------------------------------------------------------------------
-    */
-
-    elseif ($accountType === 'income') {
+    } elseif ($accountType === 'income') {
 
         $totalIncome += $balance;
 
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | EXPENSE
-    |--------------------------------------------------------------------------
-    */
-
-    elseif ($accountType === 'expense') {
+    } elseif ($accountType === 'expense') {
 
         $totalExpenses += $balance;
 
@@ -145,15 +81,6 @@ foreach ($accounts as $account) {
 
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| NET BALANCE
-|--------------------------------------------------------------------------
-|
-| Assets - Liabilities
-|
-*/
 
 $netBalance =
     $totalAssets
@@ -171,6 +98,22 @@ $success = $success
 
 $error = $error
     ?? ($_SESSION['account_error'] ?? '');
+
+
+/*
+|--------------------------------------------------------------------------
+| USER DISPLAY
+|--------------------------------------------------------------------------
+*/
+
+$displayName =
+    $user['full_name']
+    ?? $user['username']
+    ?? 'User';
+
+$displayRole =
+    $tenantRole
+    ?? 'User';
 
 ?>
 
@@ -202,7 +145,939 @@ $error = $error
 
         /*
         |--------------------------------------------------------------------------
-        | MODAL
+        | ACCOUNTS PAGE
+        |--------------------------------------------------------------------------
+        */
+
+        .accounts-page {
+
+            animation:
+                accountsFadeIn
+                0.35s
+                ease;
+
+        }
+
+
+        @keyframes accountsFadeIn {
+
+            from {
+
+                opacity: 0;
+
+                transform:
+                    translateY(8px);
+
+            }
+
+            to {
+
+                opacity: 1;
+
+                transform:
+                    translateY(0);
+
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAGE HEADER
+        |--------------------------------------------------------------------------
+        */
+
+        .accounts-header {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 20px;
+
+            margin-bottom: 24px;
+
+        }
+
+
+        .accounts-heading {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 14px;
+
+        }
+
+
+        .accounts-heading-icon {
+
+            width: 48px;
+
+            height: 48px;
+
+            border-radius: 14px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #eef2ff,
+                    #e0e7ff
+                );
+
+            color: #4f46e5;
+
+            font-size: 22px;
+
+            flex-shrink: 0;
+
+        }
+
+
+        .accounts-heading h1 {
+
+            margin: 0;
+
+            font-size: 26px;
+
+            font-weight: 750;
+
+            color: #111827;
+
+            letter-spacing: -0.4px;
+
+        }
+
+
+        .accounts-heading p {
+
+            margin: 4px 0 0;
+
+            color: #6b7280;
+
+            font-size: 14px;
+
+        }
+
+
+        .accounts-actions {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 9px;
+
+            flex-wrap: wrap;
+
+        }
+
+
+        .account-action-btn {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            gap: 7px;
+
+            min-height: 40px;
+
+            padding: 0 14px;
+
+            border-radius: 9px;
+
+            font-size: 13px;
+
+            font-weight: 650;
+
+            cursor: pointer;
+
+            transition:
+                all 0.18s ease;
+
+        }
+
+
+        .account-action-btn:hover {
+
+            transform:
+                translateY(-1px);
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ALERTS
+        |--------------------------------------------------------------------------
+        */
+
+        .accounts-alert {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+            padding: 13px 16px;
+
+            border-radius: 10px;
+
+            margin-bottom: 20px;
+
+            font-size: 14px;
+
+            font-weight: 550;
+
+        }
+
+
+        .accounts-alert-success {
+
+            color: #166534;
+
+            background: #f0fdf4;
+
+            border: 1px solid #bbf7d0;
+
+        }
+
+
+        .accounts-alert-error {
+
+            color: #991b1b;
+
+            background: #fef2f2;
+
+            border: 1px solid #fecaca;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUMMARY CARDS
+        |--------------------------------------------------------------------------
+        */
+
+        .account-summary-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    4,
+                    minmax(0, 1fr)
+                );
+
+            gap: 16px;
+
+            margin-bottom: 24px;
+
+        }
+
+
+        .account-summary-card {
+
+            position: relative;
+
+            overflow: hidden;
+
+            background: #ffffff;
+
+            border:
+                1px solid #e5e7eb;
+
+            border-radius: 14px;
+
+            padding: 19px;
+
+            box-shadow:
+                0 3px 12px
+                rgba(15, 23, 42, 0.045);
+
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
+
+        }
+
+
+        .account-summary-card:hover {
+
+            transform:
+                translateY(-2px);
+
+            box-shadow:
+                0 8px 22px
+                rgba(15, 23, 42, 0.08);
+
+        }
+
+
+        .account-summary-card::after {
+
+            content: '';
+
+            position: absolute;
+
+            width: 70px;
+
+            height: 70px;
+
+            right: -25px;
+
+            top: -25px;
+
+            border-radius: 50%;
+
+            background: rgba(
+                99,
+                102,
+                241,
+                0.05
+            );
+
+        }
+
+
+        .account-summary-top {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 10px;
+
+            margin-bottom: 15px;
+
+        }
+
+
+        .account-summary-icon {
+
+            width: 38px;
+
+            height: 38px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            border-radius: 10px;
+
+            font-size: 17px;
+
+        }
+
+
+        .summary-icon-blue {
+
+            background: #eff6ff;
+
+            color: #2563eb;
+
+        }
+
+
+        .summary-icon-green {
+
+            background: #f0fdf4;
+
+            color: #16a34a;
+
+        }
+
+
+        .summary-icon-red {
+
+            background: #fef2f2;
+
+            color: #dc2626;
+
+        }
+
+
+        .summary-icon-purple {
+
+            background: #faf5ff;
+
+            color: #9333ea;
+
+        }
+
+
+        .account-summary-title {
+
+            font-size: 12px;
+
+            font-weight: 650;
+
+            color: #6b7280;
+
+            text-transform: uppercase;
+
+            letter-spacing: 0.45px;
+
+        }
+
+
+        .account-summary-value {
+
+            font-size: 24px;
+
+            font-weight: 750;
+
+            color: #111827;
+
+            letter-spacing: -0.5px;
+
+        }
+
+
+        .account-summary-subtitle {
+
+            margin-top: 5px;
+
+            font-size: 11px;
+
+            color: #9ca3af;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ACCOUNTS PANEL
+        |--------------------------------------------------------------------------
+        */
+
+        .accounts-panel {
+
+            background: #ffffff;
+
+            border:
+                1px solid #e5e7eb;
+
+            border-radius: 14px;
+
+            overflow: hidden;
+
+            box-shadow:
+                0 3px 14px
+                rgba(15, 23, 42, 0.045);
+
+        }
+
+
+        .accounts-panel-header {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 15px;
+
+            padding: 18px 20px;
+
+            border-bottom:
+                1px solid #eef0f3;
+
+        }
+
+
+        .accounts-panel-title {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+        }
+
+
+        .accounts-panel-title h2 {
+
+            margin: 0;
+
+            font-size: 16px;
+
+            font-weight: 700;
+
+            color: #111827;
+
+        }
+
+
+        .accounts-count {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            min-width: 25px;
+
+            height: 24px;
+
+            padding: 0 7px;
+
+            border-radius: 20px;
+
+            background: #f3f4f6;
+
+            color: #4b5563;
+
+            font-size: 11px;
+
+            font-weight: 700;
+
+        }
+
+
+        .accounts-panel-description {
+
+            margin: 3px 0 0;
+
+            color: #9ca3af;
+
+            font-size: 12px;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TABLE
+        |--------------------------------------------------------------------------
+        */
+
+        .accounts-table-wrapper {
+
+            width: 100%;
+
+            overflow-x: auto;
+
+        }
+
+
+        .accounts-table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            min-width: 850px;
+
+        }
+
+
+        .accounts-table thead th {
+
+            padding: 12px 18px;
+
+            background: #f9fafb;
+
+            border-bottom:
+                1px solid #e5e7eb;
+
+            color: #6b7280;
+
+            font-size: 11px;
+
+            font-weight: 700;
+
+            text-transform: uppercase;
+
+            letter-spacing: 0.45px;
+
+            text-align: left;
+
+            white-space: nowrap;
+
+        }
+
+
+        .accounts-table tbody td {
+
+            padding: 15px 18px;
+
+            border-bottom:
+                1px solid #f1f3f5;
+
+            color: #374151;
+
+            font-size: 13px;
+
+            vertical-align: middle;
+
+        }
+
+
+        .accounts-table tbody tr {
+
+            transition:
+                background 0.15s ease;
+
+        }
+
+
+        .accounts-table tbody tr:hover {
+
+            background: #fafbff;
+
+        }
+
+
+        .accounts-table tbody tr:last-child td {
+
+            border-bottom: none;
+
+        }
+
+
+        .account-code {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            padding: 5px 8px;
+
+            border-radius: 6px;
+
+            background: #f3f4f6;
+
+            color: #4b5563;
+
+            font-size: 11px;
+
+            font-weight: 700;
+
+            font-family:
+                ui-monospace,
+                SFMono-Regular,
+                Menlo,
+                Monaco,
+                Consolas,
+                monospace;
+
+        }
+
+
+        .account-name-cell {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+        }
+
+
+        .account-name-icon {
+
+            width: 34px;
+
+            height: 34px;
+
+            border-radius: 9px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            background: #f5f3ff;
+
+            color: #7c3aed;
+
+            font-size: 14px;
+
+            flex-shrink: 0;
+
+        }
+
+
+        .account-name {
+
+            color: #111827;
+
+            font-weight: 650;
+
+        }
+
+
+        .account-type-badge {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            padding: 5px 9px;
+
+            border-radius: 20px;
+
+            background: #f8fafc;
+
+            border: 1px solid #e2e8f0;
+
+            color: #475569;
+
+            font-size: 11px;
+
+            font-weight: 650;
+
+        }
+
+
+        .account-balance {
+
+            font-size: 14px;
+
+            font-weight: 750;
+
+            color: #111827;
+
+            white-space: nowrap;
+
+        }
+
+
+        .status-pill {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 6px;
+
+            padding: 5px 9px;
+
+            border-radius: 20px;
+
+            font-size: 11px;
+
+            font-weight: 700;
+
+        }
+
+
+        .status-pill::before {
+
+            content: '';
+
+            width: 6px;
+
+            height: 6px;
+
+            border-radius: 50%;
+
+            background: currentColor;
+
+        }
+
+
+        .status-active {
+
+            color: #15803d;
+
+            background: #f0fdf4;
+
+        }
+
+
+        .status-inactive {
+
+            color: #6b7280;
+
+            background: #f3f4f6;
+
+        }
+
+
+        .status-suspended {
+
+            color: #b45309;
+
+            background: #fffbeb;
+
+        }
+
+
+        .status-default {
+
+            color: #475569;
+
+            background: #f8fafc;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TABLE ACTIONS
+        |--------------------------------------------------------------------------
+        */
+
+        .account-row-actions {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 6px;
+
+        }
+
+
+        .table-action {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            height: 32px;
+
+            padding: 0 10px;
+
+            border-radius: 7px;
+
+            border: 1px solid #e5e7eb;
+
+            background: #ffffff;
+
+            color: #4b5563;
+
+            font-size: 11px;
+
+            font-weight: 650;
+
+            cursor: pointer;
+
+            transition:
+                all 0.15s ease;
+
+        }
+
+
+        .table-action:hover {
+
+            border-color: #c7d2fe;
+
+            background: #eef2ff;
+
+            color: #4f46e5;
+
+        }
+
+
+        .table-action-delete:hover {
+
+            border-color: #fecaca;
+
+            background: #fef2f2;
+
+            color: #dc2626;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMPTY STATE
+        |--------------------------------------------------------------------------
+        */
+
+        .accounts-empty {
+
+            padding: 65px 25px;
+
+            text-align: center;
+
+        }
+
+
+        .accounts-empty-icon {
+
+            width: 62px;
+
+            height: 62px;
+
+            margin: 0 auto 16px;
+
+            border-radius: 16px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            background: #f5f3ff;
+
+            color: #7c3aed;
+
+            font-size: 25px;
+
+        }
+
+
+        .accounts-empty h3 {
+
+            margin: 0 0 6px;
+
+            font-size: 17px;
+
+            color: #111827;
+
+        }
+
+
+        .accounts-empty p {
+
+            max-width: 380px;
+
+            margin: 0 auto 20px;
+
+            color: #6b7280;
+
+            font-size: 13px;
+
+            line-height: 1.6;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | MODALS
         |--------------------------------------------------------------------------
         */
 
@@ -213,13 +1088,27 @@ $error = $error
             inset: 0;
 
             width: 100%;
+
             height: 100%;
 
-            background: rgba(0, 0, 0, 0.55);
+            background:
+                rgba(
+                    15,
+                    23,
+                    42,
+                    0.58
+                );
+
+            backdrop-filter:
+                blur(3px);
+
+            -webkit-backdrop-filter:
+                blur(3px);
 
             display: none;
 
             align-items: center;
+
             justify-content: center;
 
             z-index: 9999;
@@ -234,6 +1123,28 @@ $error = $error
         .modal-overlay.active {
 
             display: flex;
+
+            animation:
+                modalOverlayIn
+                0.18s
+                ease;
+
+        }
+
+
+        @keyframes modalOverlayIn {
+
+            from {
+
+                opacity: 0;
+
+            }
+
+            to {
+
+                opacity: 1;
+
+            }
 
         }
 
@@ -250,15 +1161,50 @@ $error = $error
 
             overflow-y: auto;
 
-            border-radius: 12px;
+            border-radius: 16px;
 
             padding: 25px;
 
             box-sizing: border-box;
 
             box-shadow:
-                0 20px 50px
-                rgba(0, 0, 0, 0.25);
+                0 25px 70px
+                rgba(
+                    15,
+                    23,
+                    42,
+                    0.25
+                );
+
+            animation:
+                modalIn
+                0.2s
+                ease;
+
+        }
+
+
+        @keyframes modalIn {
+
+            from {
+
+                opacity: 0;
+
+                transform:
+                    translateY(12px)
+                    scale(0.98);
+
+            }
+
+            to {
+
+                opacity: 1;
+
+                transform:
+                    translateY(0)
+                    scale(1);
+
+            }
 
         }
 
@@ -273,14 +1219,18 @@ $error = $error
 
             gap: 20px;
 
-            margin-bottom: 25px;
+            margin-bottom: 24px;
 
         }
 
 
         .modal-header h2 {
 
-            margin: 0 0 5px 0;
+            margin: 0 0 5px;
+
+            color: #111827;
+
+            font-size: 20px;
 
         }
 
@@ -291,55 +1241,55 @@ $error = $error
 
             color: #6b7280;
 
+            font-size: 13px;
+
         }
 
 
         .modal-close {
 
+            width: 34px;
+
+            height: 34px;
+
             border: none;
 
-            background: transparent;
+            border-radius: 8px;
 
-            font-size: 28px;
+            background: #f3f4f6;
+
+            color: #6b7280;
+
+            font-size: 22px;
 
             line-height: 1;
 
             cursor: pointer;
 
-            color: #6b7280;
+            transition:
+                all 0.15s ease;
 
         }
 
 
         .modal-close:hover {
 
-            color: #111827;
+            background: #fee2e2;
 
-        }
-
-
-        .modal-footer {
-
-            display: flex;
-
-            justify-content: flex-end;
-
-            gap: 10px;
-
-            margin-top: 25px;
+            color: #dc2626;
 
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | FORM
+        | FORMS
         |--------------------------------------------------------------------------
         */
 
         .form-group {
 
-            margin-bottom: 18px;
+            margin-bottom: 17px;
 
         }
 
@@ -350,7 +1300,11 @@ $error = $error
 
             margin-bottom: 7px;
 
-            font-weight: 600;
+            color: #374151;
+
+            font-size: 13px;
+
+            font-weight: 650;
 
         }
 
@@ -363,78 +1317,136 @@ $error = $error
 
             box-sizing: border-box;
 
-        }
+            border:
+                1px solid #d1d5db;
 
+            border-radius: 9px;
 
-        /*
-        |--------------------------------------------------------------------------
-        | ACCOUNT SUMMARY
-        |--------------------------------------------------------------------------
-        */
-
-        .account-summary-grid {
-
-            display: grid;
-
-            grid-template-columns:
-                repeat(
-                    4,
-                    minmax(0, 1fr)
-                );
-
-            gap: 20px;
-
-            margin-top: 25px;
-
-        }
-
-
-        .account-summary-card {
-
-            background: #ffffff;
-
-            border: 1px solid #e5e7eb;
-
-            border-radius: 12px;
-
-            padding: 20px;
-
-            box-shadow:
-                0 2px 8px
-                rgba(0, 0, 0, 0.04);
-
-        }
-
-
-        .account-summary-title {
-
-            font-size: 14px;
-
-            color: #6b7280;
-
-            margin-bottom: 8px;
-
-        }
-
-
-        .account-summary-value {
-
-            font-size: 26px;
-
-            font-weight: 700;
+            padding: 10px 12px;
 
             color: #111827;
 
+            background: #ffffff;
+
+            font-size: 13px;
+
+            outline: none;
+
+            transition:
+                border-color 0.15s ease,
+                box-shadow 0.15s ease;
+
+        }
+
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+
+            border-color: #6366f1;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(
+                    99,
+                    102,
+                    241,
+                    0.10
+                );
+
+        }
+
+
+        .form-group textarea {
+
+            min-height: 90px;
+
+            resize: vertical;
+
+        }
+
+
+        .modal-footer {
+
+            display: flex;
+
+            justify-content: flex-end;
+
+            gap: 9px;
+
+            margin-top: 23px;
+
+            padding-top: 18px;
+
+            border-top:
+                1px solid #f1f3f5;
+
         }
 
 
         /*
         |--------------------------------------------------------------------------
-        | MOBILE
+        | MODAL BUTTONS
         |--------------------------------------------------------------------------
         */
 
-        @media (max-width: 900px) {
+        .modal-btn {
+
+            min-height: 39px;
+
+            padding: 0 15px;
+
+            border-radius: 8px;
+
+            border: 1px solid transparent;
+
+            font-size: 12px;
+
+            font-weight: 650;
+
+            cursor: pointer;
+
+        }
+
+
+        .modal-btn-secondary {
+
+            background: #ffffff;
+
+            border-color: #d1d5db;
+
+            color: #4b5563;
+
+        }
+
+
+        .modal-btn-primary {
+
+            background: #4f46e5;
+
+            border-color: #4f46e5;
+
+            color: #ffffff;
+
+        }
+
+
+        .modal-btn-primary:hover {
+
+            background: #4338ca;
+
+            border-color: #4338ca;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RESPONSIVE
+        |--------------------------------------------------------------------------
+        */
+
+        @media (max-width: 1050px) {
 
             .account-summary-grid {
 
@@ -449,11 +1461,70 @@ $error = $error
         }
 
 
+        @media (max-width: 760px) {
+
+            .accounts-header {
+
+                align-items: flex-start;
+
+                flex-direction: column;
+
+            }
+
+
+            .accounts-actions {
+
+                width: 100%;
+
+            }
+
+
+            .account-action-btn {
+
+                flex: 1;
+
+            }
+
+        }
+
+
         @media (max-width: 600px) {
 
             .account-summary-grid {
 
                 grid-template-columns: 1fr;
+
+            }
+
+
+            .accounts-heading h1 {
+
+                font-size: 22px;
+
+            }
+
+
+            .accounts-heading-icon {
+
+                width: 42px;
+
+                height: 42px;
+
+            }
+
+
+            .account-action-btn {
+
+                flex: 1 1 100%;
+
+            }
+
+
+            .modal {
+
+                padding: 20px;
+
+                border-radius: 13px;
 
             }
 
@@ -484,7 +1555,6 @@ require APP_PATH .
 
     <nav class="navbar">
 
-
         <div class="page-title">
 
             Accounts
@@ -494,13 +1564,12 @@ require APP_PATH .
 
         <div class="user-info">
 
-
             <span class="user-name">
 
                 <?= htmlspecialchars(
-                    $user['full_name']
-                    ?? $user['username']
-                    ?? 'User'
+                    $displayName,
+                    ENT_QUOTES,
+                    'UTF-8'
                 ) ?>
 
             </span>
@@ -509,96 +1578,94 @@ require APP_PATH .
             <span class="badge">
 
                 <?= htmlspecialchars(
-                    $tenantRole
-                    ?? 'User'
+                    $displayRole,
+                    ENT_QUOTES,
+                    'UTF-8'
                 ) ?>
 
             </span>
 
-
         </div>
-
 
     </nav>
 
 
     <!-- =====================================================
-         MAIN CONTAINER
+         PAGE
     ====================================================== -->
 
-    <div class="container">
+    <div class="container accounts-page">
 
 
         <!-- =================================================
              PAGE HEADER
         ================================================== -->
 
-        <div class="page-header">
+        <div class="accounts-header">
 
 
-            <div>
-
-                <h1>
-                    Accounts
-                </h1>
+            <div class="accounts-heading">
 
 
-                <p>
+                <div class="accounts-heading-icon">
 
-                    Manage your business
-                    accounts and balances.
+                    💰
 
-                </p>
+                </div>
+
+
+                <div>
+
+                    <h1>
+                        Accounts
+                    </h1>
+
+                    <p>
+                        Manage your business accounts,
+                        balances, and transfers.
+                    </p>
+
+                </div>
 
 
             </div>
 
 
-            <div
-                style="
-                    display:flex;
-                    gap:10px;
-                    flex-wrap:wrap;
-                    align-items:center;
-                "
-            >
+            <div class="accounts-actions">
 
-
-                <!-- ADJUST -->
 
                 <button
                     type="button"
-                    class="btn btn-secondary"
+                    class="btn btn-secondary account-action-btn"
                     onclick="openAdjustModal()"
                 >
 
+                    ↕
                     Adjust Balance
 
                 </button>
 
 
-                <!-- TRANSFER -->
-
                 <button
                     type="button"
-                    class="btn btn-secondary"
+                    class="btn btn-secondary account-action-btn"
                     onclick="openTransferModal()"
                 >
 
-                    Transfer Balance
+                    ⇄
+                    Transfer
 
                 </button>
 
 
-                <!-- CREATE -->
-
                 <button
                     type="button"
-                    class="btn btn-primary"
+                    class="btn btn-primary account-action-btn"
                     onclick="openCreateModal()"
                 >
 
-                    + Add Account
+                    +
+                    Add Account
 
                 </button>
 
@@ -610,51 +1677,49 @@ require APP_PATH .
 
 
         <!-- =================================================
-             SUCCESS
+             ALERTS
         ================================================== -->
 
         <?php if (!empty($success)): ?>
 
+            <div class="accounts-alert accounts-alert-success">
 
-            <div
-                class="alert alert-success"
-                style="margin-bottom:20px;"
-            >
+                ✓
 
-                <?= htmlspecialchars(
-                    $success
-                ) ?>
+                <span>
+                    <?= htmlspecialchars(
+                        $success,
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </span>
 
             </div>
 
-
         <?php endif; ?>
 
-
-        <!-- =================================================
-             ERROR
-        ================================================== -->
 
         <?php if (!empty($error)): ?>
 
+            <div class="accounts-alert accounts-alert-error">
 
-            <div
-                class="alert alert-danger"
-                style="margin-bottom:20px;"
-            >
+                !
 
-                <?= htmlspecialchars(
-                    $error
-                ) ?>
+                <span>
+                    <?= htmlspecialchars(
+                        $error,
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) ?>
+                </span>
 
             </div>
-
 
         <?php endif; ?>
 
 
         <!-- =================================================
-             SUMMARY CARDS
+             SUMMARY
         ================================================== -->
 
         <div class="account-summary-grid">
@@ -664,9 +1729,27 @@ require APP_PATH .
 
             <div class="account-summary-card">
 
-                <div class="account-summary-title">
+                <div class="account-summary-top">
 
-                    Total Accounts
+                    <div>
+
+                        <div class="account-summary-title">
+                            Total Accounts
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            account-summary-icon
+                            summary-icon-blue
+                        "
+                    >
+
+                        ◫
+
+                    </div>
 
                 </div>
 
@@ -679,16 +1762,41 @@ require APP_PATH .
 
                 </div>
 
+
+                <div class="account-summary-subtitle">
+
+                    Business accounts
+
+                </div>
+
             </div>
 
 
-            <!-- TOTAL ASSETS / FUNDS -->
+            <!-- TOTAL ASSETS -->
 
             <div class="account-summary-card">
 
-                <div class="account-summary-title">
+                <div class="account-summary-top">
 
-                    Total Assets / Funds
+                    <div>
+
+                        <div class="account-summary-title">
+                            Total Assets
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            account-summary-icon
+                            summary-icon-green
+                        "
+                    >
+
+                        ↑
+
+                    </div>
 
                 </div>
 
@@ -702,16 +1810,41 @@ require APP_PATH .
 
                 </div>
 
+
+                <div class="account-summary-subtitle">
+
+                    Available business funds
+
+                </div>
+
             </div>
 
 
-            <!-- TOTAL LIABILITIES -->
+            <!-- LIABILITIES -->
 
             <div class="account-summary-card">
 
-                <div class="account-summary-title">
+                <div class="account-summary-top">
 
-                    Total Liabilities
+                    <div>
+
+                        <div class="account-summary-title">
+                            Liabilities
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            account-summary-icon
+                            summary-icon-red
+                        "
+                    >
+
+                        ↓
+
+                    </div>
 
                 </div>
 
@@ -725,6 +1858,13 @@ require APP_PATH .
 
                 </div>
 
+
+                <div class="account-summary-subtitle">
+
+                    Outstanding obligations
+
+                </div>
+
             </div>
 
 
@@ -732,9 +1872,27 @@ require APP_PATH .
 
             <div class="account-summary-card">
 
-                <div class="account-summary-title">
+                <div class="account-summary-top">
 
-                    Net Balance
+                    <div>
+
+                        <div class="account-summary-title">
+                            Net Balance
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            account-summary-icon
+                            summary-icon-purple
+                        "
+                    >
+
+                        ◆
+
+                    </div>
 
                 </div>
 
@@ -748,6 +1906,13 @@ require APP_PATH .
 
                 </div>
 
+
+                <div class="account-summary-subtitle">
+
+                    Assets minus liabilities
+
+                </div>
+
             </div>
 
 
@@ -755,46 +1920,41 @@ require APP_PATH .
 
 
         <!-- =================================================
-             ACCOUNTS TABLE
+             ACCOUNTS PANEL
         ================================================== -->
 
-        <?php if (empty($accounts)): ?>
+        <div class="accounts-panel">
 
 
-            <div
-                class="form-card"
-                style="margin-top:30px;"
-            >
+            <div class="accounts-panel-header">
 
 
-                <div class="empty-state">
+                <div>
 
 
-                    <h3>
-                        No Accounts Found
-                    </h3>
+                    <div class="accounts-panel-title">
+
+                        <h2>
+                            Business Accounts
+                        </h2>
 
 
-                    <p>
+                        <span class="accounts-count">
 
-                        You haven't added any
-                        accounts yet.
+                            <?= number_format(
+                                $totalAccounts
+                            ) ?>
+
+                        </span>
+
+                    </div>
+
+
+                    <p class="accounts-panel-description">
+
+                        View and manage your account balances.
 
                     </p>
-
-
-                    <br>
-
-
-                    <button
-                        type="button"
-                        class="btn btn-primary"
-                        onclick="openCreateModal()"
-                    >
-
-                        Add Your First Account
-
-                    </button>
 
 
                 </div>
@@ -803,284 +1963,429 @@ require APP_PATH .
             </div>
 
 
-        <?php else: ?>
+            <?php if (empty($accounts)): ?>
 
 
-            <div
-                class="table-container"
-                style="margin-top:30px;"
-            >
+                <!-- EMPTY -->
+
+                <div class="accounts-empty">
 
 
-                <table>
+                    <div class="accounts-empty-icon">
+
+                        💰
+
+                    </div>
 
 
-                    <thead>
-
-                        <tr>
-
-                            <th>
-                                Code
-                            </th>
-
-                            <th>
-                                Account Name
-                            </th>
-
-                            <th>
-                                Type
-                            </th>
-
-                            <th>
-                                Balance
-                            </th>
-
-                            <th>
-                                Status
-                            </th>
-
-                            <th>
-                                Actions
-                            </th>
-
-                        </tr>
-
-                    </thead>
+                    <h3>
+                        No Accounts Yet
+                    </h3>
 
 
-                    <tbody>
+                    <p>
+
+                        Create your first business account
+                        to start tracking balances,
+                        transfers, and financial activity.
+
+                    </p>
 
 
-                    <?php foreach (
-                        $accounts as $account
-                    ): ?>
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        onclick="openCreateModal()"
+                    >
+
+                        + Add Your First Account
+
+                    </button>
 
 
-                        <?php
-
-                        $accountId =
-                            (int)(
-                                $account['id']
-                                ?? 0
-                            );
+                </div>
 
 
-                        $accountCode =
-                            $account['account_code']
-                            ?? $account['code']
-                            ?? '';
+            <?php else: ?>
 
 
-                        $accountName =
-                            $account['account_name']
-                            ?? $account['name']
-                            ?? '';
+                <!-- TABLE -->
+
+                <div class="accounts-table-wrapper">
 
 
-                        $accountType =
-                            $account['account_type']
-                            ?? $account['type']
-                            ?? '';
+                    <table class="accounts-table">
 
 
-                        $accountBalance =
-                            (float)(
-                                $account['balance']
-                                ?? $account['current_balance']
-                                ?? 0
-                            );
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Code
+                                </th>
+
+                                <th>
+                                    Account
+                                </th>
+
+                                <th>
+                                    Type
+                                </th>
+
+                                <th>
+                                    Balance
+                                </th>
+
+                                <th>
+                                    Status
+                                </th>
+
+                                <th>
+                                    Actions
+                                </th>
+
+                            </tr>
+
+                        </thead>
 
 
-                        $accountStatus =
-                            $account['status']
-                            ?? 'active';
+                        <tbody>
 
 
-                        $statusClass =
-                            'status-' .
-                            $accountStatus;
-
-                        ?>
+                        <?php foreach (
+                            $accounts as $account
+                        ): ?>
 
 
-                        <tr>
+                            <?php
+
+                            $accountId =
+                                (int)(
+                                    $account['id']
+                                    ?? 0
+                                );
 
 
-                            <td>
-
-                                <strong>
-
-                                    <?= htmlspecialchars(
-                                        $accountCode
-                                        ?: '-'
-                                    ) ?>
-
-                                </strong>
-
-                            </td>
+                            $accountCode =
+                                $account['account_code']
+                                ?? $account['code']
+                                ?? '';
 
 
-                            <td>
-
-                                <?= htmlspecialchars(
-                                    $accountName
-                                    ?: '-'
-                                ) ?>
-
-                            </td>
+                            $accountName =
+                                $account['account_name']
+                                ?? $account['name']
+                                ?? '';
 
 
-                            <td>
+                            $accountType =
+                                $account['account_type']
+                                ?? $account['type']
+                                ?? '';
 
-                                <?= htmlspecialchars(
-                                    ucfirst(
-                                        str_replace(
-                                            '_',
-                                            ' ',
-                                            $accountType
-                                        )
+
+                            $accountBalance =
+                                (float)(
+                                    $account['balance']
+                                    ?? $account['current_balance']
+                                    ?? 0
+                                );
+
+
+                            $accountStatus =
+                                strtolower(
+                                    trim(
+                                        $account['status']
+                                        ?? 'active'
                                     )
-                                ) ?>
-
-                            </td>
+                                );
 
 
-                            <td>
-
-                                <strong>
-
-                                    ₱<?= number_format(
-                                        $accountBalance,
-                                        2
-                                    ) ?>
-
-                                </strong>
-
-                            </td>
+                            $formattedType =
+                                ucfirst(
+                                    str_replace(
+                                        '_',
+                                        ' ',
+                                        $accountType
+                                    )
+                                );
 
 
-                            <td>
+                            $statusClass =
+                                match ($accountStatus) {
 
-                                <span
-                                    class="status <?= htmlspecialchars(
-                                        $statusClass
-                                    ) ?>"
-                                >
+                                    'active' =>
+                                        'status-active',
 
-                                    <?= htmlspecialchars(
-                                        ucfirst(
-                                            $accountStatus
-                                        )
-                                    ) ?>
+                                    'inactive' =>
+                                        'status-inactive',
 
-                                </span>
+                                    'suspended' =>
+                                        'status-suspended',
 
-                            </td>
+                                    default =>
+                                        'status-default'
 
-
-                            <td
-                                style="
-                                    display:flex;
-                                    gap:6px;
-                                    flex-wrap:wrap;
-                                "
-                            >
+                                };
 
 
-                                <!-- EDIT -->
+                            $editData = [
+                                'id' =>
+                                    $accountId,
 
-                                <button
-                                    type="button"
-                                    class="btn btn-secondary"
-                                    onclick="openEditModal(
-                                        <?= $accountId ?>,
+                                'name' =>
+                                    $accountName,
+
+                                'type' =>
+                                    $accountType,
+
+                                'balance' =>
+                                    $accountBalance,
+
+                                'status' =>
+                                    $accountStatus
+                            ];
+
+                            ?>
+
+
+                            <tr>
+
+
+                                <!-- CODE -->
+
+                                <td>
+
+                                    <span class="account-code">
+
                                         <?= htmlspecialchars(
-                                            json_encode(
-                                                $accountName
-                                            ),
+                                            $accountCode ?: '-',
                                             ENT_QUOTES,
                                             'UTF-8'
-                                        ) ?>,
+                                        ) ?>
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- ACCOUNT -->
+
+                                <td>
+
+
+                                    <div
+                                        class="
+                                            account-name-cell
+                                        "
+                                    >
+
+
+                                        <div
+                                            class="
+                                                account-name-icon
+                                            "
+                                        >
+
+                                            $
+
+                                        </div>
+
+
+                                        <span
+                                            class="account-name"
+                                        >
+
+                                            <?= htmlspecialchars(
+                                                $accountName ?: '-',
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            ) ?>
+
+                                        </span>
+
+
+                                    </div>
+
+
+                                </td>
+
+
+                                <!-- TYPE -->
+
+                                <td>
+
+                                    <span
+                                        class="
+                                            account-type-badge
+                                        "
+                                    >
+
                                         <?= htmlspecialchars(
-                                            json_encode(
-                                                $accountType
-                                            ),
+                                            $formattedType,
                                             ENT_QUOTES,
                                             'UTF-8'
-                                        ) ?>,
+                                        ) ?>
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- BALANCE -->
+
+                                <td>
+
+                                    <span
+                                        class="account-balance"
+                                    >
+
+                                        ₱<?= number_format(
+                                            $accountBalance,
+                                            2
+                                        ) ?>
+
+                                    </span>
+
+                                </td>
+
+
+                                <!-- STATUS -->
+
+                                <td>
+
+                                    <span
+                                        class="
+                                            status-pill
+                                            <?= htmlspecialchars(
+                                                $statusClass,
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            ) ?>
+                                        "
+                                    >
+
                                         <?= htmlspecialchars(
-                                            json_encode(
-                                                $accountBalance
-                                            ),
-                                            ENT_QUOTES,
-                                            'UTF-8'
-                                        ) ?>,
-                                        <?= htmlspecialchars(
-                                            json_encode(
+                                            ucfirst(
                                                 $accountStatus
                                             ),
                                             ENT_QUOTES,
                                             'UTF-8'
                                         ) ?>
-                                    )"
-                                >
 
-                                    Edit
+                                    </span>
 
-                                </button>
+                                </td>
 
 
-                                <!-- DELETE -->
+                                <!-- ACTIONS -->
 
-                                <form
-                                    method="POST"
-                                    action="index.php?url=accounts/delete"
-                                    style="display:inline;"
-                                    onsubmit="
-                                        return confirm(
-                                            'Are you sure you want to delete this account?'
-                                        );
-                                    "
-                                >
+                                <td>
 
-                                    <input
-                                        type="hidden"
-                                        name="id"
-                                        value="<?= $accountId ?>"
+
+                                    <div
+                                        class="
+                                            account-row-actions
+                                        "
                                     >
 
 
-                                    <button
-                                        type="submit"
-                                        class="btn btn-danger"
-                                    >
+                                        <!-- EDIT -->
 
-                                        Delete
+                                        <button
+                                            type="button"
+                                            class="table-action edit-account-btn"
+                                            data-account-id="<?= $accountId ?>"
+                                            data-account-name="<?= htmlspecialchars(
+                                                $accountName,
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            ) ?>"
+                                            data-account-type="<?= htmlspecialchars(
+                                                $accountType,
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            ) ?>"
+                                            data-account-balance="<?= htmlspecialchars(
+                                                (string)$accountBalance,
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            ) ?>"
+                                            data-account-status="<?= htmlspecialchars(
+                                                $accountStatus,
+                                                ENT_QUOTES,
+                                                'UTF-8'
+                                            ) ?>"
+                                        >
 
-                                    </button>
+                                            Edit
 
-                                </form>
-
-
-                            </td>
+                                        </button>
 
 
-                        </tr>
+                                        <!-- DELETE -->
+
+                                        <form
+                                            method="POST"
+                                            action="index.php?url=accounts/delete"
+                                            style="display:inline;"
+                                            onsubmit="
+                                                return confirm(
+                                                    'Are you sure you want to delete this account?'
+                                                );
+                                            "
+                                        >
 
 
-                    <?php endforeach; ?>
+                                            <input
+                                                type="hidden"
+                                                name="id"
+                                                value="<?= $accountId ?>"
+                                            >
 
 
-                    </tbody>
+                                            <button
+                                                type="submit"
+                                                class="
+                                                    table-action
+                                                    table-action-delete
+                                                "
+                                            >
+
+                                                Delete
+
+                                            </button>
 
 
-                </table>
+                                        </form>
 
 
-            </div>
+                                    </div>
 
 
-        <?php endif; ?>
+                                </td>
+
+
+                            </tr>
+
+
+                        <?php endforeach; ?>
+
+
+                        </tbody>
+
+
+                    </table>
+
+
+                </div>
+
+
+            <?php endif; ?>
+
+
+        </div>
 
 
     </div>
@@ -1143,16 +2448,12 @@ require APP_PATH .
         >
 
 
-            <!-- ACCOUNT NAME -->
-
             <div class="form-group">
 
                 <label
                     for="create_account_name"
                 >
-
                     Account Name
-
                 </label>
 
 
@@ -1167,16 +2468,12 @@ require APP_PATH .
             </div>
 
 
-            <!-- ACCOUNT TYPE -->
-
             <div class="form-group">
 
                 <label
                     for="create_account_type"
                 >
-
                     Account Type
-
                 </label>
 
 
@@ -1215,16 +2512,12 @@ require APP_PATH .
             </div>
 
 
-            <!-- OPENING BALANCE -->
-
             <div class="form-group">
 
                 <label
                     for="create_balance"
                 >
-
                     Opening Balance
-
                 </label>
 
 
@@ -1246,7 +2539,10 @@ require APP_PATH .
 
                 <button
                     type="button"
-                    class="btn btn-secondary"
+                    class="
+                        modal-btn
+                        modal-btn-secondary
+                    "
                     onclick="closeCreateModal()"
                 >
 
@@ -1257,7 +2553,10 @@ require APP_PATH .
 
                 <button
                     type="submit"
-                    class="btn btn-primary"
+                    class="
+                        modal-btn
+                        modal-btn-primary
+                    "
                 >
 
                     Create Account
@@ -1338,16 +2637,12 @@ require APP_PATH .
             >
 
 
-            <!-- ACCOUNT NAME -->
-
             <div class="form-group">
 
                 <label
                     for="edit_account_name"
                 >
-
                     Account Name
-
                 </label>
 
 
@@ -1361,16 +2656,12 @@ require APP_PATH .
             </div>
 
 
-            <!-- ACCOUNT TYPE -->
-
             <div class="form-group">
 
                 <label
                     for="edit_account_type"
                 >
-
                     Account Type
-
                 </label>
 
 
@@ -1409,16 +2700,12 @@ require APP_PATH .
             </div>
 
 
-            <!-- BALANCE -->
-
             <div class="form-group">
 
                 <label
                     for="edit_balance"
                 >
-
                     Balance
-
                 </label>
 
 
@@ -1434,16 +2721,12 @@ require APP_PATH .
             </div>
 
 
-            <!-- STATUS -->
-
             <div class="form-group">
 
                 <label
                     for="edit_status"
                 >
-
                     Status
-
                 </label>
 
 
@@ -1471,7 +2754,10 @@ require APP_PATH .
 
                 <button
                     type="button"
-                    class="btn btn-secondary"
+                    class="
+                        modal-btn
+                        modal-btn-secondary
+                    "
                     onclick="closeEditModal()"
                 >
 
@@ -1482,7 +2768,10 @@ require APP_PATH .
 
                 <button
                     type="submit"
-                    class="btn btn-primary"
+                    class="
+                        modal-btn
+                        modal-btn-primary
+                    "
                 >
 
                     Save Changes
@@ -1556,16 +2845,12 @@ require APP_PATH .
         >
 
 
-            <!-- ACCOUNT -->
-
             <div class="form-group">
 
                 <label
                     for="adjust_account_id"
                 >
-
                     Account
-
                 </label>
 
 
@@ -1621,13 +2906,17 @@ require APP_PATH .
                         >
 
                             <?= htmlspecialchars(
-                                $adjustCode
+                                $adjustCode,
+                                ENT_QUOTES,
+                                'UTF-8'
                             ) ?>
 
                             -
 
                             <?= htmlspecialchars(
-                                $adjustName
+                                $adjustName,
+                                ENT_QUOTES,
+                                'UTF-8'
                             ) ?>
 
                             -
@@ -1648,16 +2937,12 @@ require APP_PATH .
             </div>
 
 
-            <!-- ADJUSTMENT TYPE -->
-
             <div class="form-group">
 
                 <label
                     for="adjustment_type"
                 >
-
                     Adjustment Type
-
                 </label>
 
 
@@ -1671,11 +2956,9 @@ require APP_PATH .
                         Select Adjustment
                     </option>
 
-
                     <option value="add">
                         Increase Balance
                     </option>
-
 
                     <option value="subtract">
                         Decrease Balance
@@ -1686,16 +2969,12 @@ require APP_PATH .
             </div>
 
 
-            <!-- AMOUNT -->
-
             <div class="form-group">
 
                 <label
                     for="adjustment_amount"
                 >
-
                     Amount
-
                 </label>
 
 
@@ -1712,16 +2991,12 @@ require APP_PATH .
             </div>
 
 
-            <!-- REASON -->
-
             <div class="form-group">
 
                 <label
                     for="adjustment_reason"
                 >
-
                     Reason
-
                 </label>
 
 
@@ -1741,7 +3016,10 @@ require APP_PATH .
 
                 <button
                     type="button"
-                    class="btn btn-secondary"
+                    class="
+                        modal-btn
+                        modal-btn-secondary
+                    "
                     onclick="closeAdjustModal()"
                 >
 
@@ -1752,7 +3030,10 @@ require APP_PATH .
 
                 <button
                     type="submit"
-                    class="btn btn-primary"
+                    class="
+                        modal-btn
+                        modal-btn-primary
+                    "
                 >
 
                     Adjust Balance
@@ -1826,16 +3107,12 @@ require APP_PATH .
         >
 
 
-            <!-- FROM ACCOUNT -->
-
             <div class="form-group">
 
                 <label
                     for="transfer_from_id"
                 >
-
                     From Account
-
                 </label>
 
 
@@ -1891,13 +3168,17 @@ require APP_PATH .
                         >
 
                             <?= htmlspecialchars(
-                                $fromCode
+                                $fromCode,
+                                ENT_QUOTES,
+                                'UTF-8'
                             ) ?>
 
                             -
 
                             <?= htmlspecialchars(
-                                $fromName
+                                $fromName,
+                                ENT_QUOTES,
+                                'UTF-8'
                             ) ?>
 
                             -
@@ -1918,16 +3199,12 @@ require APP_PATH .
             </div>
 
 
-            <!-- TO ACCOUNT -->
-
             <div class="form-group">
 
                 <label
                     for="transfer_to_id"
                 >
-
                     To Account
-
                 </label>
 
 
@@ -1975,13 +3252,17 @@ require APP_PATH .
                         >
 
                             <?= htmlspecialchars(
-                                $toCode
+                                $toCode,
+                                ENT_QUOTES,
+                                'UTF-8'
                             ) ?>
 
                             -
 
                             <?= htmlspecialchars(
-                                $toName
+                                $toName,
+                                ENT_QUOTES,
+                                'UTF-8'
                             ) ?>
 
                         </option>
@@ -1995,16 +3276,12 @@ require APP_PATH .
             </div>
 
 
-            <!-- AMOUNT -->
-
             <div class="form-group">
 
                 <label
                     for="transfer_amount"
                 >
-
                     Transfer Amount
-
                 </label>
 
 
@@ -2021,16 +3298,12 @@ require APP_PATH .
             </div>
 
 
-            <!-- DESCRIPTION -->
-
             <div class="form-group">
 
                 <label
                     for="transfer_description"
                 >
-
                     Description
-
                 </label>
 
 
@@ -2050,7 +3323,10 @@ require APP_PATH .
 
                 <button
                     type="button"
-                    class="btn btn-secondary"
+                    class="
+                        modal-btn
+                        modal-btn-secondary
+                    "
                     onclick="closeTransferModal()"
                 >
 
@@ -2061,7 +3337,10 @@ require APP_PATH .
 
                 <button
                     type="submit"
-                    class="btn btn-primary"
+                    class="
+                        modal-btn
+                        modal-btn-primary
+                    "
                 >
 
                     Transfer Balance
@@ -2103,10 +3382,27 @@ function openCreateModal()
         );
 
 
-    if (modal)
-    {
+    if (modal) {
 
         modal.classList.add('active');
+
+        const nameInput =
+            document.getElementById(
+                'create_account_name'
+            );
+
+        if (nameInput) {
+
+            setTimeout(
+                function() {
+
+                    nameInput.focus();
+
+                },
+                100
+            );
+
+        }
 
     }
 
@@ -2119,8 +3415,7 @@ function closeCreateModal(event)
     if (
         event &&
         event.target !== event.currentTarget
-    )
-    {
+    ) {
 
         return;
 
@@ -2133,8 +3428,7 @@ function closeCreateModal(event)
         );
 
 
-    if (modal)
-    {
+    if (modal) {
 
         modal.classList.remove('active');
 
@@ -2158,29 +3452,65 @@ function openEditModal(
 )
 {
 
-    document.getElementById(
-        'edit_account_id'
-    ).value = id;
+    const idInput =
+        document.getElementById(
+            'edit_account_id'
+        );
+
+    const nameInput =
+        document.getElementById(
+            'edit_account_name'
+        );
+
+    const typeInput =
+        document.getElementById(
+            'edit_account_type'
+        );
+
+    const balanceInput =
+        document.getElementById(
+            'edit_balance'
+        );
+
+    const statusInput =
+        document.getElementById(
+            'edit_status'
+        );
 
 
-    document.getElementById(
-        'edit_account_name'
-    ).value = name;
+    if (idInput) {
+
+        idInput.value = id;
+
+    }
 
 
-    document.getElementById(
-        'edit_account_type'
-    ).value = type;
+    if (nameInput) {
+
+        nameInput.value = name;
+
+    }
 
 
-    document.getElementById(
-        'edit_balance'
-    ).value = balance;
+    if (typeInput) {
+
+        typeInput.value = type;
+
+    }
 
 
-    document.getElementById(
-        'edit_status'
-    ).value = status;
+    if (balanceInput) {
+
+        balanceInput.value = balance;
+
+    }
+
+
+    if (statusInput) {
+
+        statusInput.value = status;
+
+    }
 
 
     const modal =
@@ -2189,8 +3519,7 @@ function openEditModal(
         );
 
 
-    if (modal)
-    {
+    if (modal) {
 
         modal.classList.add('active');
 
@@ -2205,8 +3534,7 @@ function closeEditModal(event)
     if (
         event &&
         event.target !== event.currentTarget
-    )
-    {
+    ) {
 
         return;
 
@@ -2219,14 +3547,53 @@ function closeEditModal(event)
         );
 
 
-    if (modal)
-    {
+    if (modal) {
 
         modal.classList.remove('active');
 
     }
 
 }
+
+
+/*
+|--------------------------------------------------------------------------
+| EDIT BUTTONS
+|--------------------------------------------------------------------------
+*/
+
+document
+    .querySelectorAll(
+        '.edit-account-btn'
+    )
+    .forEach(
+        function(button)
+        {
+
+            button.addEventListener(
+                'click',
+                function()
+                {
+
+                    openEditModal(
+
+                        this.dataset.accountId,
+
+                        this.dataset.accountName,
+
+                        this.dataset.accountType,
+
+                        this.dataset.accountBalance,
+
+                        this.dataset.accountStatus
+
+                    );
+
+                }
+            );
+
+        }
+    );
 
 
 /*
@@ -2244,8 +3611,7 @@ function openAdjustModal()
         );
 
 
-    if (modal)
-    {
+    if (modal) {
 
         modal.classList.add('active');
 
@@ -2260,8 +3626,7 @@ function closeAdjustModal(event)
     if (
         event &&
         event.target !== event.currentTarget
-    )
-    {
+    ) {
 
         return;
 
@@ -2274,8 +3639,7 @@ function closeAdjustModal(event)
         );
 
 
-    if (modal)
-    {
+    if (modal) {
 
         modal.classList.remove('active');
 
@@ -2299,8 +3663,7 @@ function openTransferModal()
         );
 
 
-    if (modal)
-    {
+    if (modal) {
 
         modal.classList.add('active');
 
@@ -2315,8 +3678,7 @@ function closeTransferModal(event)
     if (
         event &&
         event.target !== event.currentTarget
-    )
-    {
+    ) {
 
         return;
 
@@ -2329,8 +3691,7 @@ function closeTransferModal(event)
         );
 
 
-    if (modal)
-    {
+    if (modal) {
 
         modal.classList.remove('active');
 
@@ -2360,8 +3721,7 @@ const transferTo =
 if (
     transferFrom &&
     transferTo
-)
-{
+) {
 
     transferFrom.addEventListener(
         'change',
@@ -2380,8 +3740,7 @@ if (
 
                     if (
                         option.value !== ''
-                    )
-                    {
+                    ) {
 
                         option.disabled =
                             option.value ===
@@ -2396,8 +3755,7 @@ if (
             if (
                 transferTo.value ===
                 selected
-            )
-            {
+            ) {
 
                 transferTo.value = '';
 
@@ -2422,8 +3780,7 @@ document.addEventListener(
 
         if (
             event.key === 'Escape'
-        )
-        {
+        ) {
 
             closeCreateModal();
 
@@ -2437,6 +3794,7 @@ document.addEventListener(
 
     }
 );
+
 
 </script>
 

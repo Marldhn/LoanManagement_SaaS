@@ -212,6 +212,8 @@ $sidebarBrandName =
         ??
         $settings['company_name']
         ??
+        $settings['system_name']
+        ??
         $business['name']
         ??
         'Loan Management'
@@ -237,6 +239,8 @@ $sidebarBrandTagline =
         ??
         $settings['tagline']
         ??
+        $settings['system_tagline']
+        ??
         'SaaS Platform'
     );
 
@@ -252,72 +256,104 @@ if ($sidebarBrandTagline === '') {
 |--------------------------------------------------------------------------
 | BRAND LOGO
 |--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| SettingsController saves the logo using:
+|
+| sidebar_logo
+|
+| Example database value:
+|
+| uploads/settings/logo/business_1_1787690538.jpg
+|
 */
 
 $sidebarLogo =
     trim(
-        $settings['logo']
-        ??
-        $settings['logo_path']
-        ??
-        ''
+        $settings['sidebar_logo']
+        ?? ''
     );
 
 
 /*
 |--------------------------------------------------------------------------
-| LOGO URL NORMALIZATION
+| LOGO URL
 |--------------------------------------------------------------------------
 |
-| If the database stores:
+| The database stores the path relative to public/:
 |
-| uploads/settings/logo.png
+| uploads/settings/logo/business_1_1787690538.jpg
 |
-| it will work as:
+| Since index.php is inside public/, we create:
 |
-| ../uploads/settings/logo.png
+| uploads/settings/logo/business_1_1787690538.jpg
 |
-| depending on the location of the current page.
-|
-| For your current index.php?url= routing, assets are normally
-| relative to public/.
+| which resolves correctly from public/index.php.
 |
 */
 
+$sidebarLogoUrl = '';
 
-if (
-    $sidebarLogo !== ''
-    &&
-    !str_starts_with(
-        $sidebarLogo,
-        'http://'
-    )
-    &&
-    !str_starts_with(
-        $sidebarLogo,
-        'https://'
-    )
-    &&
-    !str_starts_with(
-        $sidebarLogo,
-        '/'
-    )
-) {
+
+if ($sidebarLogo !== '') {
+
 
     /*
     |--------------------------------------------------------------------------
-    | Remove leading ./ if present
+    | FULL HTTP / HTTPS URL
     |--------------------------------------------------------------------------
     */
 
-    $sidebarLogo =
-        ltrim(
+    if (
+        str_starts_with(
             $sidebarLogo,
-            './'
-        );
+            'http://'
+        )
+        ||
+        str_starts_with(
+            $sidebarLogo,
+            'https://'
+        )
+    ) {
 
-    $sidebarLogo =
-        $sidebarLogo;
+        $sidebarLogoUrl =
+            $sidebarLogo;
+
+    } else {
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | NORMALIZE PATH
+        |--------------------------------------------------------------------------
+        */
+
+        $sidebarLogo =
+            ltrim(
+                $sidebarLogo,
+                '/'
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BUILD PUBLIC URL
+        |--------------------------------------------------------------------------
+        |
+        | Example:
+        |
+        | Current:
+        | /LoanSaaS/public/index.php
+        |
+        | Result:
+        | uploads/settings/logo/business_1_1787690538.jpg
+        |
+        */
+
+        $sidebarLogoUrl =
+            $sidebarLogo;
+    }
 }
 
 
@@ -376,11 +412,11 @@ if (
 
         <div class="sidebar-brand-icon">
 
-            <?php if ($sidebarLogo !== ''): ?>
+            <?php if ($sidebarLogoUrl !== ''): ?>
 
                 <img
                     src="<?= htmlspecialchars(
-                        $sidebarLogo,
+                        $sidebarLogoUrl,
                         ENT_QUOTES,
                         'UTF-8'
                     ) ?>"
