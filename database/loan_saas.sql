@@ -2,8 +2,8 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1:3306
--- Generation Time: Aug 25, 2026 at 07:45 AM
+-- Host: 127.0.0.1
+-- Generation Time: Aug 25, 2026 at 11:38 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -44,7 +44,7 @@ CREATE TABLE `accounts` (
 --
 
 INSERT INTO `accounts` (`id`, `business_id`, `account_name`, `account_type`, `balance`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Gcash', 'asset', 300.00, 'active', 2, '2026-08-22 00:06:29', '2026-08-24 21:29:22'),
+(1, 1, 'Gcash', 'asset', 200.00, 'active', 2, '2026-08-22 00:06:29', '2026-08-25 15:48:00'),
 (2, 1, 'Maribank', 'asset', 1300.00, 'active', 2, '2026-08-22 00:28:41', '2026-08-24 21:28:17'),
 (3, 1, 'Cash', 'asset', 0.00, 'active', 2, '2026-08-22 00:35:34', '2026-08-23 01:34:54');
 
@@ -102,6 +102,7 @@ CREATE TABLE `businesses` (
   `address` text DEFAULT NULL,
   `logo` varchar(255) DEFAULT NULL,
   `status` enum('active','inactive','suspended','pending') NOT NULL DEFAULT 'pending',
+  `currency` varchar(10) NOT NULL DEFAULT 'PHP',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -110,10 +111,10 @@ CREATE TABLE `businesses` (
 -- Dumping data for table `businesses`
 --
 
-INSERT INTO `businesses` (`id`, `name`, `slug`, `email`, `phone`, `address`, `logo`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'ShelDohns Financial', 'sheldohns-financial', 'sheldohn@gmail.com', '09061941138', 'Jakosalem Street', NULL, 'active', '2026-08-21 00:28:50', '2026-08-21 00:28:50'),
-(2, 'Secret', 'secret', NULL, NULL, NULL, NULL, 'active', '2026-08-21 01:19:55', '2026-08-21 01:19:55'),
-(3, 'Dondi', 'dondi', NULL, NULL, NULL, NULL, 'active', '2026-08-22 01:31:34', '2026-08-22 01:31:34');
+INSERT INTO `businesses` (`id`, `name`, `slug`, `email`, `phone`, `address`, `logo`, `status`, `currency`, `created_at`, `updated_at`) VALUES
+(1, 'ShelDohns Financialss', 'sheldohns-financial', NULL, NULL, NULL, NULL, 'active', 'PHP', '2026-08-21 00:28:50', '2026-08-25 20:55:09'),
+(2, 'Secret', 'secret', NULL, NULL, NULL, NULL, 'active', 'PHP', '2026-08-21 01:19:55', '2026-08-21 01:19:55'),
+(3, 'Dondi', 'dondi', NULL, NULL, NULL, NULL, 'active', 'PHP', '2026-08-22 01:31:34', '2026-08-22 01:31:34');
 
 -- --------------------------------------------------------
 
@@ -177,6 +178,7 @@ CREATE TABLE `expenses` (
   `id` int(10) UNSIGNED NOT NULL,
   `business_id` int(10) UNSIGNED NOT NULL,
   `category_id` int(10) UNSIGNED DEFAULT NULL,
+  `account_id` int(10) UNSIGNED DEFAULT NULL,
   `description` varchar(255) NOT NULL,
   `amount` decimal(15,2) NOT NULL DEFAULT 0.00,
   `expense_date` date NOT NULL,
@@ -186,6 +188,13 @@ CREATE TABLE `expenses` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `expenses`
+--
+
+INSERT INTO `expenses` (`id`, `business_id`, `category_id`, `account_id`, `description`, `amount`, `expense_date`, `notes`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 1, 'Food', 100.00, '2026-08-25', NULL, 'active', 2, '2026-08-25 15:48:00', '2026-08-25 15:48:00');
 
 -- --------------------------------------------------------
 
@@ -231,7 +240,7 @@ INSERT INTO `loans` (`id`, `business_id`, `borrower_id`, `account_id`, `category
 (5, 1, 1, NULL, 2, 'LN-20260823-519AB2', 1000.00, 10.00, 'flat', 'installment', 5, 'months', 0.00, 500.00, 1500.00, '2026-08-23', '2027-01-23', 'pending', '', '', 2, '2026-08-23 03:38:40', '2026-08-23 03:38:40'),
 (6, 1, 1, NULL, 2, 'LN-20260823-8C01A2', 1000.00, 10.00, 'flat', 'installment', 3, 'months', 0.00, 300.00, 1300.00, '2026-08-23', '2026-11-23', 'active', '', '', 2, '2026-08-23 03:39:10', '2026-08-24 19:32:33'),
 (7, 1, 1, NULL, 2, 'LN-20260823-30CC0C', 1000.00, 10.00, 'flat', 'installment', 5, 'months', 0.00, 500.00, 1500.00, '2026-08-23', '2026-09-23', 'active', '', '', 2, '2026-08-23 03:40:45', '2026-08-24 19:33:06'),
-(8, 1, 1, NULL, 2, 'LN-20260824-3913E0', 6000.00, 100.00, 'flat', 'full_payment', 1, 'months', 1000.00, 6000.00, 13000.00, '2026-08-25', '2026-09-25', 'pending', '', '', 2, '2026-08-24 19:49:35', '2026-08-24 19:49:35');
+(8, 1, 1, NULL, 2, 'LN-20260824-3913E0', 6000.00, 100.00, 'flat', 'full_payment', 1, 'months', 1000.00, 6000.00, 13000.00, '2026-08-25', '2026-09-25', 'cancelled', '', '', 2, '2026-08-24 19:49:35', '2026-08-25 15:18:40');
 
 -- --------------------------------------------------------
 
@@ -380,29 +389,35 @@ CREATE TABLE `system_settings` (
 --
 
 INSERT INTO `system_settings` (`id`, `business_id`, `setting_key`, `setting_value`, `created_at`, `updated_at`) VALUES
-(1, 1, 'system_name', 'Loan Management System', '2026-08-25 05:39:21', '2026-08-25 05:39:55'),
-(2, 1, 'system_tagline', '', '2026-08-25 05:39:21', '2026-08-25 05:39:55'),
-(3, 1, 'currency', 'PHP', '2026-08-25 05:39:21', '2026-08-25 05:39:55'),
-(4, 1, 'currency_symbol', '₱', '2026-08-25 05:39:21', '2026-08-25 05:39:55'),
-(5, 1, 'date_format', 'Y-m-d', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(6, 1, 'timezone', 'Asia/Manila', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(7, 1, 'primary_color', '#2563eb', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(8, 1, 'loan_number_prefix', 'LN', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(9, 1, 'payment_number_prefix', 'PAY', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(10, 1, 'default_interest_type', 'flat', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(11, 1, 'default_payment_type', 'installment', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(12, 1, 'default_term', '1', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(13, 1, 'default_term_period', 'months', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(14, 1, 'default_interest_rate', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(15, 1, 'default_processing_fee', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(16, 1, 'enable_penalty', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(17, 1, 'penalty_type', 'fixed', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(18, 1, 'penalty_rate', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(19, 1, 'penalty_amount', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(20, 1, 'overdue_reminders', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(21, 1, 'payment_reminders', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(22, 1, 'maintenance_mode', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55'),
-(23, 1, 'allow_registration', '0', '2026-08-25 05:39:22', '2026-08-25 05:39:55');
+(1, 1, 'system_name', 'Loan Management System', '2026-08-25 05:39:21', '2026-08-25 20:55:09'),
+(2, 1, 'system_tagline', '', '2026-08-25 05:39:21', '2026-08-25 20:55:09'),
+(3, 1, 'currency', 'PHP', '2026-08-25 05:39:21', '2026-08-25 20:55:09'),
+(4, 1, 'currency_symbol', '₱', '2026-08-25 05:39:21', '2026-08-25 20:55:09'),
+(5, 1, 'date_format', 'Y-m-d', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(6, 1, 'timezone', 'Asia/Manila', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(7, 1, 'primary_color', '#2563eb', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(8, 1, 'loan_number_prefix', 'LN', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(9, 1, 'payment_number_prefix', 'PAY', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(10, 1, 'default_interest_type', 'flat', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(11, 1, 'default_payment_type', 'installment', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(12, 1, 'default_term', '1', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(13, 1, 'default_term_period', 'months', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(14, 1, 'default_interest_rate', '0', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(15, 1, 'default_processing_fee', '0', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(16, 1, 'enable_penalty', '0', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(17, 1, 'penalty_type', 'fixed', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(18, 1, 'penalty_rate', '0', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(19, 1, 'penalty_amount', '0', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(20, 1, 'overdue_reminders', '0', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(21, 1, 'payment_reminders', '0', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(22, 1, 'maintenance_mode', '0', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(23, 1, 'allow_registration', '0', '2026-08-25 05:39:22', '2026-08-25 20:55:09'),
+(89, 1, 'email_notifications', '1', '2026-08-25 15:58:36', '2026-08-25 20:55:09'),
+(90, 1, 'payment_notifications', '1', '2026-08-25 15:58:36', '2026-08-25 20:55:09'),
+(91, 1, 'overdue_notifications', '1', '2026-08-25 15:58:36', '2026-08-25 20:55:09'),
+(96, 1, 'session_timeout', '5', '2026-08-25 15:58:36', '2026-08-25 20:55:09'),
+(97, 1, 'login_attempts', '3', '2026-08-25 15:58:36', '2026-08-25 20:55:09'),
+(294, 1, 'sidebar_logo', 'uploads/settings/logo/business_1_1787691294.jpg', '2026-08-25 18:32:15', '2026-08-25 20:54:54');
 
 -- --------------------------------------------------------
 
@@ -417,7 +432,9 @@ CREATE TABLE `users` (
   `password` varchar(255) NOT NULL,
   `full_name` varchar(150) NOT NULL,
   `role` enum('super_admin','admin','staff') NOT NULL DEFAULT 'staff',
-  `status` enum('pending','approved','rejected','inactive') NOT NULL DEFAULT 'approved',
+  `status` enum('pending','approved','rejected','inactive','locked') NOT NULL DEFAULT 'approved',
+  `failed_login_attempts` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `locked_until` datetime DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -426,12 +443,12 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `email`, `password`, `full_name`, `role`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'superadmin', 'superadmin@gmail.com', '$2y$10$r7wubJjlYNzs7Hwvf3UVQO6CiInOxL00.dLwHFxJK11FJiRX7xTUe', 'System Administrator', 'super_admin', 'approved', '2026-08-20 22:36:25', '2026-08-20 22:41:15'),
-(2, 'mrubinos', 'mrubinos@azpired.net', '$2y$10$LkgWVckDDNPU0znd7oFXpOov73A6ZJe/Vf0LVV7VIQT.0fio2KN5a', 'Marldohn Rubinos', 'admin', 'approved', '2026-08-21 00:28:50', '2026-08-21 00:28:50'),
-(3, 'sardillo', 'ardilloshelou@gmail.com', '$2y$10$hmZOuZgv/DmnSkJuJjYNN.a7jyE0r9ELnmd04dHuSK.s9zk3/Bclq', 'March Shelou Ardillo', 'staff', 'approved', '2026-08-21 01:08:35', '2026-08-24 23:22:56'),
-(4, 'mardonio1104', 'marldohncrubinos11@gmail.com', '$2y$10$E2rsODQgncoWsy5sBF9LuuHn6Fq.NWlY0NumDhgf.iyLdYX1FSXoa', 'March Shelou', 'admin', 'approved', '2026-08-21 01:19:55', '2026-08-21 01:19:55'),
-(5, 'drubinos', 'drubinos@gmail.com', '$2y$10$bZ78GqH5dGy4UbvpAeKcz.VZqheopHr4ZZtXsVMqsJVBWFNM5A9KO', 'Dondi Rubinos', 'admin', 'approved', '2026-08-22 01:31:34', '2026-08-22 01:31:34');
+INSERT INTO `users` (`id`, `username`, `email`, `password`, `full_name`, `role`, `status`, `failed_login_attempts`, `locked_until`, `created_at`, `updated_at`) VALUES
+(1, 'superadmin', 'superadmin@gmail.com', '$2y$10$r7wubJjlYNzs7Hwvf3UVQO6CiInOxL00.dLwHFxJK11FJiRX7xTUe', 'System Administrator', 'super_admin', '', 0, NULL, '2026-08-20 22:36:25', '2026-08-25 16:21:00'),
+(2, 'mrubinos', 'mrubinos@azpired.net', '$2y$10$LkgWVckDDNPU0znd7oFXpOov73A6ZJe/Vf0LVV7VIQT.0fio2KN5a', 'Marldohn Rubinos', 'admin', 'approved', 0, NULL, '2026-08-21 00:28:50', '2026-08-25 17:24:58'),
+(3, 'sardillo', 'ardilloshelou@gmail.com', '$2y$10$hmZOuZgv/DmnSkJuJjYNN.a7jyE0r9ELnmd04dHuSK.s9zk3/Bclq', 'March Shelou Ardillo', 'staff', 'approved', 0, NULL, '2026-08-21 01:08:35', '2026-08-24 23:22:56'),
+(4, 'mardonio1104', 'marldohncrubinos11@gmail.com', '$2y$10$E2rsODQgncoWsy5sBF9LuuHn6Fq.NWlY0NumDhgf.iyLdYX1FSXoa', 'March Shelou', 'admin', 'approved', 0, NULL, '2026-08-21 01:19:55', '2026-08-21 01:19:55'),
+(5, 'drubinos', 'drubinos@gmail.com', '$2y$10$bZ78GqH5dGy4UbvpAeKcz.VZqheopHr4ZZtXsVMqsJVBWFNM5A9KO', 'Dondi Rubinos', 'admin', 'approved', 0, NULL, '2026-08-22 01:31:34', '2026-08-22 01:31:34');
 
 --
 -- Indexes for dumped tables
@@ -493,7 +510,8 @@ ALTER TABLE `expenses`
   ADD KEY `idx_expenses_business` (`business_id`),
   ADD KEY `idx_expenses_category` (`category_id`),
   ADD KEY `idx_expenses_created_by` (`created_by`),
-  ADD KEY `idx_expenses_date` (`expense_date`);
+  ADD KEY `idx_expenses_date` (`expense_date`),
+  ADD KEY `idx_expenses_account_id` (`account_id`);
 
 --
 -- Indexes for table `loans`
@@ -601,7 +619,7 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `expenses`
 --
 ALTER TABLE `expenses`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `loans`
@@ -637,7 +655,7 @@ ALTER TABLE `subscriptions`
 -- AUTO_INCREMENT for table `system_settings`
 --
 ALTER TABLE `system_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=525;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -668,6 +686,12 @@ ALTER TABLE `business_users`
 --
 ALTER TABLE `categories`
   ADD CONSTRAINT `fk_categories_created_by` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+--
+-- Constraints for table `expenses`
+--
+ALTER TABLE `expenses`
+  ADD CONSTRAINT `fk_expenses_account` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `loans`
