@@ -1,3 +1,4 @@
+
 <?php
 
 require_once APP_PATH . '/models/Expense.php';
@@ -9,396 +10,169 @@ class LoanController
 {
     private Loan $loan;
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | CONSTRUCTOR
-    |--------------------------------------------------------------------------
-    */
-
     public function __construct()
     {
         $this->loan = new Loan();
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | LOAN LIST
-    |--------------------------------------------------------------------------
-    */
 
     public function index(): void
     {
         AuthMiddleware::requireLogin();
 
         $user = Auth::user();
-
         $business = Auth::business();
-
         $businessId = Auth::businessId();
-
         $tenantRole = Auth::tenantRole();
 
         $loanModel = new Loan();
 
+        $loans = $loanModel->all($businessId);
+        $borrowers = $loanModel->borrowers($businessId);
+        $categories = $loanModel->categories($businessId);
 
-        /*
-         * Get loans for current business.
-         */
+        $accountModel = new Account();
+        $accounts = $accountModel->getAll($businessId);
 
-        $loans =
-            $loanModel->all(
-                $businessId
-            );
-
-
-        /*
-         * Get borrowers.
-         */
-
-        $borrowers =
-            $loanModel->borrowers(
-                $businessId
-            );
-
-
-        /*
-         * Get loan categories.
-         */
-
-        $categories =
-            $loanModel->categories(
-                $businessId
-            );
-
-
-        /*
-         * Get accounts.
-         */
-
-        $accountModel =
-            new Account();
-
-        $accounts =
-            $accountModel->getAll(
-                $businessId
-            );
-
-
-        /*
-         * Success / error messages.
-         */
-
-        $success =
-            $_SESSION['loan_success']
-            ?? '';
-
-        $error =
-            $_SESSION['loan_error']
-            ?? '';
-
-
-        /*
-         * Clear flash messages.
-         */
+        $success = $_SESSION['loan_success'] ?? '';
+        $error = $_SESSION['loan_error'] ?? '';
 
         unset(
             $_SESSION['loan_success'],
             $_SESSION['loan_error']
         );
 
-
-        require APP_PATH .
-            '/views/loans/index.php';
+        require APP_PATH . '/views/loans/index.php';
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CREATE LOAN
-    |--------------------------------------------------------------------------
-    */
 
     public function store(): void
     {
         AuthMiddleware::requireLogin();
 
-        if (
-            $_SERVER['REQUEST_METHOD']
-            !== 'POST'
-        ) {
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: index.php?url=loans');
             exit;
         }
 
+        $user = Auth::user();
+        $businessId = Auth::businessId();
+        $loanModel = new Loan();
 
-        $user =
-            Auth::user();
+        $borrowerId = (int)($_POST['borrower_id'] ?? 0);
 
-        $businessId =
-            Auth::businessId();
-
-        $loanModel =
-            new Loan();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | FORM DATA
-        |--------------------------------------------------------------------------
-        */
-
-        $borrowerId =
-            (int)(
-                $_POST['borrower_id']
-                ?? 0
-            );
-
-
-        $categoryId =
-            !empty(
-                $_POST['category_id']
-            )
+        $categoryId = !empty($_POST['category_id'])
             ? (int)$_POST['category_id']
             : null;
 
+        $principalAmount = (float)($_POST['principal_amount'] ?? 0);
 
-        $principalAmount =
-            (float)(
-                $_POST['principal_amount']
-                ?? 0
-            );
+        $interestRate = (float)($_POST['interest_rate'] ?? 0);
 
+        $interestType = trim(
+            $_POST['interest_type'] ?? 'flat'
+        );
 
-        $interestRate =
-            (float)(
-                $_POST['interest_rate']
-                ?? 0
-            );
+        $accountId = (int)($_POST['account_id'] ?? 0);
 
+        $paymentType = trim(
+            $_POST['payment_type'] ?? 'installment'
+        );
 
-        $interestType =
-            trim(
-                $_POST['interest_type']
-                ?? 'flat'
-            );
+        $term = (int)($_POST['term'] ?? 1);
 
+        $termPeriod = trim(
+            $_POST['term_period'] ?? 'months'
+        );
 
-        $accountId =
-            (int)(
-                $_POST['account_id']
-                ?? 0
-            );
+        $processingFee = (float)(
+            $_POST['processing_fee'] ?? 0
+        );
 
-
-        /*
-         * PAYMENT TYPE
-         */
-
-        $paymentType =
-            trim(
-                $_POST['payment_type']
-                ?? 'installment'
-            );
-
-
-        $term =
-            (int)(
-                $_POST['term']
-                ?? 1
-            );
-
-
-        $termPeriod =
-            trim(
-                $_POST['term_period']
-                ?? 'months'
-            );
-
-
-        $processingFee =
-            (float)(
-                $_POST['processing_fee']
-                ?? 0
-            );
-
-
-        $releaseDate =
-            !empty(
-                $_POST['release_date']
-            )
+        $releaseDate = !empty($_POST['release_date'])
             ? $_POST['release_date']
-            : null;
+            : date('Y-m-d');
 
-
-        $firstPaymentDate =
-            !empty(
-                $_POST['first_payment_date']
-            )
+        $firstPaymentDate = !empty($_POST['first_payment_date'])
             ? $_POST['first_payment_date']
             : null;
 
+        $status = trim(
+            $_POST['status'] ?? 'pending'
+        );
 
-        $status =
-            trim(
-                $_POST['status']
-                ?? 'pending'
-            );
+        $purpose = trim(
+            $_POST['purpose'] ?? ''
+        );
 
-
-        $purpose =
-            trim(
-                $_POST['purpose']
-                ?? ''
-            );
-
-
-        $notes =
-            trim(
-                $_POST['notes']
-                ?? ''
-            );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | VALIDATION
-        |--------------------------------------------------------------------------
-        */
+        $notes = trim(
+            $_POST['notes'] ?? ''
+        );
 
         if ($borrowerId <= 0) {
-
             $_SESSION['loan_error'] =
                 'Please select a borrower.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
 
         if ($accountId <= 0) {
-
             $_SESSION['loan_error'] =
                 'Please select the account from which the loan will be released.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
 
         if ($principalAmount <= 0) {
-
             $_SESSION['loan_error'] =
                 'Principal amount must be greater than zero.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
 
         if ($interestRate < 0) {
-
             $_SESSION['loan_error'] =
                 'Interest rate cannot be negative.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
 
         if ($term <= 0) {
-
             $_SESSION['loan_error'] =
                 'Loan term must be greater than zero.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | VALIDATE INTEREST TYPE
-        |--------------------------------------------------------------------------
-        */
 
         $allowedInterestTypes = [
             'flat',
             'reducing_balance'
         ];
 
-
         if (!in_array(
             $interestType,
             $allowedInterestTypes,
             true
         )) {
-
             $_SESSION['loan_error'] =
                 'Invalid interest type.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | VALIDATE PAYMENT TYPE
-        |--------------------------------------------------------------------------
-        */
 
         $allowedPaymentTypes = [
             'installment',
             'full_payment'
         ];
 
-
         if (!in_array(
             $paymentType,
             $allowedPaymentTypes,
             true
         )) {
-
             $_SESSION['loan_error'] =
                 'Invalid payment type.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | VALIDATE TERM PERIOD
-        |--------------------------------------------------------------------------
-        */
 
         $allowedPeriods = [
             'days',
@@ -407,166 +181,164 @@ class LoanController
             'years'
         ];
 
-
         if (!in_array(
             $termPeriod,
             $allowedPeriods,
             true
         )) {
-
             $_SESSION['loan_error'] =
                 'Invalid loan term period.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | VERIFY BORROWER BELONGS TO BUSINESS
-        |--------------------------------------------------------------------------
-        */
-
-        if (
-            !$loanModel->borrowerBelongsToBusiness(
-                $borrowerId,
-                $businessId
-            )
-        ) {
-
+        if (!$loanModel->borrowerBelongsToBusiness(
+            $borrowerId,
+            $businessId
+        )) {
             $_SESSION['loan_error'] =
                 'Invalid borrower selected.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
+        /*
+         * FULL PAYMENT DATE FIX
+         *
+         * For a full-payment loan:
+         *
+         * release date + term period = payment date
+         *
+         * Example:
+         * Release: 2026-08-15
+         * Term: 15 days
+         * Due: 2026-08-30
+         *
+         * We do not use an arbitrary first_payment_date
+         * for full-payment loans.
+         */
+
+        if ($paymentType === 'full_payment') {
+            try {
+                $dueDate = new DateTime($releaseDate);
+
+                switch ($termPeriod) {
+                    case 'days':
+                        $dueDate->modify("+{$term} days");
+                        break;
+
+                    case 'weeks':
+                        $dueDate->modify("+{$term} weeks");
+                        break;
+
+                    case 'months':
+                        $dueDate->modify("+{$term} months");
+                        break;
+
+                    case 'years':
+                        $dueDate->modify("+{$term} years");
+                        break;
+                }
+
+                $firstPaymentDate =
+                    $dueDate->format('Y-m-d');
+
+            } catch (Throwable $e) {
+                $_SESSION['loan_error'] =
+                    'Invalid release date.';
+                header('Location: index.php?url=loans');
+                exit;
+            }
+        } elseif (!$firstPaymentDate) {
+            try {
+                $firstDate = new DateTime($releaseDate);
+
+                switch ($termPeriod) {
+                    case 'days':
+                        $firstDate->modify('+1 day');
+                        break;
+
+                    case 'weeks':
+                        $firstDate->modify('+1 week');
+                        break;
+
+                    case 'months':
+                        $firstDate->modify('+1 month');
+                        break;
+
+                    case 'years':
+                        $firstDate->modify('+1 year');
+                        break;
+                }
+
+                $firstPaymentDate =
+                    $firstDate->format('Y-m-d');
+
+            } catch (Throwable $e) {
+                $firstPaymentDate = $releaseDate;
+            }
+        }
 
         /*
-        |--------------------------------------------------------------------------
-        | CALCULATE INTEREST
-        |--------------------------------------------------------------------------
-        */
+         * CALCULATE INTEREST
+         */
 
         $totalInterest = 0;
 
-
-        if (
-            $interestType === 'flat'
-        ) {
-
-            /*
-             * Flat interest:
-             *
-             * Principal × Rate × Term
-             */
-
+        if ($interestType === 'flat') {
             $totalInterest =
-                $principalAmount
-                *
-                ($interestRate / 100)
-                *
+                $principalAmount *
+                ($interestRate / 100) *
                 $term;
-
         } else {
-
-            /*
-             * Reducing balance.
-             */
-
-            $periods =
-                $term;
-
+            $periods = $term;
 
             if ($periods > 0) {
-
                 $periodicRate =
-                    ($interestRate / 100);
-
+                    $interestRate / 100;
 
                 if ($periodicRate > 0) {
-
                     $payment =
-                        $principalAmount
-                        *
+                        $principalAmount *
                         (
-                            $periodicRate
-                            *
+                            $periodicRate *
                             pow(
                                 1 + $periodicRate,
                                 $periods
                             )
-                        )
-                        /
+                        ) /
                         (
                             pow(
                                 1 + $periodicRate,
                                 $periods
-                            )
-                            - 1
+                            ) - 1
                         );
 
-
                     $totalInterest =
                         (
-                            $payment
-                            *
-                            $periods
-                        )
-                        -
+                            $payment * $periods
+                        ) -
                         $principalAmount;
-
-                } else {
-
-                    $totalInterest =
-                        0;
                 }
             }
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | TOTAL PAYABLE
-        |--------------------------------------------------------------------------
-        */
-
         $totalPayable =
-            $principalAmount
-            +
-            $totalInterest
-            +
+            $principalAmount +
+            $totalInterest +
             $processingFee;
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | GENERATE LOAN NUMBER
-        |--------------------------------------------------------------------------
-        */
 
         $loanNumber =
             $loanModel->generateLoanNumber(
                 $businessId
             );
 
+        try {
+            $db = Database::getInstance();
 
-        /*
-        |--------------------------------------------------------------------------
-        | CREATE LOAN
-        |--------------------------------------------------------------------------
-        */
+            $db->beginTransaction();
 
-        $loanId =
-            $loanModel->create([
-
+            $loanId = $loanModel->create([
                 'business_id' =>
                     $businessId,
 
@@ -625,745 +397,686 @@ class LoanController
                     $notes,
 
                 'created_by' =>
-                    $user['id']
-                    ?? null
+                    $user['id'] ?? null
             ]);
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | DEDUCT LOAN FROM ACCOUNT
-        |--------------------------------------------------------------------------
-        */
-
-        if ($loanId) {
-
-            try {
-
-                $accountModel =
-                    new Account();
-
-
-                $accountModel->deductForLoan(
-                    $accountId,
-                    $businessId,
-                    $principalAmount
+            if (!$loanId) {
+                throw new Exception(
+                    'Unable to create loan.'
                 );
-
-            } catch (
-                Throwable $e
-            ) {
-
-                $_SESSION['loan_error'] =
-                    $e->getMessage();
-
-                header(
-                    'Location: index.php?url=loans'
-                );
-
-                exit;
             }
-        }
 
+            $accountModel =
+                new Account();
 
-        /*
-        |--------------------------------------------------------------------------
-        | GENERATE PAYMENT SCHEDULE
-        |--------------------------------------------------------------------------
-        */
+            $accountModel->deductForLoan(
+                $accountId,
+                $businessId,
+                $principalAmount
+            );
 
-        if ($loanId) {
+            /*
+             * Generate payment schedule.
+             *
+             * For full_payment, the model receives the
+             * already-calculated maturity/payment date.
+             */
 
             $loanModel->generateSchedule(
-
                 $loanId,
-
                 $principalAmount,
-
                 $totalInterest,
-
                 $term,
-
                 $termPeriod,
-
                 $firstPaymentDate,
-
                 $paymentType
             );
+
+            $db->commit();
+
+        } catch (Throwable $e) {
+
+            if (
+                isset($db) &&
+                $db->inTransaction()
+            ) {
+                $db->rollBack();
+            }
+
+            $_SESSION['loan_error'] =
+                $e->getMessage();
+
+            header('Location: index.php?url=loans');
+            exit;
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | SUCCESS
-        |--------------------------------------------------------------------------
-        */
 
         $_SESSION['loan_success'] =
             'Loan created successfully.';
 
-
-        header(
-            'Location: index.php?url=loans'
-        );
-
+        header('Location: index.php?url=loans');
         exit;
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | VIEW LOAN
-    |--------------------------------------------------------------------------
-    */
 
     public function show(): void
     {
         AuthMiddleware::requireLogin();
 
-        $businessId =
-            Auth::businessId();
+        $businessId = Auth::businessId();
 
-
-        $id =
-            (int)(
-                $_GET['id']
-                ?? 0
-            );
-
+        $id = (int)(
+            $_GET['id'] ?? 0
+        );
 
         if ($id <= 0) {
-
             $_SESSION['loan_error'] =
                 'Invalid loan ID.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
+        $loanModel = new Loan();
 
-        $loanModel =
-            new Loan();
-
-
-        $loan =
-            $loanModel->findByBusiness(
-                $id,
-                $businessId
-            );
-
+        $loan = $loanModel->findByBusiness(
+            $id,
+            $businessId
+        );
 
         if (!$loan) {
-
             $_SESSION['loan_error'] =
                 'Loan not found.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
 
-            header(
-                'Location: index.php?url=loans'
-            );
+        $schedule =
+            $loanModel->getSchedule($id);
+
+        $payments =
+            $loanModel->getPayments($id);
+
+        $user = Auth::user();
+        $business = Auth::business();
+        $tenantRole = Auth::tenantRole();
+
+        require APP_PATH . '/views/loans/show.php';
+    }
+
+    public function edit(): void
+    {
+        AuthMiddleware::requireLogin();
+
+        $businessId = Auth::businessId();
+
+        $id = (int)(
+            $_GET['id']
+            ?? $_POST['id']
+            ?? 0
+        );
+
+        if ($id <= 0) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+
+            echo json_encode([
+                'success' => false,
+                'message' => 'Invalid loan ID.'
+            ]);
 
             exit;
         }
 
+        $loanModel = new Loan();
 
-        $schedule =
-            $loanModel->getSchedule(
-                $id
-            );
+        $loan = $loanModel->findByBusiness(
+            $id,
+            $businessId
+        );
 
+        if (!$loan) {
+            http_response_code(404);
+            header('Content-Type: application/json');
 
-        $payments =
-            $loanModel->getPayments(
-                $id
-            );
+            echo json_encode([
+                'success' => false,
+                'message' => 'Loan not found.'
+            ]);
 
+            exit;
+        }
 
-        $user =
-            Auth::user();
+        header('Content-Type: application/json');
 
-        $business =
-            Auth::business();
+        echo json_encode([
+            'success' => true,
+            'loan' => $loan
+        ]);
 
-        $tenantRole =
-            Auth::tenantRole();
-
-
-        require APP_PATH .
-            '/views/loans/show.php';
+        exit;
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE LOAN
-    |--------------------------------------------------------------------------
-    */
 
     public function update(): void
     {
         AuthMiddleware::requireLogin();
 
-
-        if (
-            $_SERVER['REQUEST_METHOD']
-            !== 'POST'
-        ) {
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: index.php?url=loans');
             exit;
         }
 
+        $businessId = Auth::businessId();
 
-        $businessId =
-            Auth::businessId();
-
-
-        $id =
-            (int)(
-                $_POST['id']
-                ?? 0
-            );
-
+        $id = (int)(
+            $_POST['id']
+            ?? $_POST['loan_id']
+            ?? 0
+        );
 
         if ($id <= 0) {
-
             $_SESSION['loan_error'] =
                 'Invalid loan ID.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
+        $loanModel = new Loan();
 
-        $loanModel =
-            new Loan();
-
-
-        $loan =
-            $loanModel->findByBusiness(
-                $id,
-                $businessId
-            );
-
+        $loan = $loanModel->findByBusiness(
+            $id,
+            $businessId
+        );
 
         if (!$loan) {
-
             $_SESSION['loan_error'] =
                 'Loan not found.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
+        $borrowerId = (int)(
+            $_POST['borrower_id']
+            ?? $loan['borrower_id']
+            ?? 0
+        );
 
-        $borrowerId =
-            (int)(
-                $_POST['borrower_id']
-                ??
-                $loan['borrower_id']
-            );
-
-
-        $categoryId =
-            !empty(
-                $_POST['category_id']
-            )
+        $categoryId = !empty(
+            $_POST['category_id']
+        )
             ? (int)$_POST['category_id']
             : null;
 
-
-        $status =
-            trim(
-                $_POST['status']
-                ??
-                $loan['status']
-            );
-
-
-        $purpose =
-            trim(
-                $_POST['purpose']
-                ?? ''
-            );
-
-
-        $notes =
-            trim(
-                $_POST['notes']
-                ?? ''
-            );
-
-
-        $loanModel->update(
-            $id,
-            $businessId,
-            [
-
-                'borrower_id' =>
-                    $borrowerId,
-
-                'category_id' =>
-                    $categoryId,
-
-                'status' =>
-                    $status,
-
-                'purpose' =>
-                    $purpose,
-
-                'notes' =>
-                    $notes
-            ]
+        $principalAmount = (float)(
+            $_POST['principal_amount']
+            ?? $loan['principal_amount']
+            ?? 0
         );
 
-
-        $_SESSION['loan_success'] =
-            'Loan updated successfully.';
-
-
-        header(
-            'Location: index.php?url=loans'
+        $interestRate = (float)(
+            $_POST['interest_rate']
+            ?? $loan['interest_rate']
+            ?? 0
         );
 
-        exit;
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | DELETE / CANCEL LOAN
-    |--------------------------------------------------------------------------
-    */
-
-    public function delete(): void
-    {
-        AuthMiddleware::requireLogin();
-
-
-        if (
-            $_SERVER['REQUEST_METHOD']
-            !== 'POST'
-        ) {
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
-            exit;
-        }
-
-
-        $businessId =
-            Auth::businessId();
-
-
-        $id =
-            (int)(
-                $_POST['id']
-                ?? 0
-            );
-
-
-        if ($id <= 0) {
-
-            $_SESSION['loan_error'] =
-                'Invalid loan ID.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
-            exit;
-        }
-
-
-        $loanModel =
-            new Loan();
-
-
-        $loan =
-            $loanModel->findByBusiness(
-                $id,
-                $businessId
-            );
-
-
-        if (!$loan) {
-
-            $_SESSION['loan_error'] =
-                'Loan not found.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
-            exit;
-        }
-
-
-        /*
-         * We don't physically delete the loan.
-         *
-         * We mark it as cancelled so financial
-         * history remains intact.
-         */
-
-        $loanModel->update(
-            $id,
-            $businessId,
-            [
-                'status' =>
-                    'cancelled'
-            ]
+        $interestType = trim(
+            $_POST['interest_type']
+            ?? $loan['interest_type']
+            ?? 'flat'
         );
 
-
-        $_SESSION['loan_success'] =
-            'Loan cancelled successfully.';
-
-
-        header(
-            'Location: index.php?url=loans'
+        $paymentType = trim(
+            $_POST['payment_type']
+            ?? $loan['payment_type']
+            ?? 'installment'
         );
 
-        exit;
-    }
+        $term = (int)(
+            $_POST['term']
+            ?? $loan['term']
+            ?? 1
+        );
 
+        $termPeriod = trim(
+            $_POST['term_period']
+            ?? $loan['term_period']
+            ?? 'months'
+        );
 
-    /*
-    |--------------------------------------------------------------------------
-    | REJECT LOAN
-    |--------------------------------------------------------------------------
-    */
+        $processingFee = (float)(
+            $_POST['processing_fee']
+            ?? $loan['processing_fee']
+            ?? 0
+        );
 
-    public function reject(): void
-    {
-        AuthMiddleware::requireLogin();
+        $releaseDate = !empty(
+            $_POST['release_date']
+        )
+            ? $_POST['release_date']
+            : ($loan['release_date'] ?? date('Y-m-d'));
 
+        $firstPaymentDate = !empty(
+            $_POST['first_payment_date']
+        )
+            ? $_POST['first_payment_date']
+            : ($loan['first_payment_date'] ?? null);
 
-        if (
-            $_SERVER['REQUEST_METHOD']
-            !== 'POST'
-        ) {
+        $status = trim(
+            $_POST['status']
+            ?? $loan['status']
+            ?? 'pending'
+        );
 
-            header(
-                'Location: index.php?url=loans'
-            );
+        $purpose = trim(
+            $_POST['purpose']
+            ?? $loan['purpose']
+            ?? ''
+        );
 
-            exit;
-        }
+        $notes = trim(
+            $_POST['notes']
+            ?? $loan['notes']
+            ?? ''
+        );
 
-
-        $businessId =
-            Auth::businessId();
-
-
-        $id =
-            (int)(
-                $_POST['id']
-                ?? 0
-            );
-
-
-        if ($id <= 0) {
-
+        if ($borrowerId <= 0) {
             $_SESSION['loan_error'] =
-                'Invalid loan ID.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+                'Please select a borrower.';
+            header('Location: index.php?url=loans');
             exit;
         }
 
+        if ($principalAmount <= 0) {
+            $_SESSION['loan_error'] =
+                'Principal amount must be greater than zero.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
 
-        $loanModel =
-            new Loan();
+        if ($interestRate < 0) {
+            $_SESSION['loan_error'] =
+                'Interest rate cannot be negative.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
 
+        if ($term <= 0) {
+            $_SESSION['loan_error'] =
+                'Loan term must be greater than zero.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
+
+        $allowedInterestTypes = [
+            'flat',
+            'reducing_balance'
+        ];
+
+        if (!in_array(
+            $interestType,
+            $allowedInterestTypes,
+            true
+        )) {
+            $_SESSION['loan_error'] =
+                'Invalid interest type.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
+
+        $allowedPaymentTypes = [
+            'installment',
+            'full_payment'
+        ];
+
+        if (!in_array(
+            $paymentType,
+            $allowedPaymentTypes,
+            true
+        )) {
+            $_SESSION['loan_error'] =
+                'Invalid payment type.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
+
+        $allowedPeriods = [
+            'days',
+            'weeks',
+            'months',
+            'years'
+        ];
+
+        if (!in_array(
+            $termPeriod,
+            $allowedPeriods,
+            true
+        )) {
+            $_SESSION['loan_error'] =
+                'Invalid loan term period.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
+
+        if (!$loanModel->borrowerBelongsToBusiness(
+            $borrowerId,
+            $businessId
+        )) {
+            $_SESSION['loan_error'] =
+                'Invalid borrower selected.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
 
         /*
-         * Make sure the loan belongs
-         * to the current business.
+         * FULL PAYMENT DATE FIX
          */
 
-        $loan =
-            $loanModel->findByBusiness(
-                $id,
-                $businessId
-            );
+        if ($paymentType === 'full_payment') {
+            try {
+                $dueDate = new DateTime($releaseDate);
 
+                switch ($termPeriod) {
+                    case 'days':
+                        $dueDate->modify("+{$term} days");
+                        break;
 
-        if (!$loan) {
+                    case 'weeks':
+                        $dueDate->modify("+{$term} weeks");
+                        break;
 
-            $_SESSION['loan_error'] =
-                'Loan not found.';
+                    case 'months':
+                        $dueDate->modify("+{$term} months");
+                        break;
 
-            header(
-                'Location: index.php?url=loans'
-            );
+                    case 'years':
+                        $dueDate->modify("+{$term} years");
+                        break;
+                }
 
-            exit;
+                $firstPaymentDate =
+                    $dueDate->format('Y-m-d');
+
+            } catch (Throwable $e) {
+                $_SESSION['loan_error'] =
+                    'Invalid release date.';
+                header('Location: index.php?url=loans');
+                exit;
+            }
         }
 
-
         /*
-         * Only pending loans can be rejected.
+         * CALCULATE INTEREST
          */
 
-        if (
-            $loan['status']
-            !== 'pending'
-        ) {
+        $totalInterest = 0;
 
-            $_SESSION['loan_error'] =
-                'Only pending loans can be rejected.';
+        if ($interestType === 'flat') {
 
-            header(
-                'Location: index.php?url=loans'
-            );
+            $totalInterest =
+                $principalAmount *
+                ($interestRate / 100) *
+                $term;
 
-            exit;
+        } else {
+
+            $periods = $term;
+
+            if ($periods > 0) {
+
+                $periodicRate =
+                    $interestRate / 100;
+
+                if ($periodicRate > 0) {
+
+                    $payment =
+                        $principalAmount *
+                        (
+                            $periodicRate *
+                            pow(
+                                1 + $periodicRate,
+                                $periods
+                            )
+                        ) /
+                        (
+                            pow(
+                                1 + $periodicRate,
+                                $periods
+                            ) - 1
+                        );
+
+                    $totalInterest =
+                        (
+                            $payment * $periods
+                        ) -
+                        $principalAmount;
+                }
+            }
         }
 
+        $totalPayable =
+            $principalAmount +
+            $totalInterest +
+            $processingFee;
 
-        /*
-         * Change loan status to rejected.
-         */
+        try {
 
-        $updated =
-            $loanModel->update(
+            $updated = $loanModel->update(
                 $id,
                 $businessId,
                 [
+                    'borrower_id' =>
+                        $borrowerId,
+
+                    'category_id' =>
+                        $categoryId,
+
+                    'principal_amount' =>
+                        $principalAmount,
+
+                    'interest_rate' =>
+                        $interestRate,
+
+                    'interest_type' =>
+                        $interestType,
+
+                    'payment_type' =>
+                        $paymentType,
+
+                    'term' =>
+                        $term,
+
+                    'term_period' =>
+                        $termPeriod,
+
+                    'processing_fee' =>
+                        $processingFee,
+
+                    'total_interest' =>
+                        $totalInterest,
+
+                    'total_payable' =>
+                        $totalPayable,
+
+                    'release_date' =>
+                        $releaseDate,
+
+                    'first_payment_date' =>
+                        $firstPaymentDate,
+
                     'status' =>
-                        'rejected'
+                        $status,
+
+                    'purpose' =>
+                        $purpose,
+
+                    'notes' =>
+                        $notes
                 ]
             );
 
+            if ($updated === false) {
+                throw new Exception(
+                    'Unable to update the loan.'
+                );
+            }
 
-        if (!$updated) {
+            /*
+             * Regenerate schedule after changing
+             * the loan's payment terms/date.
+             */
+
+            $db = Database::getInstance();
+
+            $db->beginTransaction();
+
+            try {
+
+                $stmt = $db->prepare(
+                    "
+                    DELETE FROM loan_schedules
+                    WHERE loan_id = ?
+                    "
+                );
+
+                $stmt->execute([
+                    $id
+                ]);
+
+                $loanModel->generateSchedule(
+                    $id,
+                    $principalAmount,
+                    $totalInterest,
+                    $term,
+                    $termPeriod,
+                    $firstPaymentDate,
+                    $paymentType
+                );
+
+                $db->commit();
+
+            } catch (Throwable $e) {
+
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+
+                throw $e;
+            }
+
+            $_SESSION['loan_success'] =
+                'Loan updated successfully.';
+
+            header('Location: index.php?url=loans');
+            exit;
+
+        } catch (Throwable $e) {
 
             $_SESSION['loan_error'] =
-                'Failed to reject the loan.';
+                $e->getMessage();
 
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
-
-        $_SESSION['loan_success'] =
-            'Loan rejected successfully.';
-
-
-        header(
-            'Location: index.php?url=loans'
-        );
-
-        exit;
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | APPROVE LOAN
-    |--------------------------------------------------------------------------
-    */
 
     public function approve(): void
     {
         AuthMiddleware::requireLogin();
 
+        $businessId = Auth::businessId();
 
-        $businessId =
-            Auth::businessId();
-
-
-        $id =
-            (int)(
-                $_POST['id']
-                ?? 0
-            );
-
+        $id = (int)(
+            $_POST['id'] ?? 0
+        );
 
         if ($id <= 0) {
-
             $_SESSION['loan_error'] =
                 'Invalid loan ID.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
+        $loanModel = new Loan();
 
-        $loanModel =
-            new Loan();
-
-
-        $loan =
-            $loanModel->findByBusiness(
-                $id,
-                $businessId
-            );
-
+        $loan = $loanModel->findByBusiness(
+            $id,
+            $businessId
+        );
 
         if (!$loan) {
-
             $_SESSION['loan_error'] =
                 'Loan not found.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
-
-        if (
-            $loan['status']
-            !== 'pending'
-        ) {
-
+        if ($loan['status'] !== 'pending') {
             $_SESSION['loan_error'] =
                 'Only pending loans can be approved.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
 
         $loanModel->update(
             $id,
             $businessId,
             [
-                'status' =>
-                    'active'
+                'status' => 'active'
             ]
         );
-
 
         $_SESSION['loan_success'] =
             'Loan approved successfully.';
 
-
-        header(
-            'Location: index.php?url=loans'
-        );
-
+        header('Location: index.php?url=loans');
         exit;
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | RELEASE LOAN
-    |--------------------------------------------------------------------------
-    */
 
     public function release(): void
     {
         AuthMiddleware::requireLogin();
 
+        $businessId = Auth::businessId();
 
-        $businessId =
-            Auth::businessId();
-
-
-        $id =
-            (int)(
-                $_POST['id']
-                ?? 0
-            );
-
+        $id = (int)(
+            $_POST['id'] ?? 0
+        );
 
         if ($id <= 0) {
-
             $_SESSION['loan_error'] =
                 'Invalid loan ID.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
+        $loanModel = new Loan();
 
-        $loanModel =
-            new Loan();
-
-
-        $loan =
-            $loanModel->findByBusiness(
-                $id,
-                $businessId
-            );
-
+        $loan = $loanModel->findByBusiness(
+            $id,
+            $businessId
+        );
 
         if (!$loan) {
-
             $_SESSION['loan_error'] =
                 'Loan not found.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
 
         if (!in_array(
             $loan['status'],
-            [
-                'approved',
-                'pending'
-            ],
+            ['approved', 'pending'],
             true
         )) {
-
             $_SESSION['loan_error'] =
                 'This loan cannot be released.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
-
-        $releaseDate =
-            date('Y-m-d');
-
+        $releaseDate = date('Y-m-d');
 
         $loanModel->update(
             $id,
             $businessId,
             [
-
                 'status' =>
                     'active',
 
@@ -1372,651 +1085,597 @@ class LoanController
             ]
         );
 
-
         $_SESSION['loan_success'] =
             'Loan released successfully.';
 
+        header('Location: index.php?url=loans');
+        exit;
+    }
 
-        header(
-            'Location: index.php?url=loans'
+    public function penalty(): void
+    {
+        AuthMiddleware::requireLogin();
+
+        $businessId = Auth::businessId();
+
+        $loanId = (int)(
+            $_GET['id']
+            ?? $_POST['id']
+            ?? $_POST['loan_id']
+            ?? 0
         );
+
+        if ($loanId <= 0) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+
+            echo json_encode([
+                'success' => false,
+                'message' => 'Invalid loan ID.'
+            ]);
+
+            exit;
+        }
+
+        $loanModel = new Loan();
+
+        $loan = $loanModel->findByBusiness(
+            $loanId,
+            $businessId
+        );
+
+        if (!$loan) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+
+            echo json_encode([
+                'success' => false,
+                'message' => 'Loan not found.'
+            ]);
+
+            exit;
+        }
+
+        $schedule =
+            $loanModel->getSchedule($loanId);
+
+        header('Content-Type: application/json');
+
+        echo json_encode([
+            'success' => true,
+            'loan' => $loan,
+            'schedules' => $schedule
+        ]);
 
         exit;
     }
 
+    public function storePenalty(): void
+    {
+        AuthMiddleware::requireLogin();
 
-    /*
-    |--------------------------------------------------------------------------
-    | PAYMENT FORM
-    |--------------------------------------------------------------------------
-    */
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: index.php?url=loans');
+            exit;
+        }
+
+        $businessId = Auth::businessId();
+        $user = Auth::user();
+
+        $loanId = (int)(
+            $_POST['loan_id'] ?? 0
+        );
+
+        $scheduleId = !empty(
+            $_POST['schedule_id']
+        )
+            ? (int)$_POST['schedule_id']
+            : null;
+
+        $penaltyType = trim(
+            $_POST['penalty_type'] ?? 'fixed'
+        );
+
+        $penaltyBaseRate = (float)(
+            $_POST['penalty_base_rate'] ?? 0
+        );
+
+        $baseAmount = (float)(
+            $_POST['base_amount'] ?? 0
+        );
+
+        $penaltyAmount = (float)(
+            $_POST['penalty_amount'] ?? 0
+        );
+
+        $reason = trim(
+            $_POST['reason'] ?? ''
+        );
+
+        if ($loanId <= 0) {
+            $_SESSION['loan_error'] =
+                'Invalid loan ID.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
+
+        $allowedPenaltyTypes = [
+            'fixed',
+            'percentage',
+            'daily_fixed',
+            'daily_percentage'
+        ];
+
+        if (!in_array(
+            $penaltyType,
+            $allowedPenaltyTypes,
+            true
+        )) {
+            $_SESSION['loan_error'] =
+                'Invalid penalty type.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
+
+        if ($penaltyAmount <= 0) {
+            $_SESSION['loan_error'] =
+                'Penalty amount must be greater than zero.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
+
+        $loanModel = new Loan();
+
+        $loan = $loanModel->findByBusiness(
+            $loanId,
+            $businessId
+        );
+
+        if (!$loan) {
+            $_SESSION['loan_error'] =
+                'Loan not found.';
+            header('Location: index.php?url=loans');
+            exit;
+        }
+
+        if ($scheduleId) {
+
+            $db = Database::getInstance();
+
+            $stmt = $db->prepare(
+                "
+                SELECT id
+                FROM loan_schedules
+                WHERE id = ?
+                AND loan_id = ?
+                "
+            );
+
+            $stmt->execute([
+                $scheduleId,
+                $loanId
+            ]);
+
+            if (!$stmt->fetchColumn()) {
+                $_SESSION['loan_error'] =
+                    'Selected schedule does not belong to this loan.';
+                header('Location: index.php?url=loans');
+                exit;
+            }
+        }
+
+        try {
+
+            $db = Database::getInstance();
+
+            $stmt = $db->prepare(
+                "
+                INSERT INTO loan_penalties
+                (
+                    business_id,
+                    loan_id,
+                    schedule_id,
+                    penalty_type,
+                    penalty_base_rate,
+                    base_amount,
+                    penalty_amount,
+                    reason,
+                    created_by
+                )
+                VALUES
+                (
+                    :business_id,
+                    :loan_id,
+                    :schedule_id,
+                    :penalty_type,
+                    :penalty_base_rate,
+                    :base_amount,
+                    :penalty_amount,
+                    :reason,
+                    :created_by
+                )
+                "
+            );
+
+            $stmt->execute([
+                ':business_id' =>
+                    $businessId,
+
+                ':loan_id' =>
+                    $loanId,
+
+                ':schedule_id' =>
+                    $scheduleId,
+
+                ':penalty_type' =>
+                    $penaltyType,
+
+                ':penalty_base_rate' =>
+                    $penaltyBaseRate,
+
+                ':base_amount' =>
+                    $baseAmount,
+
+                ':penalty_amount' =>
+                    $penaltyAmount,
+
+                ':reason' =>
+                    $reason !== ''
+                        ? $reason
+                        : null,
+
+                ':created_by' =>
+                    $user['id'] ?? null
+            ]);
+
+            $_SESSION['loan_success'] =
+                'Penalty added successfully.';
+
+            header('Location: index.php?url=loans');
+            exit;
+
+        } catch (Throwable $e) {
+
+            $_SESSION['loan_error'] =
+                $e->getMessage();
+
+            header('Location: index.php?url=loans');
+            exit;
+        }
+    }
 
     public function payment(): void
     {
         AuthMiddleware::requireLogin();
 
+        $businessId = Auth::businessId();
 
-        $businessId =
-            Auth::businessId();
-
-
-        $id =
-            (int)(
-                $_GET['id']
-                ?? 0
-            );
-
+        $id = (int)(
+            $_GET['id'] ?? 0
+        );
 
         if ($id <= 0) {
-
             $_SESSION['loan_error'] =
                 'Invalid loan ID.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
+        $loanModel = new Loan();
 
-        $loanModel =
-            new Loan();
-
-
-        $loan =
-            $loanModel->findByBusiness(
-                $id,
-                $businessId
-            );
-
+        $loan = $loanModel->findByBusiness(
+            $id,
+            $businessId
+        );
 
         if (!$loan) {
-
             $_SESSION['loan_error'] =
                 'Loan not found.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
 
         if (!in_array(
             $loan['status'],
-            [
-                'approved',
-                'active',
-                'overdue'
-            ],
+            ['approved', 'active', 'overdue'],
             true
         )) {
-
             $_SESSION['loan_error'] =
                 'Payment cannot be made for this loan.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | Get schedules
-        |--------------------------------------------------------------------------
-        */
-
         $schedule =
-            $loanModel->getSchedule(
-                $id
-            );
+            $loanModel->getSchedule($id);
 
+        $db = Database::getInstance();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Get accounts
-        |--------------------------------------------------------------------------
-        */
-
-        $db =
-            Database::getInstance();
-
-
-        $stmt =
-            $db->prepare(
-                "
-                SELECT
-                    id,
-                    account_name,
-                    account_type,
-                    balance
-                FROM accounts
-                WHERE business_id = ?
-                AND status = 'active'
-                ORDER BY account_name ASC
-                "
-            );
-
+        $stmt = $db->prepare(
+            "
+            SELECT
+                id,
+                account_name,
+                account_type,
+                balance
+            FROM accounts
+            WHERE business_id = ?
+            AND status = 'active'
+            ORDER BY account_name ASC
+            "
+        );
 
         $stmt->execute([
             $businessId
         ]);
 
-
-        $accounts =
-            $stmt->fetchAll(
-                PDO::FETCH_ASSOC
-            );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Get existing payments
-        |--------------------------------------------------------------------------
-        */
+        $accounts = $stmt->fetchAll(
+            PDO::FETCH_ASSOC
+        );
 
         $payments =
-            $loanModel->getPayments(
-                $id
-            );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Calculate total paid
-        |--------------------------------------------------------------------------
-        */
+            $loanModel->getPayments($id);
 
         $totalPaid = 0;
 
-
-        foreach (
-            $payments
-            as $payment
-        ) {
-
+        foreach ($payments as $payment) {
             if (
-                ($payment['status']
-                    ?? 'posted')
+                ($payment['status'] ?? 'posted')
                 === 'posted'
             ) {
-
                 $totalPaid +=
                     (float)(
-                        $payment['amount']
-                        ?? 0
+                        $payment['amount'] ?? 0
                     );
             }
         }
 
-
-        $remainingBalance =
-            max(
-                0,
-                (float)$loan['total_payable']
-                -
-                $totalPaid
-            );
-
+        $remainingBalance = max(
+            0,
+            (float)$loan['total_payable'] -
+            $totalPaid
+        );
 
         require APP_PATH .
             '/views/loans/payment.php';
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | STORE PAYMENT
-    |--------------------------------------------------------------------------
-    */
-
     public function storePayment(): void
     {
         AuthMiddleware::requireLogin();
 
-
-        if (
-            $_SERVER['REQUEST_METHOD']
-            !== 'POST'
-        ) {
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: index.php?url=loans');
             exit;
         }
 
+        $businessId = Auth::businessId();
+        $user = Auth::user();
 
-        $businessId =
-            Auth::businessId();
+        $loanId = (int)(
+            $_POST['loan_id'] ?? 0
+        );
 
-
-        $user =
-            Auth::user();
-
-
-        $loanId =
-            (int)(
-                $_POST['loan_id']
-                ?? 0
-            );
-
-
-        $scheduleId =
-            !empty(
-                $_POST['schedule_id']
-            )
+        $scheduleId = !empty(
+            $_POST['schedule_id']
+        )
             ? (int)$_POST['schedule_id']
             : null;
 
+        $accountId = (int)(
+            $_POST['account_id'] ?? 0
+        );
 
-        $accountId =
-            (int)(
-                $_POST['account_id']
-                ?? 0
-            );
+        $amount = (float)(
+            $_POST['amount'] ?? 0
+        );
 
-
-        $amount =
-            (float)(
-                $_POST['amount']
-                ?? 0
-            );
-
-
-        $paymentDate =
-            !empty(
-                $_POST['payment_date']
-            )
+        $paymentDate = !empty(
+            $_POST['payment_date']
+        )
             ? $_POST['payment_date']
             : date('Y-m-d');
 
-
-        $notes =
-            trim(
-                $_POST['notes']
-                ?? ''
-            );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validate loan
-        |--------------------------------------------------------------------------
-        */
+        $notes = trim(
+            $_POST['notes'] ?? ''
+        );
 
         if ($loanId <= 0) {
-
             $_SESSION['loan_error'] =
                 'Invalid loan ID.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validate amount
-        |--------------------------------------------------------------------------
-        */
 
         if ($amount <= 0) {
-
             $_SESSION['loan_error'] =
                 'Payment amount must be greater than zero.';
-
             header(
-                'Location: index.php?url=loans/payment&id='
-                . $loanId
+                'Location: index.php?url=loans/payment&id=' .
+                $loanId
             );
-
             exit;
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validate account
-        |--------------------------------------------------------------------------
-        */
 
         if ($accountId <= 0) {
-
             $_SESSION['loan_error'] =
                 'Please select an account.';
-
             header(
-                'Location: index.php?url=loans/payment&id='
-                . $loanId
+                'Location: index.php?url=loans/payment&id=' .
+                $loanId
             );
-
             exit;
         }
 
+        $loanModel = new Loan();
 
-        $loanModel =
-            new Loan();
-
-
-        $loan =
-            $loanModel->findByBusiness(
-                $loanId,
-                $businessId
-            );
-
+        $loan = $loanModel->findByBusiness(
+            $loanId,
+            $businessId
+        );
 
         if (!$loan) {
-
             $_SESSION['loan_error'] =
                 'Loan not found.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Only active/approved/overdue loans
-        |--------------------------------------------------------------------------
-        */
 
         if (!in_array(
             $loan['status'],
-            [
-                'approved',
-                'active',
-                'overdue'
-            ],
+            ['approved', 'active', 'overdue'],
             true
         )) {
-
             $_SESSION['loan_error'] =
                 'Payment cannot be made for this loan.';
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
         }
 
-
-        $db =
-            Database::getInstance();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Start transaction
-        |--------------------------------------------------------------------------
-        */
+        $db = Database::getInstance();
 
         $db->beginTransaction();
 
-
         try {
 
-            /*
-            |--------------------------------------------------------------------------
-            | Check account
-            |--------------------------------------------------------------------------
-            */
-
-            $stmt =
-                $db->prepare(
-                    "
-                    SELECT
-                        id,
-                        balance,
-                        status
-                    FROM accounts
-                    WHERE id = ?
-                    AND business_id = ?
-                    FOR UPDATE
-                    "
-                );
-
+            $stmt = $db->prepare(
+                "
+                SELECT
+                    id,
+                    balance,
+                    status
+                FROM accounts
+                WHERE id = ?
+                AND business_id = ?
+                FOR UPDATE
+                "
+            );
 
             $stmt->execute([
                 $accountId,
                 $businessId
             ]);
 
-
-            $account =
-                $stmt->fetch(
-                    PDO::FETCH_ASSOC
-                );
-
+            $account = $stmt->fetch(
+                PDO::FETCH_ASSOC
+            );
 
             if (!$account) {
-
                 throw new Exception(
                     'Selected account was not found.'
                 );
             }
 
-
-            if (
-                $account['status']
-                !== 'active'
-            ) {
-
+            if ($account['status'] !== 'active') {
                 throw new Exception(
                     'Selected account is inactive.'
                 );
             }
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Calculate total already paid
-            |--------------------------------------------------------------------------
-            */
-
-            $stmt =
-                $db->prepare(
-                    "
-                    SELECT
-                        COALESCE(
-                            SUM(amount),
-                            0
-                        )
-                    FROM loan_payments
-                    WHERE loan_id = ?
-                    AND business_id = ?
-                    AND status = 'posted'
-                    "
-                );
-
+            $stmt = $db->prepare(
+                "
+                SELECT
+                    COALESCE(SUM(amount),0)
+                FROM loan_payments
+                WHERE loan_id = ?
+                AND business_id = ?
+                AND status = 'posted'
+                "
+            );
 
             $stmt->execute([
                 $loanId,
                 $businessId
             ]);
 
-
             $totalPaid =
                 (float)$stmt->fetchColumn();
 
+            $remainingBalance = max(
+                0,
+                (float)$loan['total_payable'] -
+                $totalPaid
+            );
 
-            /*
-            |--------------------------------------------------------------------------
-            | Remaining balance
-            |--------------------------------------------------------------------------
-            */
-
-            $remainingBalance =
-                max(
-                    0,
-                    (float)$loan['total_payable']
-                    -
-                    $totalPaid
-                );
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Don't allow overpayment
-            |--------------------------------------------------------------------------
-            */
-
-            if (
-                $amount >
-                $remainingBalance
-            ) {
-
+            if ($amount > $remainingBalance) {
                 throw new Exception(
-                    'Payment cannot be greater than the remaining loan balance of ₱'
-                    .
+                    'Payment cannot be greater than the remaining loan balance of ₱' .
                     number_format(
                         $remainingBalance,
                         2
-                    )
-                    .
+                    ) .
                     '.'
                 );
             }
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Determine schedule
-            |--------------------------------------------------------------------------
-            */
-
-            $principalAmount =
-                $amount;
-
-
-            $interestAmount =
-                0;
-
-
-            $penaltyAmount =
-                0;
-
+            $principalAmount = $amount;
+            $interestAmount = 0;
+            $penaltyAmount = 0;
 
             if ($scheduleId) {
 
-                $stmt =
-                    $db->prepare(
-                        "
-                        SELECT
-                            id,
-                            loan_id,
-                            total_due,
-                            paid_amount,
-                            status
-                        FROM loan_schedules
-                        WHERE id = ?
-                        AND loan_id = ?
-                        FOR UPDATE
-                        "
-                    );
-
+                $stmt = $db->prepare(
+                    "
+                    SELECT
+                        id,
+                        loan_id,
+                        total_due,
+                        paid_amount,
+                        status
+                    FROM loan_schedules
+                    WHERE id = ?
+                    AND loan_id = ?
+                    FOR UPDATE
+                    "
+                );
 
                 $stmt->execute([
                     $scheduleId,
                     $loanId
                 ]);
 
-
-                $schedule =
-                    $stmt->fetch(
-                        PDO::FETCH_ASSOC
-                    );
-
+                $schedule = $stmt->fetch(
+                    PDO::FETCH_ASSOC
+                );
 
                 if (!$schedule) {
-
                     throw new Exception(
                         'Selected payment schedule was not found.'
                     );
                 }
 
+                $scheduleRemaining = max(
+                    0,
+                    (float)$schedule['total_due'] -
+                    (float)$schedule['paid_amount']
+                );
 
-                $scheduleRemaining =
-                    max(
-                        0,
-                        (float)$schedule['total_due']
-                        -
-                        (float)$schedule['paid_amount']
-                    );
-
-
-                if (
-                    $amount >
-                    $scheduleRemaining
-                ) {
-
+                if ($amount > $scheduleRemaining) {
                     throw new Exception(
                         'Payment is greater than the remaining amount for this installment.'
                     );
                 }
-
-
-                /*
-                 * Get interest for this schedule.
-                 *
-                 * This now calls the method that exists
-                 * in Loan.php.
-                 */
 
                 $scheduleInterest =
                     $loanModel->getScheduleInterest(
                         $scheduleId
                     );
 
+                $interestAmount = min(
+                    $amount,
+                    $scheduleInterest
+                );
 
-                /*
-                 * Interest is paid first.
-                 */
-
-                $interestAmount =
-                    min(
-                        $amount,
-                        $scheduleInterest
-                    );
-
-
-                $principalAmount =
-                    max(
-                        0,
-                        $amount
-                        -
-                        $interestAmount
-                    );
+                $principalAmount = max(
+                    0,
+                    $amount - $interestAmount
+                );
             }
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Generate payment number
-            |--------------------------------------------------------------------------
-            */
-
             $paymentNumber =
-                'PAY-'
-                .
-                date('Ymd')
-                .
-                '-'
-                .
+                'PAY-' .
+                date('Ymd') .
+                '-' .
                 strtoupper(
                     substr(
                         bin2hex(
@@ -2027,63 +1686,44 @@ class LoanController
                     )
                 );
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Insert payment
-            |--------------------------------------------------------------------------
-            */
-
-            $stmt =
-                $db->prepare(
-                    "
-                    INSERT INTO loan_payments
-                    (
-                        business_id,
-                        loan_id,
-                        schedule_id,
-                        account_id,
-                        payment_number,
-                        payment_date,
-                        amount,
-                        principal_amount,
-                        interest_amount,
-                        penalty_amount,
-                        notes,
-                        status,
-                        created_by
-                    )
-
-                    VALUES
-                    (
-                        :business_id,
-                        :loan_id,
-                        :schedule_id,
-                        :account_id,
-                        :payment_number,
-                        :payment_date,
-                        :amount,
-                        :principal_amount,
-                        :interest_amount,
-                        :penalty_amount,
-                        :notes,
-                        'posted',
-                        :created_by
-                    )
-                    "
-                );
-
-
-            /*
-             * IMPORTANT:
-             *
-             * Every named placeholder is unique.
-             * This avoids the HY093 issue when
-             * PDO emulated prepares are disabled.
-             */
+            $stmt = $db->prepare(
+                "
+                INSERT INTO loan_payments
+                (
+                    business_id,
+                    loan_id,
+                    schedule_id,
+                    account_id,
+                    payment_number,
+                    payment_date,
+                    amount,
+                    principal_amount,
+                    interest_amount,
+                    penalty_amount,
+                    notes,
+                    status,
+                    created_by
+                )
+                VALUES
+                (
+                    :business_id,
+                    :loan_id,
+                    :schedule_id,
+                    :account_id,
+                    :payment_number,
+                    :payment_date,
+                    :amount,
+                    :principal_amount,
+                    :interest_amount,
+                    :penalty_amount,
+                    :notes,
+                    'posted',
+                    :created_by
+                )
+                "
+            );
 
             $stmt->execute([
-
                 ':business_id' =>
                     $businessId,
 
@@ -2118,78 +1758,49 @@ class LoanController
                     $notes,
 
                 ':created_by' =>
-                    $user['id']
-                    ?? null
+                    $user['id'] ?? null
             ]);
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Update schedule
-            |--------------------------------------------------------------------------
-            */
 
             if ($scheduleId) {
 
-                $stmt =
-                    $db->prepare(
-                        "
-                        UPDATE loan_schedules
-                        SET
-                            paid_amount =
-                                paid_amount
-                                +
-                                :payment_amount,
+                $stmt = $db->prepare(
+                    "
+                    UPDATE loan_schedules
+                    SET
+                        paid_amount =
+                            paid_amount + :payment_amount,
 
-                            status =
-                                CASE
+                        status =
+                            CASE
+                                WHEN
+                                    paid_amount +
+                                    :status_amount >= total_due
+                                THEN 'paid'
 
-                                    WHEN
-                                        paid_amount
-                                        +
-                                        :status_amount
-                                        >= total_due
-                                    THEN 'paid'
+                                WHEN
+                                    paid_amount +
+                                    :partial_amount > 0
+                                THEN 'partial'
 
-                                    WHEN
-                                        paid_amount
-                                        +
-                                        :partial_amount
-                                        > 0
-                                    THEN 'partial'
+                                ELSE status
+                            END,
 
-                                    ELSE status
+                        paid_date =
+                            CASE
+                                WHEN
+                                    paid_amount +
+                                    :date_amount >= total_due
+                                THEN :paid_date
 
-                                END,
+                                ELSE paid_date
+                            END
 
-                            paid_date =
-                                CASE
-
-                                    WHEN
-                                        paid_amount
-                                        +
-                                        :date_amount
-                                        >= total_due
-                                    THEN :paid_date
-
-                                    ELSE paid_date
-
-                                END
-
-                        WHERE id = :schedule_id
-
-                        AND loan_id = :schedule_loan_id
-                        "
-                    );
-
-
-                /*
-                 * Use different named parameters for each
-                 * occurrence so PDO cannot produce HY093.
-                 */
+                    WHERE id = :schedule_id
+                    AND loan_id = :schedule_loan_id
+                    "
+                );
 
                 $stmt->execute([
-
                     ':payment_amount' =>
                         $amount,
 
@@ -2213,28 +1824,15 @@ class LoanController
                 ]);
             }
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Add payment to account
-            |--------------------------------------------------------------------------
-            */
-
-            $stmt =
-                $db->prepare(
-                    "
-                    UPDATE accounts
-                    SET balance =
-                        balance + ?
-
-                    WHERE id = ?
-
-                    AND business_id = ?
-
-                    AND status = 'active'
-                    "
-                );
-
+            $stmt = $db->prepare(
+                "
+                UPDATE accounts
+                SET balance = balance + ?
+                WHERE id = ?
+                AND business_id = ?
+                AND status = 'active'
+                "
+            );
 
             $stmt->execute([
                 $amount,
@@ -2242,137 +1840,83 @@ class LoanController
                 $businessId
             ]);
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Check whether loan is now fully paid
-            |--------------------------------------------------------------------------
-            */
-
-            $stmt =
-                $db->prepare(
-                    "
-                    SELECT
-                        COALESCE(
-                            SUM(amount),
-                            0
-                        )
-                    FROM loan_payments
-                    WHERE loan_id = ?
-                    AND business_id = ?
-                    AND status = 'posted'
-                    "
-                );
-
+            $stmt = $db->prepare(
+                "
+                SELECT
+                    COALESCE(SUM(amount),0)
+                FROM loan_payments
+                WHERE loan_id = ?
+                AND business_id = ?
+                AND status = 'posted'
+                "
+            );
 
             $stmt->execute([
                 $loanId,
                 $businessId
             ]);
 
-
             $newTotalPaid =
                 (float)$stmt->fetchColumn();
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Complete loan if fully paid
-            |--------------------------------------------------------------------------
-            */
-
             if (
-                $newTotalPaid
-                >=
+                $newTotalPaid >=
                 (float)$loan['total_payable']
             ) {
 
-                $stmt =
-                    $db->prepare(
-                        "
-                        UPDATE loans
-                        SET status = 'completed'
-                        WHERE id = ?
-                        AND business_id = ?
-                        "
-                    );
-
+                $stmt = $db->prepare(
+                    "
+                    UPDATE loans
+                    SET status = 'completed'
+                    WHERE id = ?
+                    AND business_id = ?
+                    "
+                );
 
                 $stmt->execute([
                     $loanId,
                     $businessId
                 ]);
 
-            } else {
+            } elseif (
+                $loan['status'] === 'approved'
+            ) {
 
-                /*
-                 * If loan was approved and payment
-                 * is made, make it active.
-                 */
+                $stmt = $db->prepare(
+                    "
+                    UPDATE loans
+                    SET status = 'active'
+                    WHERE id = ?
+                    AND business_id = ?
+                    AND status = 'approved'
+                    "
+                );
 
-                if (
-                    $loan['status']
-                    === 'approved'
-                ) {
-
-                    $stmt =
-                        $db->prepare(
-                            "
-                            UPDATE loans
-                            SET status = 'active'
-                            WHERE id = ?
-                            AND business_id = ?
-                            AND status = 'approved'
-                            "
-                        );
-
-
-                    $stmt->execute([
-                        $loanId,
-                        $businessId
-                    ]);
-                }
+                $stmt->execute([
+                    $loanId,
+                    $businessId
+                ]);
             }
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Commit
-            |--------------------------------------------------------------------------
-            */
-
             $db->commit();
-
 
             $_SESSION['loan_success'] =
                 'Payment recorded successfully.';
 
-
-            header(
-                'Location: index.php?url=loans'
-            );
-
+            header('Location: index.php?url=loans');
             exit;
 
-        } catch (
-            Throwable $e
-        ) {
+        } catch (Throwable $e) {
 
-            if (
-                $db->inTransaction()
-            ) {
-
+            if ($db->inTransaction()) {
                 $db->rollBack();
             }
-
 
             $_SESSION['loan_error'] =
                 $e->getMessage();
 
-
             header(
-                'Location: index.php?url=loans/payment&id='
-                .
+                'Location: index.php?url=loans/payment&id=' .
                 $loanId
             );
 
@@ -2380,80 +1924,35 @@ class LoanController
         }
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | PAYMENT INDEX
-    |--------------------------------------------------------------------------
-    |
-    | Shows all payments for the current business.
-    |
-    */
-
     public function payments(): void
     {
         AuthMiddleware::requireLogin();
 
+        $businessId = Auth::businessId();
 
-        $businessId =
-            Auth::businessId();
-
-
-        $loanModel =
-            new Loan();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | GET ALL PAYMENTS
-        |--------------------------------------------------------------------------
-        */
+        $loanModel = new Loan();
 
         $payments =
             $loanModel->getAllPayments(
                 $businessId
             );
 
+        $totalPayments = 0;
+        $totalPrincipal = 0;
+        $totalInterest = 0;
+        $totalPenalty = 0;
 
-        /*
-        |--------------------------------------------------------------------------
-        | CALCULATE TOTALS
-        |--------------------------------------------------------------------------
-        */
-
-        $totalPayments =
-            0;
-
-
-        $totalPrincipal =
-            0;
-
-
-        $totalInterest =
-            0;
-
-
-        $totalPenalty =
-            0;
-
-
-        foreach (
-            $payments
-            as $payment
-        ) {
+        foreach ($payments as $payment) {
 
             if (
-                ($payment['status']
-                    ?? 'posted')
+                ($payment['status'] ?? 'posted')
                 === 'posted'
             ) {
 
                 $totalPayments +=
                     (float)(
-                        $payment['amount']
-                        ?? 0
+                        $payment['amount'] ?? 0
                     );
-
 
                 $totalPrincipal +=
                     (float)(
@@ -2461,13 +1960,11 @@ class LoanController
                         ?? 0
                     );
 
-
                 $totalInterest +=
                     (float)(
                         $payment['interest_amount']
                         ?? 0
                     );
-
 
                 $totalPenalty +=
                     (float)(
@@ -2477,52 +1974,20 @@ class LoanController
             }
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | FLASH MESSAGES
-        |--------------------------------------------------------------------------
-        */
-
         $success =
-            $_SESSION['loan_success']
-            ?? '';
-
+            $_SESSION['loan_success'] ?? '';
 
         $error =
-            $_SESSION['loan_error']
-            ?? '';
-
+            $_SESSION['loan_error'] ?? '';
 
         unset(
             $_SESSION['loan_success'],
             $_SESSION['loan_error']
         );
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | AUTH DATA
-        |--------------------------------------------------------------------------
-        */
-
-        $user =
-            Auth::user();
-
-
-        $business =
-            Auth::business();
-
-
-        $tenantRole =
-            Auth::tenantRole();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | LOAD PAYMENT INDEX VIEW
-        |--------------------------------------------------------------------------
-        */
+        $user = Auth::user();
+        $business = Auth::business();
+        $tenantRole = Auth::tenantRole();
 
         require APP_PATH .
             '/views/payments/index.php';

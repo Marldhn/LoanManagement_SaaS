@@ -1,4 +1,3 @@
-
 <?php
 
 /*
@@ -57,6 +56,7 @@ require_once APP_PATH . '/controllers/CategoryController.php';
 require_once APP_PATH . '/controllers/CollectionController.php';
 require_once APP_PATH . '/controllers/ReportController.php';
 require_once APP_PATH . '/controllers/SettingsController.php';
+require_once APP_PATH . '/controllers/PenaltyController.php';
 
 
 /*
@@ -70,7 +70,10 @@ require_once APP_PATH . '/models/Loan.php';
 require_once APP_PATH . '/models/Account.php';
 require_once APP_PATH . '/models/Expense.php';
 require_once APP_PATH . '/models/Category.php';
-    require_once APP_PATH . '/models/Setting.php';
+require_once APP_PATH . '/models/Setting.php';
+require_once APP_PATH . '/models/Penalty.php';
+
+
 /*
 |--------------------------------------------------------------------------
 | Get Requested URL
@@ -783,6 +786,39 @@ switch ($url) {
         $controller->updateLogo();
 
         break;
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | COLLECTIONS
+    |--------------------------------------------------------------------------
+    |
+    | Collection management is separate from individual loan payments.
+    |
+    */
+
+    case 'penalties':
+
+        $controller = new PenaltyController();
+
+        $controller->index();
+
+        break;
+
+
+    case 'penalties/view':
+
+        $controller = new PenaltyController();
+
+        $controller->view();
+
+        break;
+        
+
+        
+
+
 
 
     /*

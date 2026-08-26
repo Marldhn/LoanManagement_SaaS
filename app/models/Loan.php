@@ -4,33 +4,11 @@ class Loan
 {
     private PDO $db;
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | CONSTRUCTOR
-    |--------------------------------------------------------------------------
-    */
-
     public function __construct()
     {
         $this->db = Database::getInstance();
-
-        /*
-         * Make sure the payment schedule table exists.
-         *
-         * This fixes the error:
-         *
-         * Table 'loan_management_db.loan_schedules' doesn't exist
-         */
         $this->ensureLoanSchedulesTable();
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | ENSURE LOAN SCHEDULES TABLE
-    |--------------------------------------------------------------------------
-    */
 
     private function ensureLoanSchedulesTable(): void
     {
@@ -38,19 +16,12 @@ class Loan
             CREATE TABLE IF NOT EXISTS loan_schedules
             (
                 id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-
                 loan_id INT UNSIGNED NOT NULL,
-
                 installment_number INT NOT NULL,
-
                 due_date DATE NOT NULL,
-
                 principal_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-
                 interest_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-
                 total_due DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-
                 status ENUM(
                     'pending',
                     'paid',
@@ -58,22 +29,14 @@ class Loan
                     'overdue',
                     'cancelled'
                 ) NOT NULL DEFAULT 'pending',
-
                 paid_amount DECIMAL(15,2) NOT NULL DEFAULT 0.00,
-
                 paid_date DATE NULL,
-
                 created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
                 updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                     ON UPDATE CURRENT_TIMESTAMP,
-
                 PRIMARY KEY (id),
-
                 INDEX idx_loan_schedules_loan_id (loan_id),
-
                 INDEX idx_loan_schedules_due_date (due_date),
-
                 INDEX idx_loan_schedules_status (status)
             )
             ENGINE=InnoDB
@@ -84,19 +47,11 @@ class Loan
         $this->db->exec($sql);
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET ALL LOANS FOR BUSINESS
-    |--------------------------------------------------------------------------
-    */
-
     public function getByBusiness(int $businessId): array
     {
         $sql = "
             SELECT
                 l.*,
-
                 CONCAT(
                     COALESCE(b.first_name, ''),
                     ' ',
@@ -104,53 +59,31 @@ class Loan
                     ' ',
                     COALESCE(b.last_name, '')
                 ) AS borrower_name,
-
                 c.name AS category_name
-
             FROM loans l
-
             INNER JOIN borrowers b
                 ON b.id = l.borrower_id
-
             LEFT JOIN categories c
                 ON c.id = l.category_id
-
-            WHERE b.business_id = ?
-
+            WHERE l.business_id = ?
+            AND b.business_id = ?
             ORDER BY l.id DESC
         ";
 
         $stmt = $this->db->prepare($sql);
 
         $stmt->execute([
+            $businessId,
             $businessId
         ]);
 
-        return $stmt->fetchAll(
-            PDO::FETCH_ASSOC
-        );
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | ALIAS - GET ALL LOANS
-    |--------------------------------------------------------------------------
-    */
 
     public function all(int $businessId): array
     {
-        return $this->getByBusiness(
-            $businessId
-        );
+        return $this->getByBusiness($businessId);
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | FIND LOAN FOR BUSINESS
-    |--------------------------------------------------------------------------
-    */
 
     public function findByBusiness(
         int $id,
@@ -160,7 +93,6 @@ class Loan
         $sql = "
             SELECT
                 l.*,
-
                 CONCAT(
                     COALESCE(b.first_name, ''),
                     ' ',
@@ -168,21 +100,15 @@ class Loan
                     ' ',
                     COALESCE(b.last_name, '')
                 ) AS borrower_name,
-
                 c.name AS category_name
-
             FROM loans l
-
             INNER JOIN borrowers b
                 ON b.id = l.borrower_id
-
             LEFT JOIN categories c
                 ON c.id = l.category_id
-
             WHERE l.id = ?
-
+            AND l.business_id = ?
             AND b.business_id = ?
-
             LIMIT 1
         ";
 
@@ -190,22 +116,14 @@ class Loan
 
         $stmt->execute([
             $id,
+            $businessId,
             $businessId
         ]);
 
-        $loan = $stmt->fetch(
-            PDO::FETCH_ASSOC
-        );
+        $loan = $stmt->fetch(PDO::FETCH_ASSOC);
 
         return $loan ?: null;
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | ALIAS - FIND LOAN
-    |--------------------------------------------------------------------------
-    */
 
     public function find(
         int $id,
@@ -217,13 +135,6 @@ class Loan
             $businessId
         );
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CHECK BORROWER BELONGS TO BUSINESS
-    |--------------------------------------------------------------------------
-    */
 
     public function borrowerBelongsToBusiness(
         int $borrowerId,
@@ -248,18 +159,8 @@ class Loan
         return (bool)$stmt->fetchColumn();
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | CREATE LOAN
-    |--------------------------------------------------------------------------
-    */
-
     public function create(array $data): int
     {
-        /*
-         * Make sure payment type always has a valid value.
-         */
         $paymentType =
             $data['payment_type']
             ?? 'installment';
@@ -274,18 +175,22 @@ class Loan
             $allowedPaymentTypes,
             true
         )) {
-
             throw new InvalidArgumentException(
                 'Invalid payment type.'
             );
         }
 
+        $accountId =
+            !empty($data['account_id'])
+            ? (int)$data['account_id']
+            : null;
 
         $sql = "
             INSERT INTO loans
             (
                 business_id,
                 borrower_id,
+                account_id,
                 category_id,
                 loan_number,
                 principal_amount,
@@ -304,11 +209,11 @@ class Loan
                 notes,
                 created_by
             )
-
             VALUES
             (
                 :business_id,
                 :borrower_id,
+                :account_id,
                 :category_id,
                 :loan_number,
                 :principal_amount,
@@ -332,12 +237,14 @@ class Loan
         $stmt = $this->db->prepare($sql);
 
         $stmt->execute([
-
             ':business_id' =>
                 $data['business_id'],
 
             ':borrower_id' =>
                 $data['borrower_id'],
+
+            ':account_id' =>
+                $accountId,
 
             ':category_id' =>
                 $data['category_id'],
@@ -394,13 +301,6 @@ class Loan
         return (int)$this->db->lastInsertId();
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | GENERATE LOAN NUMBER
-    |--------------------------------------------------------------------------
-    */
-
     public function generateLoanNumber(
         int $businessId = 0
     ): string {
@@ -441,114 +341,80 @@ class Loan
         return $number;
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | UPDATE LOAN
-    |--------------------------------------------------------------------------
-    */
-
     public function update(
         int $id,
         int $businessId,
         array $data
     ): bool {
 
-        /*
-         * Only these fields are allowed
-         * to be updated.
-         */
         $allowedFields = [
             'borrower_id',
+            'account_id',
             'category_id',
+            'principal_amount',
+            'interest_rate',
+            'interest_type',
+            'payment_type',
+            'term',
+            'term_period',
+            'processing_fee',
+            'total_interest',
+            'total_payable',
+            'release_date',
+            'first_payment_date',
             'status',
             'purpose',
-            'notes',
-            'release_date'
+            'notes'
         ];
 
-
-        /*
-         * Build the SET portion of the query.
-         */
         $fields = [];
         $values = [];
 
-
         foreach ($allowedFields as $field) {
 
-            if (
-                array_key_exists(
-                    $field,
-                    $data
-                )
-            ) {
+            if (array_key_exists(
+                $field,
+                $data
+            )) {
 
                 $fields[] =
-                    "l.{$field} = :{$field}";
+                    "{$field} = :{$field}";
 
                 $values[$field] =
                     $data[$field];
             }
         }
 
-
-        /*
-         * Nothing to update.
-         */
         if (empty($fields)) {
             return false;
         }
 
-
-        /*
-         * Add WHERE parameters.
-         */
         $values['id'] =
             $id;
 
         $values['business_id'] =
             $businessId;
 
-
-        /*
-         * Update the loan.
-         */
         $sql = "
-            UPDATE loans AS l
-
-            INNER JOIN borrowers AS b
-                ON b.id = l.borrower_id
-
+            UPDATE loans
             SET
-                " . implode(
+                " .
+                implode(
                     ",\n                ",
                     $fields
-                ) . "
-
-            WHERE l.id = :id
-
-            AND b.business_id = :business_id
+                ) .
+            "
+            WHERE id = :id
+            AND business_id = :business_id
         ";
 
-
         $stmt =
-            $this->db->prepare(
-                $sql
-            );
-
+            $this->db->prepare($sql);
 
         return $stmt->execute(
             $values
         );
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET BORROWERS
-    |--------------------------------------------------------------------------
-    */
 
     public function borrowers(
         int $businessId
@@ -571,13 +437,6 @@ class Loan
             PDO::FETCH_ASSOC
         );
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET CATEGORIES
-    |--------------------------------------------------------------------------
-    */
 
     public function categories(
         int $businessId
@@ -604,13 +463,6 @@ class Loan
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET PAYMENT SCHEDULE
-    |--------------------------------------------------------------------------
-    */
-
     public function getSchedule(
         int $loanId
     ): array {
@@ -632,13 +484,6 @@ class Loan
             PDO::FETCH_ASSOC
         );
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET SINGLE SCHEDULE
-    |--------------------------------------------------------------------------
-    */
 
     public function getScheduleById(
         int $scheduleId,
@@ -668,18 +513,6 @@ class Loan
         return $schedule ?: null;
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET SCHEDULE INTEREST
-    |--------------------------------------------------------------------------
-    |
-    | This method fixes:
-    |
-    | Call to undefined method Loan::getScheduleInterest()
-    |
-    */
-
     public function getScheduleInterest(
         int $scheduleId
     ): float {
@@ -706,13 +539,6 @@ class Loan
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET PAYMENTS
-    |--------------------------------------------------------------------------
-    */
-
     public function getPayments(
         int $loanId
     ): array {
@@ -735,13 +561,6 @@ class Loan
         );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | GET ALL PAYMENTS FOR BUSINESS
-    |--------------------------------------------------------------------------
-    */
-
     public function getAllPayments(
         int $businessId
     ): array {
@@ -749,12 +568,10 @@ class Loan
         $sql = "
             SELECT
                 lp.*,
-
                 l.loan_number,
                 l.principal_amount,
                 l.total_payable,
                 l.status AS loan_status,
-
                 CONCAT(
                     COALESCE(b.first_name, ''),
                     ' ',
@@ -762,35 +579,25 @@ class Loan
                     ' ',
                     COALESCE(b.last_name, '')
                 ) AS borrower_name,
-
                 a.account_name,
-
                 ls.installment_number
-
             FROM loan_payments lp
-
             INNER JOIN loans l
                 ON l.id = lp.loan_id
-
             INNER JOIN borrowers b
                 ON b.id = l.borrower_id
-
             LEFT JOIN accounts a
                 ON a.id = lp.account_id
-
             LEFT JOIN loan_schedules ls
                 ON ls.id = lp.schedule_id
-
             WHERE lp.business_id = ?
-
             ORDER BY
                 lp.payment_date DESC,
                 lp.id DESC
         ";
 
-        $stmt = $this->db->prepare(
-            $sql
-        );
+        $stmt =
+            $this->db->prepare($sql);
 
         $stmt->execute([
             $businessId
@@ -800,13 +607,6 @@ class Loan
             PDO::FETCH_ASSOC
         );
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | GENERATE PAYMENT SCHEDULE
-    |--------------------------------------------------------------------------
-    */
 
     public function generateSchedule(
         int $loanId,
@@ -818,15 +618,7 @@ class Loan
         string $paymentType = 'installment'
     ): void {
 
-        /*
-         * Make absolutely sure the table exists.
-         */
         $this->ensureLoanSchedulesTable();
-
-
-        /*
-         * Validate payment type.
-         */
 
         $allowedPaymentTypes = [
             'installment',
@@ -844,41 +636,19 @@ class Loan
             );
         }
 
-
-        /*
-         * Full payment only requires
-         * one schedule.
-         */
-
         if (
             $paymentType === 'full_payment'
         ) {
-
             $term = 1;
         }
-
-
-        /*
-         * Term must be greater than zero.
-         */
 
         if ($term <= 0) {
             return;
         }
 
-
-        /*
-         * Total amount to be scheduled.
-         */
-
         $totalPayable =
             $principal
             + $interest;
-
-
-        /*
-         * Calculate amounts per period.
-         */
 
         if (
             $paymentType === 'full_payment'
@@ -905,19 +675,9 @@ class Loan
                 $totalPayable / $term;
         }
 
-
-        /*
-         * Determine first due date.
-         */
-
         $startDate =
             $firstPaymentDate
             ?: date('Y-m-d');
-
-
-        /*
-         * Validate the date.
-         */
 
         try {
 
@@ -936,56 +696,41 @@ class Loan
                 );
         }
 
-
-        /*
-         * Start transaction.
-         */
-
         $this->db->beginTransaction();
 
         try {
 
-            $stmt = $this->db->prepare(
-                "
-                INSERT INTO loan_schedules
-                (
-                    loan_id,
-                    installment_number,
-                    due_date,
-                    principal_amount,
-                    interest_amount,
-                    total_due,
-                    status
-                )
-
-                VALUES
-                (
-                    :loan_id,
-                    :installment_number,
-                    :due_date,
-                    :principal_amount,
-                    :interest_amount,
-                    :total_due,
-                    :status
-                )
-                "
-            );
-
-
-            /*
-             * Generate schedule records.
-             */
+            $stmt =
+                $this->db->prepare(
+                    "
+                    INSERT INTO loan_schedules
+                    (
+                        loan_id,
+                        installment_number,
+                        due_date,
+                        principal_amount,
+                        interest_amount,
+                        total_due,
+                        status
+                    )
+                    VALUES
+                    (
+                        :loan_id,
+                        :installment_number,
+                        :due_date,
+                        :principal_amount,
+                        :interest_amount,
+                        :total_due,
+                        :status
+                    )
+                    "
+                );
 
             for (
                 $i = 1;
                 $i <= $term;
                 $i++
             ) {
-
-                /*
-                 * Move due date for
-                 * installment loans.
-                 */
 
                 if (
                     $i > 1 &&
@@ -1004,7 +749,6 @@ class Loan
 
                             break;
 
-
                         case 'weeks':
 
                             $date->modify(
@@ -1013,7 +757,6 @@ class Loan
 
                             break;
 
-
                         case 'years':
 
                             $date->modify(
@@ -1021,7 +764,6 @@ class Loan
                             );
 
                             break;
-
 
                         case 'months':
 
@@ -1034,7 +776,6 @@ class Loan
                             break;
                     }
                 }
-
 
                 $stmt->execute([
 
@@ -1063,20 +804,11 @@ class Loan
                 ]);
             }
 
-
-            /*
-             * Commit transaction.
-             */
-
             $this->db->commit();
 
         } catch (
             Throwable $e
         ) {
-
-            /*
-             * Roll back if anything fails.
-             */
 
             if (
                 $this->db->inTransaction()
