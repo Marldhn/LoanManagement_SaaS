@@ -4,10 +4,12 @@ class Penalty
 {
     private PDO $db;
 
+
     public function __construct()
     {
         $this->db = Database::getInstance();
     }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -38,7 +40,13 @@ class Penalty
                 CONCAT(
                     b.first_name,
                     ' ',
-                    COALESCE(CONCAT(b.middle_name, ' '), ''),
+                    COALESCE(
+                        CONCAT(
+                            b.middle_name,
+                            ' '
+                        ),
+                        ''
+                    ),
                     b.last_name
                 ) AS borrower_name,
 
@@ -61,7 +69,9 @@ class Penalty
 
             WHERE lp.business_id = :business_id
 
-            ORDER BY lp.created_at DESC, lp.id DESC
+            ORDER BY
+                lp.created_at DESC,
+                lp.id DESC
         ";
 
         $stmt = $this->db->prepare($sql);
@@ -70,7 +80,9 @@ class Penalty
             ':business_id' => $businessId
         ]);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(
+            PDO::FETCH_ASSOC
+        );
     }
 
 
@@ -80,8 +92,11 @@ class Penalty
     |--------------------------------------------------------------------------
     */
 
-    public function find(int $id, int $businessId): ?array
-    {
+    public function find(
+        int $id,
+        int $businessId
+    ): ?array {
+
         $sql = "
             SELECT
                 lp.*,
@@ -92,7 +107,13 @@ class Penalty
                 CONCAT(
                     b.first_name,
                     ' ',
-                    COALESCE(CONCAT(b.middle_name, ' '), ''),
+                    COALESCE(
+                        CONCAT(
+                            b.middle_name,
+                            ' '
+                        ),
+                        ''
+                    ),
                     b.last_name
                 ) AS borrower_name,
 
@@ -126,9 +147,116 @@ class Penalty
             ':business_id' => $businessId
         ]);
 
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $result =
+            $stmt->fetch(
+                PDO::FETCH_ASSOC
+            );
 
         return $result ?: null;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET ALL LOANS
+    |--------------------------------------------------------------------------
+    |
+    | These loans are used by the Add Penalty
+    | modal.
+    |
+    */
+
+    public function getLoans(
+        int $businessId
+    ): array {
+
+        $sql = "
+            SELECT
+                l.id,
+                l.loan_number,
+                l.borrower_id,
+
+                CONCAT(
+                    b.first_name,
+                    ' ',
+                    COALESCE(
+                        CONCAT(
+                            b.middle_name,
+                            ' '
+                        ),
+                        ''
+                    ),
+                    b.last_name
+                ) AS borrower_name
+
+            FROM loans l
+
+            INNER JOIN borrowers b
+                ON b.id = l.borrower_id
+
+            WHERE l.business_id = :business_id
+
+            ORDER BY
+                l.id DESC
+        ";
+
+        $stmt = $this->db->prepare($sql);
+
+        $stmt->execute([
+            ':business_id' => $businessId
+        ]);
+
+        return $stmt->fetchAll(
+            PDO::FETCH_ASSOC
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET ALL LOAN SCHEDULES
+    |--------------------------------------------------------------------------
+    |
+    | These schedules are used by the installment
+    | dropdown in the Add Penalty modal.
+    |
+    */
+
+    public function getLoanSchedules(
+        int $businessId
+    ): array {
+
+        $sql = "
+            SELECT
+                ls.id,
+                ls.loan_id,
+                ls.installment_number,
+                ls.due_date,
+                ls.total_due,
+                ls.paid_amount,
+                ls.status
+
+            FROM loan_schedules ls
+
+            INNER JOIN loans l
+                ON l.id = ls.loan_id
+
+            WHERE l.business_id = :business_id
+
+            ORDER BY
+                ls.loan_id ASC,
+                ls.installment_number ASC
+        ";
+
+        $stmt = $this->db->prepare($sql);
+
+        $stmt->execute([
+            ':business_id' => $businessId
+        ]);
+
+        return $stmt->fetchAll(
+            PDO::FETCH_ASSOC
+        );
     }
 
 
@@ -138,11 +266,19 @@ class Penalty
     |--------------------------------------------------------------------------
     */
 
-    public function getTotalPenalties(int $businessId): float
-    {
+    public function getTotalPenalties(
+        int $businessId
+    ): float {
+
         $sql = "
-            SELECT COALESCE(SUM(penalty_amount), 0)
+            SELECT
+                COALESCE(
+                    SUM(penalty_amount),
+                    0
+                )
+
             FROM loan_penalties
+
             WHERE business_id = :business_id
         ";
 
@@ -152,7 +288,8 @@ class Penalty
             ':business_id' => $businessId
         ]);
 
-        return (float) $stmt->fetchColumn();
+        return (float)
+            $stmt->fetchColumn();
     }
 
 
@@ -162,14 +299,26 @@ class Penalty
     |--------------------------------------------------------------------------
     */
 
-    public function getThisMonthPenalties(int $businessId): float
-    {
+    public function getThisMonthPenalties(
+        int $businessId
+    ): float {
+
         $sql = "
-            SELECT COALESCE(SUM(penalty_amount), 0)
+            SELECT
+                COALESCE(
+                    SUM(penalty_amount),
+                    0
+                )
+
             FROM loan_penalties
+
             WHERE business_id = :business_id
-              AND YEAR(created_at) = YEAR(CURDATE())
-              AND MONTH(created_at) = MONTH(CURDATE())
+
+              AND YEAR(created_at)
+                    = YEAR(CURDATE())
+
+              AND MONTH(created_at)
+                    = MONTH(CURDATE())
         ";
 
         $stmt = $this->db->prepare($sql);
@@ -178,7 +327,8 @@ class Penalty
             ':business_id' => $businessId
         ]);
 
-        return (float) $stmt->fetchColumn();
+        return (float)
+            $stmt->fetchColumn();
     }
 
 
@@ -188,11 +338,16 @@ class Penalty
     |--------------------------------------------------------------------------
     */
 
-    public function getCount(int $businessId): int
-    {
+    public function getCount(
+        int $businessId
+    ): int {
+
         $sql = "
-            SELECT COUNT(*)
+            SELECT
+                COUNT(*)
+
             FROM loan_penalties
+
             WHERE business_id = :business_id
         ";
 
@@ -202,6 +357,7 @@ class Penalty
             ':business_id' => $businessId
         ]);
 
-        return (int) $stmt->fetchColumn();
+        return (int)
+            $stmt->fetchColumn();
     }
 }

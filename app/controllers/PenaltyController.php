@@ -43,18 +43,84 @@ class PenaltyController
     {
         $businessId = $this->checkAccess();
 
-        $penalties = $this->penalty->getAll($businessId);
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET PENALTIES
+        |--------------------------------------------------------------------------
+        */
+
+        $penalties =
+            $this->penalty->getAll(
+                $businessId
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET ALL LOANS
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        | These are the loans that will appear
+        | inside the Add Penalty modal.
+        |
+        */
+
+        $loans =
+            $this->penalty->getLoans(
+                $businessId
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET ALL LOAN SCHEDULES
+        |--------------------------------------------------------------------------
+        |
+        | These are the installments that will
+        | appear after selecting a loan.
+        |
+        */
+
+        $loanSchedules =
+            $this->penalty->getLoanSchedules(
+                $businessId
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PENALTY STATISTICS
+        |--------------------------------------------------------------------------
+        */
 
         $totalPenalties =
-            $this->penalty->getTotalPenalties($businessId);
+            $this->penalty->getTotalPenalties(
+                $businessId
+            );
+
 
         $thisMonthPenalties =
-            $this->penalty->getThisMonthPenalties($businessId);
+            $this->penalty->getThisMonthPenalties(
+                $businessId
+            );
+
 
         $penaltyCount =
-            $this->penalty->getCount($businessId);
+            $this->penalty->getCount(
+                $businessId
+            );
 
-        require APP_PATH . '/views/penalties/index.php';
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOAD PENALTY INDEX
+        |--------------------------------------------------------------------------
+        */
+
+        require APP_PATH .
+            '/views/penalties/index.php';
     }
 
 
@@ -66,7 +132,15 @@ class PenaltyController
 
     public function view(int $id): void
     {
-        $businessId = $this->checkAccess();
+        $businessId =
+            $this->checkAccess();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET PENALTY
+        |--------------------------------------------------------------------------
+        */
 
         $penalty =
             $this->penalty->find(
@@ -74,11 +148,29 @@ class PenaltyController
                 $businessId
             );
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | NOT FOUND
+        |--------------------------------------------------------------------------
+        */
+
         if (!$penalty) {
             http_response_code(404);
-            die('Penalty not found.');
+
+            die(
+                'Penalty not found.'
+            );
         }
 
-        require APP_PATH . '/views/penalties/index.php';
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOAD VIEW
+        |--------------------------------------------------------------------------
+        */
+
+        require APP_PATH .
+            '/views/penalties/index.php';
     }
 }
