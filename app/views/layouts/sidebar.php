@@ -551,29 +551,8 @@ if ($sidebarLogo !== '') {
                     </span>
                 </a>
 
-                <a
-                    href="index.php?url=business-settings"
-                    class="sidebar-link <?= sidebarActive(
-                        $currentUrl,
-                        'business-settings'
-                    ) ?>"
-                >
-                    <span class="sidebar-icon">
-                        ⚙
-                    </span>
-
-                    <span class="sidebar-link-text">
-                        Business Settings
-                    </span>
-                </a>
-
-            <?php endif; ?>
-
-            <div class="sidebar-section">
-                <span>System</span>
-            </div>
-
-            <a
+        
+                            <a
                 href="index.php?url=settings"
                 class="sidebar-link <?= sidebarActive(
                     $currentUrl,
@@ -589,6 +568,7 @@ if ($sidebarLogo !== '') {
                 </span>
             </a>
 
+            <?php endif; ?>
         <?php endif; ?>
 
     </nav>
