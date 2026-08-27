@@ -545,11 +545,6 @@ class LoanController
         /*
         |--------------------------------------------------------------------------
         | TOTAL PAYABLE
-        |
-        | THIS IS THE ORIGINAL TOTAL.
-        |
-        | DO NOT REDUCE THIS FIELD WHEN PAYMENTS
-        | ARE MADE.
         |--------------------------------------------------------------------------
         */
 
@@ -667,9 +662,6 @@ class LoanController
             /*
             |--------------------------------------------------------------------------
             | GENERATE SCHEDULE
-            |
-            | generateSchedule() no longer starts
-            | another transaction.
             |--------------------------------------------------------------------------
             */
 
@@ -789,6 +781,462 @@ class LoanController
 
         require APP_PATH .
             '/views/loans/show.php';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE LOAN
+    |--------------------------------------------------------------------------
+    |
+    | Deletes the loan and all related records.
+    |
+    | IMPORTANT:
+    | - Returns the original principal to the release account.
+    | - Reverses all posted payments from the accounts that received them.
+    | - Deletes penalties.
+    | - Deletes schedules.
+    | - Deletes payments.
+    | - Everything happens inside one transaction.
+    |
+    */
+
+    public function delete(): void
+    {
+        AuthMiddleware::requireLogin();
+
+        if (
+            $_SERVER['REQUEST_METHOD']
+            !== 'POST'
+        ) {
+
+            $_SESSION['loan_error'] =
+                'Invalid request.';
+
+            header(
+                'Location: index.php?url=loans'
+            );
+
+            exit;
+        }
+
+        $businessId =
+            Auth::businessId();
+
+        $loanId =
+            (int)(
+                $_POST['id']
+                ??
+                $_POST['loan_id']
+                ??
+                0
+            );
+
+        if ($loanId <= 0) {
+
+            $_SESSION['loan_error'] =
+                'Invalid loan ID.';
+
+            header(
+                'Location: index.php?url=loans'
+            );
+
+            exit;
+        }
+
+        $db =
+            Database::getInstance();
+
+        try {
+
+            $db->beginTransaction();
+
+            /*
+            |--------------------------------------------------------------------------
+            | LOCK AND GET LOAN
+            |--------------------------------------------------------------------------
+            */
+
+            $stmt =
+                $db->prepare(
+                    "
+                    SELECT
+                        id,
+                        business_id,
+                        account_id,
+                        principal_amount,
+                        loan_number,
+                        status
+                    FROM loans
+                    WHERE id = ?
+                    AND business_id = ?
+                    LIMIT 1
+                    FOR UPDATE
+                    "
+                );
+
+            $stmt->execute([
+                $loanId,
+                $businessId
+            ]);
+
+            $loan =
+                $stmt->fetch(
+                    PDO::FETCH_ASSOC
+                );
+
+            if (!$loan) {
+
+                throw new Exception(
+                    'Loan not found.'
+                );
+            }
+
+            $principalAmount =
+                (float)(
+                    $loan['principal_amount']
+                    ?? 0
+                );
+
+            $releaseAccountId =
+                (int)(
+                    $loan['account_id']
+                    ?? 0
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | GET ALL POSTED PAYMENTS
+            |--------------------------------------------------------------------------
+            |
+            | Payments increased the selected accounts when they
+            | were recorded. We need to reverse those increases
+            | before deleting the payment records.
+            |
+            */
+
+            $stmt =
+                $db->prepare(
+                    "
+                    SELECT
+                        account_id,
+                        COALESCE(
+                            SUM(amount),
+                            0
+                        ) AS total_amount
+                    FROM loan_payments
+                    WHERE loan_id = ?
+                    AND business_id = ?
+                    AND status = 'posted'
+                    AND account_id IS NOT NULL
+                    GROUP BY account_id
+                    "
+                );
+
+            $stmt->execute([
+                $loanId,
+                $businessId
+            ]);
+
+            $paymentReversals =
+                $stmt->fetchAll(
+                    PDO::FETCH_ASSOC
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | REVERSE PAYMENT AMOUNTS
+            |--------------------------------------------------------------------------
+            */
+
+            foreach (
+                $paymentReversals
+                as $reversal
+            ) {
+
+                $paymentAccountId =
+                    (int)(
+                        $reversal['account_id']
+                        ?? 0
+                    );
+
+                $paymentAmount =
+                    (float)(
+                        $reversal['total_amount']
+                        ?? 0
+                    );
+
+                if (
+                    $paymentAccountId <= 0 ||
+                    $paymentAmount <= 0
+                ) {
+
+                    continue;
+                }
+
+                /*
+                |------------------------------------------------------------------
+                | LOCK PAYMENT ACCOUNT
+                |------------------------------------------------------------------
+                */
+
+                $stmt =
+                    $db->prepare(
+                        "
+                        SELECT
+                            id,
+                            balance,
+                            status
+                        FROM accounts
+                        WHERE id = ?
+                        AND business_id = ?
+                        LIMIT 1
+                        FOR UPDATE
+                        "
+                    );
+
+                $stmt->execute([
+                    $paymentAccountId,
+                    $businessId
+                ]);
+
+                $paymentAccount =
+                    $stmt->fetch(
+                        PDO::FETCH_ASSOC
+                    );
+
+                if (!$paymentAccount) {
+
+                    throw new Exception(
+                        'An account associated with a loan payment could not be found.'
+                    );
+                }
+
+                /*
+                |------------------------------------------------------------------
+                | REVERSE PAYMENT
+                |------------------------------------------------------------------
+                */
+
+                $stmt =
+                    $db->prepare(
+                        "
+                        UPDATE accounts
+                        SET balance = balance - ?
+                        WHERE id = ?
+                        AND business_id = ?
+                        "
+                    );
+
+                $stmt->execute([
+                    $paymentAmount,
+                    $paymentAccountId,
+                    $businessId
+                ]);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | RETURN ORIGINAL PRINCIPAL TO RELEASE ACCOUNT
+            |--------------------------------------------------------------------------
+            |
+            | When the loan was created, this amount was deducted
+            | from the release account.
+            |
+            */
+
+            if (
+                $releaseAccountId > 0 &&
+                $principalAmount > 0
+            ) {
+
+                /*
+                |------------------------------------------------------------------
+                | LOCK RELEASE ACCOUNT
+                |------------------------------------------------------------------
+                */
+
+                $stmt =
+                    $db->prepare(
+                        "
+                        SELECT
+                            id,
+                            balance,
+                            status
+                        FROM accounts
+                        WHERE id = ?
+                        AND business_id = ?
+                        LIMIT 1
+                        FOR UPDATE
+                        "
+                    );
+
+                $stmt->execute([
+                    $releaseAccountId,
+                    $businessId
+                ]);
+
+                $releaseAccount =
+                    $stmt->fetch(
+                        PDO::FETCH_ASSOC
+                    );
+
+                if (!$releaseAccount) {
+
+                    throw new Exception(
+                        'The account used to release this loan could not be found.'
+                    );
+                }
+
+                /*
+                |------------------------------------------------------------------
+                | RETURN PRINCIPAL
+                |------------------------------------------------------------------
+                */
+
+                $stmt =
+                    $db->prepare(
+                        "
+                        UPDATE accounts
+                        SET balance = balance + ?
+                        WHERE id = ?
+                        AND business_id = ?
+                        "
+                    );
+
+                $stmt->execute([
+                    $principalAmount,
+                    $releaseAccountId,
+                    $businessId
+                ]);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | DELETE PENALTIES
+            |--------------------------------------------------------------------------
+            */
+
+            $stmt =
+                $db->prepare(
+                    "
+                    DELETE FROM loan_penalties
+                    WHERE loan_id = ?
+                    AND business_id = ?
+                    "
+                );
+
+            $stmt->execute([
+                $loanId,
+                $businessId
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | DELETE PAYMENTS
+            |--------------------------------------------------------------------------
+            */
+
+            $stmt =
+                $db->prepare(
+                    "
+                    DELETE FROM loan_payments
+                    WHERE loan_id = ?
+                    AND business_id = ?
+                    "
+                );
+
+            $stmt->execute([
+                $loanId,
+                $businessId
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | DELETE SCHEDULES
+            |--------------------------------------------------------------------------
+            */
+
+            $stmt =
+                $db->prepare(
+                    "
+                    DELETE FROM loan_schedules
+                    WHERE loan_id = ?
+                    "
+                );
+
+            $stmt->execute([
+                $loanId
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | DELETE LOAN
+            |--------------------------------------------------------------------------
+            */
+
+            $stmt =
+                $db->prepare(
+                    "
+                    DELETE FROM loans
+                    WHERE id = ?
+                    AND business_id = ?
+                    "
+                );
+
+            $stmt->execute([
+                $loanId,
+                $businessId
+            ]);
+
+            if (
+                $stmt->rowCount() <= 0
+            ) {
+
+                throw new Exception(
+                    'Unable to delete the loan.'
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | COMMIT
+            |--------------------------------------------------------------------------
+            */
+
+            $db->commit();
+
+            $_SESSION['loan_success'] =
+                'Loan ' .
+                ($loan['loan_number'] ?? '') .
+                ' deleted successfully. The principal amount has been returned to the release account.';
+
+            header(
+                'Location: index.php?url=loans'
+            );
+
+            exit;
+
+        } catch (
+            Throwable $e
+        ) {
+
+            if (
+                $db->inTransaction()
+            ) {
+
+                $db->rollBack();
+            }
+
+            $_SESSION['loan_error'] =
+                'Unable to delete loan: ' .
+                $e->getMessage();
+
+            header(
+                'Location: index.php?url=loans'
+            );
+
+            exit;
+        }
     }
 
     /*
@@ -2466,10 +2914,6 @@ class LoanController
             /*
             |--------------------------------------------------------------------------
             | HANDLE ROUNDING
-            |
-            | If payment is within one cent of the
-            | remaining balance, use the exact
-            | remaining amount.
             |--------------------------------------------------------------------------
             */
 
@@ -2849,10 +3293,6 @@ class LoanController
                 $newRemainingBalance <= 0.01
             ) {
 
-                /*
-                 * FULLY PAID
-                 */
-
                 $stmt =
                     $db->prepare(
                         "
@@ -2871,11 +3311,6 @@ class LoanController
             } elseif (
                 $loan['status'] === 'approved'
             ) {
-
-                /*
-                 * FIRST PAYMENT ACTIVATES
-                 * APPROVED LOAN
-                 */
 
                 $stmt =
                     $db->prepare(
