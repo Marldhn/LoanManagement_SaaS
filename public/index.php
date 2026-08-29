@@ -57,6 +57,7 @@ require_once APP_PATH . '/controllers/CollectionController.php';
 require_once APP_PATH . '/controllers/ReportController.php';
 require_once APP_PATH . '/controllers/SettingsController.php';
 require_once APP_PATH . '/controllers/PenaltyController.php';
+require_once APP_PATH . '/controllers/SuperAdminBusinessController.php';
 
 
 /*
@@ -816,7 +817,13 @@ switch ($url) {
         break;
         
 
-        
+        case 'super_admin/businesses':
+
+    $controller = new SuperAdminBusinessController();
+
+    $controller->index();
+
+    break;
 
 
 
