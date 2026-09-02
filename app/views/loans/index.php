@@ -282,7 +282,7 @@ $scheduleId=(int)($loan['schedule_id']??0);
 <td>₱<?=number_format($interest,2)?></td>
 <td><strong>₱<?=number_format($payable,2)?></strong></td>
 <td><span class="payment-method"><?=htmlspecialchars(formatPaymentMethod($paymentType))?></span></td>
-<td><?=$term?> <?=htmlspecialchars(ucfirst($termPeriod))?></td>
+<td><?=$term?></td>
 <td><span class="loan-status loan-status-<?=htmlspecialchars($status)?>"><?=htmlspecialchars(ucfirst($status))?></span></td>
 
 <td>
@@ -562,8 +562,8 @@ $balance=(float)($account['balance']??0);
 </div>
 
 <div class="form-group">
-<label>Term</label>
-<input type="number" id="term" name="term" min="1" value="1" required>
+    <label>Term</label>
+    <input type="number" id="term" name="term" min="1" value="1" required>
 </div>
 
 <div class="form-group">

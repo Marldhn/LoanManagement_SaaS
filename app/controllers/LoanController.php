@@ -87,6 +87,7 @@ class LoanController
 
     public function store(): void
     {
+
         AuthMiddleware::requireLogin();
 
         if (
@@ -312,6 +313,7 @@ class LoanController
         $allowedPeriods = [
             'days',
             'weeks',
+            'every_15_days',
             'months',
             'years'
         ];
@@ -384,6 +386,14 @@ class LoanController
 
                         break;
 
+                        case 'every_15_days':
+
+    $dueDate->modify(
+        "+".($term * 15)." days"
+    );
+
+    break;
+
                     case 'months':
 
                         $dueDate->modify(
@@ -448,6 +458,16 @@ class LoanController
                         );
 
                         break;
+                        
+
+
+                        case 'every_15_days':
+
+    $firstDate->modify(
+        '+15 days'
+    );
+
+    break;
 
                     case 'months':
 
@@ -675,7 +695,9 @@ class LoanController
                 $paymentType
             );
 
-            $db->commit();
+            if ($db->inTransaction()) {
+    $db->commit();
+}
 
         } catch (
             Throwable $e
@@ -1239,6 +1261,271 @@ class LoanController
         }
     }
 
+
+
+    /*
+|--------------------------------------------------------------------------
+| CREATE AUTOMATIC PENALTIES
+|--------------------------------------------------------------------------
+|
+| Finds overdue loan schedules and automatically creates
+| one penalty for each schedule that does not already have one.
+|
+*/
+
+public function createAutomaticPenalties(
+    int $businessId,
+    string $penaltyType = 'percentage',
+    float $rate = 5.00,
+    string $penaltyBase = 'overdue_amount',
+    ?int $createdBy = null
+): int {
+
+    $sql = "
+        SELECT
+            ls.id AS schedule_id,
+            ls.loan_id,
+            ls.total_due,
+            ls.paid_amount,
+            ls.due_date,
+            l.business_id
+
+        FROM loan_schedules ls
+
+        INNER JOIN loans l
+            ON l.id = ls.loan_id
+
+        LEFT JOIN loan_penalties lp
+            ON lp.schedule_id = ls.id
+            AND lp.business_id = l.business_id
+
+        WHERE l.business_id = ?
+        AND ls.due_date < CURDATE()
+        AND ls.status IN ('pending', 'partial')
+        AND lp.id IS NULL
+
+        ORDER BY ls.due_date ASC
+    ";
+
+    $stmt = $this->db->prepare($sql);
+
+    $stmt->execute([
+        $businessId
+    ]);
+
+    $schedules = $stmt->fetchAll(
+        PDO::FETCH_ASSOC
+    );
+
+    if (empty($schedules)) {
+        return 0;
+    }
+
+    $insert = $this->db->prepare(
+        "
+        INSERT INTO loan_penalties
+        (
+            business_id,
+            loan_id,
+            schedule_id,
+            penalty_type,
+            penalty_base,
+            rate,
+            base_amount,
+            penalty_amount,
+            reason,
+            created_by
+        )
+        VALUES
+        (
+            :business_id,
+            :loan_id,
+            :schedule_id,
+            :penalty_type,
+            :penalty_base,
+            :rate,
+            :base_amount,
+            :penalty_amount,
+            :reason,
+            :created_by
+        )
+        "
+    );
+
+    $created = 0;
+
+    foreach ($schedules as $schedule) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | AUTOMATIC SCHEDULE ID
+        |--------------------------------------------------------------------------
+        */
+
+        $scheduleId =
+            (int)$schedule['schedule_id'];
+
+        $loanId =
+            (int)$schedule['loan_id'];
+
+        /*
+        |--------------------------------------------------------------------------
+        | CALCULATE OVERDUE AMOUNT
+        |--------------------------------------------------------------------------
+        */
+
+        $totalDue =
+            (float)$schedule['total_due'];
+
+        $paidAmount =
+            (float)$schedule['paid_amount'];
+
+        $overdueAmount =
+            max(
+                0,
+                $totalDue - $paidAmount
+            );
+
+        if ($overdueAmount <= 0) {
+            continue;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PENALTY BASE
+        |--------------------------------------------------------------------------
+        */
+
+        switch ($penaltyBase) {
+
+            case 'principal':
+
+                $baseAmount =
+                    (float)$this->getLoanPrincipal(
+                        $loanId
+                    );
+
+                break;
+
+            case 'total_due':
+
+                $baseAmount =
+                    $totalDue;
+
+                break;
+
+            case 'overdue_amount':
+
+            default:
+
+                $baseAmount =
+                    $overdueAmount;
+
+                break;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CALCULATE PENALTY
+        |--------------------------------------------------------------------------
+        */
+
+        if ($penaltyType === 'percentage') {
+
+            $penaltyAmount =
+                round(
+                    $baseAmount *
+                    ($rate / 100),
+                    2
+                );
+
+        } else {
+
+            $penaltyAmount =
+                round(
+                    $rate,
+                    2
+                );
+        }
+
+        if ($penaltyAmount <= 0) {
+            continue;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | INSERT PENALTY
+        |--------------------------------------------------------------------------
+        */
+
+        $insert->execute([
+
+            ':business_id' =>
+                $businessId,
+
+            ':loan_id' =>
+                $loanId,
+
+            ':schedule_id' =>
+                $scheduleId,
+
+            ':penalty_type' =>
+                $penaltyType,
+
+            ':penalty_base' =>
+                $penaltyBase,
+
+            ':rate' =>
+                $rate,
+
+            ':base_amount' =>
+                $baseAmount,
+
+            ':penalty_amount' =>
+                $penaltyAmount,
+
+            ':reason' =>
+                'Automatic overdue penalty',
+
+            ':created_by' =>
+                $createdBy
+        ]);
+
+        $created++;
+    }
+
+    return $created;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| GET LOAN PRINCIPAL
+|--------------------------------------------------------------------------
+*/
+
+private function getLoanPrincipal(
+    int $loanId
+): float {
+
+    $stmt = $this->db->prepare(
+        "
+        SELECT principal_amount
+        FROM loans
+        WHERE id = ?
+        LIMIT 1
+        "
+    );
+
+    $stmt->execute([
+        $loanId
+    ]);
+
+    return (float)(
+        $stmt->fetchColumn() ?? 0
+    );
+}
+
     /*
     |--------------------------------------------------------------------------
     | EDIT LOAN
@@ -1614,7 +1901,9 @@ class LoanController
         $allowedPeriods = [
             'days',
             'weeks',
+            'every_15_days',
             'months',
+            
             'years'
         ];
 
@@ -1685,6 +1974,14 @@ class LoanController
                         );
 
                         break;
+                        
+                        case 'every_15_days':
+
+    $dueDate->modify(
+        "+".($term * 15)." days"
+    );
+
+    break;
 
                     case 'months':
 
@@ -1902,10 +2199,12 @@ class LoanController
                 $paymentType
             );
 
-            $db->commit();
+            if ($db->inTransaction()) {
+    $db->commit();
+}
 
-            $_SESSION['loan_success'] =
-                'Loan updated successfully.';
+$_SESSION['loan_success'] =
+    'Loan updated successfully.';
 
             header(
                 'Location: index.php?url=loans'
