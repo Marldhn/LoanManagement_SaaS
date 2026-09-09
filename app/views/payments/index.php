@@ -49,12 +49,60 @@ $payments =
         href="assets/css/style.css"
     >
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700;800&display=swap"
+    >
+
 
     <!-- ==========================================================
          PAYMENT PAGE STYLES
     =========================================================== -->
 
     <style>
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOKENS — shares the sidebar / dashboard / borrowers / loans language
+        |--------------------------------------------------------------------------
+        */
+
+        :root {
+
+            --lm-ink-900: #16211D;
+            --lm-ink-700: #33413B;
+            --lm-ink-500: #6B7670;
+            --lm-ink-300: #9CA69F;
+            --lm-line: #E7E2D6;
+            --lm-line-soft: #F0EDE4;
+            --lm-surface: #FFFFFF;
+            --lm-surface-tint: #FAF8F2;
+            --lm-brass: #B8860F;
+            --lm-brass-ink: #8A6608;
+            --lm-brass-soft: #F7EFD9;
+            --lm-forest: #1F7A52;
+            --lm-forest-soft: #E7F3EC;
+            --lm-danger: #B0392E;
+            --lm-danger-soft: #FBEBE8;
+            --lm-info: #2E5C8A;
+            --lm-info-soft: #E9F0F7;
+            --lm-font-serif: 'Fraunces', Georgia, 'Iowan Old Style', serif;
+            --lm-font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+        }
+
+        .container {
+            font-family: var(--lm-font-sans);
+        }
+
+        .page-header h1,
+        .page-header h2 {
+            font-family: var(--lm-font-serif);
+            font-weight: 600;
+        }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -74,16 +122,18 @@ $payments =
                     )
                 );
 
-            gap: 20px;
+            gap: 16px;
 
             margin-bottom: 25px;
         }
 
 
         .payment-summary-card {
-            background: #fff;
+            background: var(--lm-surface);
 
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--lm-line);
+
+            border-top: 3px solid var(--lm-ink-300);
 
             border-radius: 12px;
 
@@ -93,10 +143,22 @@ $payments =
         }
 
 
-        .payment-summary-label {
-            font-size: 13px;
+        .payment-summary-card:nth-child(2) {
+            border-top-color: var(--lm-forest);
+        }
 
-            color: #6b7280;
+
+        .payment-summary-card:nth-child(3) {
+            border-top-color: var(--lm-brass);
+        }
+
+
+        .payment-summary-label {
+            font-size: 12px;
+
+            font-weight: 600;
+
+            color: var(--lm-ink-500);
 
             margin-bottom: 8px;
         }
@@ -107,7 +169,9 @@ $payments =
 
             font-weight: 700;
 
-            color: #111827;
+            color: var(--lm-ink-900);
+
+            letter-spacing: -.01em;
         }
 
 
@@ -120,7 +184,7 @@ $payments =
         .payment-number {
             font-weight: 600;
 
-            color: #111827;
+            color: var(--lm-ink-900);
         }
 
 
@@ -131,7 +195,7 @@ $payments =
         */
 
         .payment-loan-link {
-            color: #2563eb;
+            color: var(--lm-info);
 
             text-decoration: none;
 
@@ -152,6 +216,8 @@ $payments =
 
         .payment-amount {
             font-weight: 700;
+
+            color: var(--lm-ink-900);
 
             white-space: nowrap;
         }
@@ -179,11 +245,13 @@ $payments =
 
         .payment-empty-state h3 {
             margin-bottom: 8px;
+
+            color: var(--lm-ink-900);
         }
 
 
         .payment-empty-state p {
-            color: #6b7280;
+            color: var(--lm-ink-300);
 
             margin: 0;
         }
@@ -213,31 +281,31 @@ $payments =
 
 
         .payment-status-posted {
-            background: #dcfce7;
+            background: var(--lm-forest-soft);
 
-            color: #166534;
+            color: var(--lm-forest);
         }
 
 
         .payment-status-pending {
-            background: #fef3c7;
+            background: var(--lm-brass-soft);
 
-            color: #92400e;
+            color: var(--lm-brass-ink);
         }
 
 
         .payment-status-voided,
         .payment-status-cancelled {
-            background: #fee2e2;
+            background: var(--lm-danger-soft);
 
-            color: #991b1b;
+            color: var(--lm-danger);
         }
 
 
         .payment-status-default {
-            background: #f3f4f6;
+            background: var(--lm-line-soft);
 
-            color: #374151;
+            color: var(--lm-ink-500);
         }
 
 
@@ -256,9 +324,37 @@ $payments =
         }
 
 
+        .payments-table th {
+            background: var(--lm-surface-tint);
+
+            color: var(--lm-ink-500);
+
+            font-weight: 700;
+
+            letter-spacing: .02em;
+        }
+
+
         .payments-table th,
         .payments-table td {
             white-space: nowrap;
+        }
+
+
+        .payments-table td {
+            color: var(--lm-ink-700);
+
+            border-top: 1px solid var(--lm-line-soft);
+        }
+
+
+        .payments-table tbody tr {
+            transition: background .15s ease;
+        }
+
+
+        .payments-table tbody tr:hover {
+            background: var(--lm-surface-tint);
         }
 
 
@@ -275,6 +371,21 @@ $payments =
                 grid-template-columns:
                     1fr;
 
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REDUCED MOTION
+        |--------------------------------------------------------------------------
+        */
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .payments-table tbody tr {
+                transition: none;
             }
 
         }

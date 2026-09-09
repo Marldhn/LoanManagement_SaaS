@@ -383,8 +383,49 @@ if (!function_exists('penaltyRemainingDays')) {
     href="assets/css/style.css"
 >
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700;800&display=swap"
+>
+
 
 <style>
+
+/*
+|--------------------------------------------------------------------------
+| TOKENS — shares the sidebar / dashboard / borrowers / loans / payments /
+| collections / accounts language
+|--------------------------------------------------------------------------
+*/
+
+:root {
+
+    --lm-ink-900: #16211D;
+    --lm-ink-700: #33413B;
+    --lm-ink-500: #6B7670;
+    --lm-ink-300: #9CA69F;
+    --lm-line: #E7E2D6;
+    --lm-line-soft: #F0EDE4;
+    --lm-surface: #FFFFFF;
+    --lm-surface-tint: #FAF8F2;
+    --lm-brass: #B8860F;
+    --lm-brass-ink: #8A6608;
+    --lm-brass-soft: #F7EFD9;
+    --lm-forest: #1F7A52;
+    --lm-forest-soft: #E7F3EC;
+    --lm-rust: #B5451C;
+    --lm-rust-soft: #FBEAE2;
+    --lm-danger: #B0392E;
+    --lm-danger-soft: #FBEBE8;
+    --lm-info: #2E5C8A;
+    --lm-info-soft: #E9F0F7;
+    --lm-font-serif: 'Fraunces', Georgia, 'Iowan Old Style', serif;
+    --lm-font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+}
+
 
 /*
 |--------------------------------------------------------------------------
@@ -395,6 +436,8 @@ if (!function_exists('penaltyRemainingDays')) {
 .penalties-page {
 
     width: 100%;
+
+    font-family: var(--lm-font-sans);
 
 }
 
@@ -424,15 +467,17 @@ if (!function_exists('penaltyRemainingDays')) {
 
     margin: 0;
 
-    color: #111827;
+    color: var(--lm-ink-900);
+
+    font-family: var(--lm-font-serif);
 
     font-size: 28px;
 
     line-height: 1.2;
 
-    font-weight: 750;
+    font-weight: 600;
 
-    letter-spacing: -.025em;
+    letter-spacing: -.01em;
 
 }
 
@@ -441,7 +486,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
     margin: 7px 0 0;
 
-    color: #6b7280;
+    color: var(--lm-ink-500);
 
     font-size: 14px;
 
@@ -465,6 +510,60 @@ if (!function_exists('penaltyRemainingDays')) {
 
 /*
 |--------------------------------------------------------------------------
+| PRIMARY BUTTON (used by this view's own action buttons)
+|--------------------------------------------------------------------------
+*/
+
+.penalty-primary-btn {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 7px;
+
+    min-height: 40px;
+
+    padding: 0 16px;
+
+    border: 1px solid var(--lm-ink-900);
+
+    border-radius: 9px;
+
+    background: var(--lm-ink-900);
+
+    color: var(--lm-brass);
+
+    font-size: 13px;
+
+    font-weight: 650;
+
+    cursor: pointer;
+
+    text-decoration: none;
+
+    white-space: nowrap;
+
+    transition:
+        background .15s ease,
+        transform .15s ease;
+
+}
+
+
+.penalty-primary-btn:hover {
+
+    background: #0F1815;
+
+    transform: translateY(-1px);
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
 | COUNT BADGE
 |--------------------------------------------------------------------------
 */
@@ -481,13 +580,13 @@ if (!function_exists('penaltyRemainingDays')) {
 
     padding: 0 13px;
 
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--lm-line);
 
     border-radius: 10px;
 
-    background: #ffffff;
+    background: var(--lm-surface);
 
-    color: #6b7280;
+    color: var(--lm-ink-500);
 
     font-size: 12px;
 
@@ -500,9 +599,9 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalty-count-badge strong {
 
-    color: #111827;
+    color: var(--lm-ink-900);
 
-    font-weight: 750;
+    font-weight: 700;
 
 }
 
@@ -534,31 +633,38 @@ if (!function_exists('penaltyRemainingDays')) {
 
     position: relative;
 
-    overflow: hidden;
-
     padding: 17px 18px;
 
-    background: #ffffff;
+    background: var(--lm-surface);
 
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--lm-line);
 
-    border-radius: 14px;
+    border-top: 3px solid var(--lm-brass);
 
-    box-shadow:
-        0 2px 7px
-        rgba(
-            0,
-            0,
-            0,
-            .035
-        );
+    border-radius: 12px;
+
+}
+
+
+.penalties-summary
+.penalty-summary-card:nth-child(2) {
+
+    border-top-color: var(--lm-rust);
+
+}
+
+
+.penalties-summary
+.penalty-summary-card:nth-child(3) {
+
+    border-top-color: var(--lm-ink-300);
 
 }
 
 
 .penalty-summary-label {
 
-    color: #6b7280;
+    color: var(--lm-ink-500);
 
     font-size: 11px;
 
@@ -571,13 +677,13 @@ if (!function_exists('penaltyRemainingDays')) {
 
     margin-top: 5px;
 
-    color: #111827;
+    color: var(--lm-ink-900);
 
     font-size: 22px;
 
     line-height: 1.2;
 
-    font-weight: 750;
+    font-weight: 700;
 
 }
 
@@ -586,7 +692,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
     margin-top: 4px;
 
-    color: #9ca3af;
+    color: var(--lm-ink-300);
 
     font-size: 10px;
 
@@ -601,22 +707,13 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalties-panel {
 
-    background: #ffffff;
+    background: var(--lm-surface);
 
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--lm-line);
 
-    border-radius: 15px;
+    border-radius: 14px;
 
     overflow: visible;
-
-    box-shadow:
-        0 2px 7px
-        rgba(
-            0,
-            0,
-            0,
-            .035
-        );
 
 }
 
@@ -634,7 +731,7 @@ if (!function_exists('penaltyRemainingDays')) {
     padding: 18px 20px;
 
     border-bottom:
-        1px solid #f0f1f3;
+        1px solid var(--lm-line-soft);
 
 }
 
@@ -643,11 +740,13 @@ if (!function_exists('penaltyRemainingDays')) {
 
     margin: 0;
 
-    color: #111827;
+    color: var(--lm-ink-900);
+
+    font-family: var(--lm-font-serif);
 
     font-size: 16px;
 
-    font-weight: 700;
+    font-weight: 600;
 
 }
 
@@ -656,7 +755,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
     margin: 4px 0 0;
 
-    color: #9ca3af;
+    color: var(--lm-ink-300);
 
     font-size: 11px;
 
@@ -696,19 +795,17 @@ if (!function_exists('penaltyRemainingDays')) {
     padding:
         12px 20px;
 
-    background: #f9fafb;
+    background: var(--lm-surface-tint);
 
-    color: #6b7280;
+    color: var(--lm-ink-500);
 
     font-size: 10px;
 
-    font-weight: 750;
+    font-weight: 700;
 
     text-align: left;
 
-    text-transform: uppercase;
-
-    letter-spacing: .045em;
+    letter-spacing: .02em;
 
     white-space: nowrap;
 
@@ -720,12 +817,12 @@ if (!function_exists('penaltyRemainingDays')) {
     padding:
         14px 20px;
 
-    color: #4b5563;
+    color: var(--lm-ink-700);
 
     font-size: 12px;
 
     border-top:
-        1px solid #f3f4f6;
+        1px solid var(--lm-line-soft);
 
     vertical-align: middle;
 
@@ -744,7 +841,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalties-table tbody tr:hover {
 
-    background: #fafafa;
+    background: var(--lm-surface-tint);
 
 }
 
@@ -757,7 +854,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalty-loan {
 
-    color: #111827;
+    color: var(--lm-ink-900);
 
     font-size: 12px;
 
@@ -768,7 +865,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalty-loan a {
 
-    color: #111827;
+    color: var(--lm-info);
 
     text-decoration: none;
 
@@ -790,7 +887,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalty-borrower {
 
-    color: #111827;
+    color: var(--lm-ink-900);
 
     font-size: 12px;
 
@@ -807,7 +904,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalty-muted {
 
-    color: #9ca3af;
+    color: var(--lm-ink-300);
 
 }
 
@@ -820,7 +917,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalty-money {
 
-    color: #111827;
+    color: var(--lm-ink-900);
 
     font-size: 12px;
 
@@ -848,9 +945,9 @@ if (!function_exists('penaltyRemainingDays')) {
 
     border-radius: 999px;
 
-    background: #f3f4f6;
+    background: var(--lm-line-soft);
 
-    color: #374151;
+    color: var(--lm-ink-700);
 
     font-size: 10px;
 
@@ -884,7 +981,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
     font-size: 10px;
 
-    font-weight: 750;
+    font-weight: 700;
 
     text-transform: capitalize;
 
@@ -910,36 +1007,36 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalty-status-overdue {
 
-    background: #fef2f2;
+    background: var(--lm-rust-soft);
 
-    color: #b91c1c;
+    color: var(--lm-rust);
 
 }
 
 
 .penalty-status-partial {
 
-    background: #fffbeb;
+    background: var(--lm-brass-soft);
 
-    color: #b45309;
+    color: var(--lm-brass-ink);
 
 }
 
 
 .penalty-status-paid {
 
-    background: #ecfdf5;
+    background: var(--lm-forest-soft);
 
-    color: #047857;
+    color: var(--lm-forest);
 
 }
 
 
 .penalty-status-pending {
 
-    background: #f3f4f6;
+    background: var(--lm-line-soft);
 
-    color: #6b7280;
+    color: var(--lm-ink-500);
 
 }
 
@@ -965,7 +1062,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
     font-size: 10px;
 
-    font-weight: 750;
+    font-weight: 700;
 
     white-space: nowrap;
 
@@ -974,45 +1071,45 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalty-remaining-normal {
 
-    background: #ecfdf5;
+    background: var(--lm-forest-soft);
 
-    color: #047857;
+    color: var(--lm-forest);
 
 }
 
 
 .penalty-remaining-warning {
 
-    background: #fffbeb;
+    background: var(--lm-brass-soft);
 
-    color: #b45309;
+    color: var(--lm-brass-ink);
 
 }
 
 
 .penalty-remaining-today {
 
-    background: #fff7ed;
+    background: var(--lm-rust-soft);
 
-    color: #c2410c;
+    color: var(--lm-rust);
 
 }
 
 
 .penalty-remaining-overdue {
 
-    background: #fef2f2;
+    background: var(--lm-danger-soft);
 
-    color: #b91c1c;
+    color: var(--lm-danger);
 
 }
 
 
 .penalty-remaining-none {
 
-    background: #f3f4f6;
+    background: var(--lm-line-soft);
 
-    color: #6b7280;
+    color: var(--lm-ink-500);
 
 }
 
@@ -1025,7 +1122,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalty-due-date {
 
-    color: #4b5563;
+    color: var(--lm-ink-700);
 
     font-size: 12px;
 
@@ -1034,7 +1131,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalty-due-date.overdue {
 
-    color: #b91c1c;
+    color: var(--lm-danger);
 
     font-weight: 700;
 
@@ -1062,13 +1159,13 @@ if (!function_exists('penaltyRemainingDays')) {
     padding: 0;
 
     border:
-        1px solid #e5e7eb;
+        1px solid var(--lm-line);
 
     border-radius: 9px;
 
-    background: #ffffff;
+    background: var(--lm-surface);
 
-    color: #6b7280;
+    color: var(--lm-ink-500);
 
     text-decoration: none;
 
@@ -1077,28 +1174,27 @@ if (!function_exists('penaltyRemainingDays')) {
     transition:
         background .15s ease,
         border-color .15s ease,
-        color .15s ease,
-        box-shadow .15s ease;
+        color .15s ease;
 
 }
 
 
 .penalty-action:hover {
 
-    background: #f9fafb;
+    background: var(--lm-surface-tint);
 
-    border-color: #d1d5db;
+    border-color: var(--lm-ink-300);
 
-    color: #111827;
+    color: var(--lm-ink-900);
 
-    box-shadow:
-        0 2px 6px
-        rgba(
-            0,
-            0,
-            0,
-            .05
-        );
+}
+
+
+.penalty-action:focus-visible {
+
+    outline: 2px solid var(--lm-brass);
+
+    outline-offset: 2px;
 
 }
 
@@ -1134,15 +1230,17 @@ if (!function_exists('penaltyRemainingDays')) {
 
     justify-content: center;
 
-    border-radius: 15px;
+    border-radius: 14px;
 
-    background: #f3f4f6;
+    background: var(--lm-brass-soft);
 
-    color: #6b7280;
+    color: var(--lm-brass-ink);
+
+    font-family: var(--lm-font-serif);
 
     font-size: 21px;
 
-    font-weight: 750;
+    font-weight: 600;
 
 }
 
@@ -1151,7 +1249,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
     margin: 0;
 
-    color: #111827;
+    color: var(--lm-ink-900);
 
     font-size: 16px;
 
@@ -1165,7 +1263,7 @@ if (!function_exists('penaltyRemainingDays')) {
     margin:
         6px 0 20px;
 
-    color: #9ca3af;
+    color: var(--lm-ink-300);
 
     font-size: 12px;
 
@@ -1191,20 +1289,20 @@ if (!function_exists('penaltyRemainingDays')) {
     padding:
         13px 20px;
 
-    background: #f9fafb;
+    background: var(--lm-surface-tint);
 
     border-top:
-        1px solid #e5e7eb;
+        1px solid var(--lm-line);
 
     border-radius:
-        0 0 15px 15px;
+        0 0 14px 14px;
 
 }
 
 
 .penalties-footer-text {
 
-    color: #9ca3af;
+    color: var(--lm-ink-300);
 
     font-size: 10px;
 
@@ -1213,7 +1311,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalties-footer-count {
 
-    color: #6b7280;
+    color: var(--lm-ink-500);
 
     font-size: 11px;
 
@@ -1246,9 +1344,9 @@ if (!function_exists('penaltyRemainingDays')) {
 
     background:
         rgba(
-            17,
-            24,
-            39,
+            22,
+            33,
+            29,
             .55
         );
 
@@ -1275,18 +1373,20 @@ if (!function_exists('penaltyRemainingDays')) {
 
     overflow-y: auto;
 
-    background: #ffffff;
+    background: var(--lm-surface);
 
     border-radius: 14px;
 
     box-shadow:
-        0 20px 40px
+        0 24px 60px
         rgba(
-            0,
-            0,
-            0,
-            .18
+            22,
+            33,
+            29,
+            .28
         );
+
+    font-family: var(--lm-font-sans);
 
 }
 
@@ -1305,7 +1405,7 @@ if (!function_exists('penaltyRemainingDays')) {
         20px 22px;
 
     border-bottom:
-        1px solid #e5e7eb;
+        1px solid var(--lm-line);
 
 }
 
@@ -1314,11 +1414,13 @@ if (!function_exists('penaltyRemainingDays')) {
 
     margin: 0;
 
-    color: #111827;
+    color: var(--lm-ink-900);
+
+    font-family: var(--lm-font-serif);
 
     font-size: 19px;
 
-    font-weight: 700;
+    font-weight: 600;
 
 }
 
@@ -1328,7 +1430,7 @@ if (!function_exists('penaltyRemainingDays')) {
     margin:
         5px 0 0;
 
-    color: #6b7280;
+    color: var(--lm-ink-500);
 
     font-size: 13px;
 
@@ -1353,9 +1455,9 @@ if (!function_exists('penaltyRemainingDays')) {
 
     border-radius: 7px;
 
-    background: #f3f4f6;
+    background: var(--lm-line-soft);
 
-    color: #374151;
+    color: var(--lm-ink-500);
 
     font-size: 22px;
 
@@ -1363,12 +1465,18 @@ if (!function_exists('penaltyRemainingDays')) {
 
     cursor: pointer;
 
+    transition:
+        background .15s ease,
+        color .15s ease;
+
 }
 
 
 .penalty-modal-close:hover {
 
-    background: #e5e7eb;
+    background: var(--lm-danger-soft);
+
+    color: var(--lm-danger);
 
 }
 
@@ -1414,7 +1522,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
     margin-bottom: 7px;
 
-    color: #374151;
+    color: var(--lm-ink-700);
 
     font-size: 13px;
 
@@ -1425,7 +1533,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
 .penalty-form-group label span {
 
-    color: #dc2626;
+    color: var(--lm-danger);
 
 }
 
@@ -1442,15 +1550,15 @@ if (!function_exists('penaltyRemainingDays')) {
         10px 12px;
 
     border:
-        1px solid #d1d5db;
+        1px solid var(--lm-line);
 
     border-radius: 8px;
 
     outline: none;
 
-    background: #ffffff;
+    background: var(--lm-surface);
 
-    color: #111827;
+    color: var(--lm-ink-900);
 
     font-family: inherit;
 
@@ -1467,15 +1575,15 @@ if (!function_exists('penaltyRemainingDays')) {
 .penalty-form-group select:focus,
 .penalty-form-group textarea:focus {
 
-    border-color: #111827;
+    border-color: var(--lm-brass);
 
     box-shadow:
         0 0 0 3px
         rgba(
-            17,
-            24,
-            39,
-            .08
+            184,
+            134,
+            15,
+            .14
         );
 
 }
@@ -1494,7 +1602,7 @@ if (!function_exists('penaltyRemainingDays')) {
 
     margin-top: 5px;
 
-    color: #9ca3af;
+    color: var(--lm-ink-300);
 
     font-size: 11px;
 
@@ -1520,10 +1628,10 @@ if (!function_exists('penaltyRemainingDays')) {
     padding:
         16px 22px;
 
-    background: #fafafa;
+    background: var(--lm-surface-tint);
 
     border-top:
-        1px solid #e5e7eb;
+        1px solid var(--lm-line);
 
 }
 
@@ -1548,18 +1656,18 @@ if (!function_exists('penaltyRemainingDays')) {
 .penalty-cancel-btn {
 
     border:
-        1px solid #d1d5db;
+        1px solid var(--lm-line);
 
-    background: #ffffff;
+    background: var(--lm-surface);
 
-    color: #374151;
+    color: var(--lm-ink-700);
 
 }
 
 
 .penalty-cancel-btn:hover {
 
-    background: #f3f4f6;
+    background: var(--lm-line-soft);
 
 }
 
@@ -1567,18 +1675,18 @@ if (!function_exists('penaltyRemainingDays')) {
 .penalty-save-btn {
 
     border:
-        1px solid #111827;
+        1px solid var(--lm-ink-900);
 
-    background: #111827;
+    background: var(--lm-ink-900);
 
-    color: #ffffff;
+    color: var(--lm-brass);
 
 }
 
 
 .penalty-save-btn:hover {
 
-    background: #000000;
+    background: #0F1815;
 
 }
 
@@ -1662,14 +1770,14 @@ if (!function_exists('penaltyRemainingDays')) {
 
         padding: 15px;
 
-        border-radius: 12px;
+        border-radius: 11px;
 
     }
 
 
     .penalties-panel {
 
-        border-radius: 13px;
+        border-radius: 12px;
 
     }
 
@@ -1702,7 +1810,7 @@ if (!function_exists('penaltyRemainingDays')) {
             12px 16px;
 
         border-radius:
-            0 0 13px 13px;
+            0 0 12px 12px;
 
     }
 
@@ -1761,6 +1869,25 @@ if (!function_exists('penaltyRemainingDays')) {
     .penalties-header-actions .penalty-primary-btn {
 
         width: 100%;
+
+    }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| REDUCED MOTION
+|--------------------------------------------------------------------------
+*/
+
+@media (prefers-reduced-motion: reduce) {
+
+    .penalties-table tbody tr,
+    .penalty-action,
+    .penalty-primary-btn {
+
+        transition: none;
 
     }
 

@@ -1,4 +1,3 @@
-
 <?php
 
 $user = $user ?? Auth::user();
@@ -140,8 +139,49 @@ $displayRole =
         href="assets/css/style.css"
     >
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700;800&display=swap"
+    >
+
 
     <style>
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOKENS — shares the sidebar / dashboard / borrowers / loans / payments /
+        | collections language
+        |--------------------------------------------------------------------------
+        */
+
+        :root {
+
+            --lm-ink-900: #16211D;
+            --lm-ink-700: #33413B;
+            --lm-ink-500: #6B7670;
+            --lm-ink-300: #9CA69F;
+            --lm-line: #E7E2D6;
+            --lm-line-soft: #F0EDE4;
+            --lm-surface: #FFFFFF;
+            --lm-surface-tint: #FAF8F2;
+            --lm-brass: #B8860F;
+            --lm-brass-ink: #8A6608;
+            --lm-brass-soft: #F7EFD9;
+            --lm-forest: #1F7A52;
+            --lm-forest-soft: #E7F3EC;
+            --lm-rust: #B5451C;
+            --lm-rust-soft: #FBEAE2;
+            --lm-danger: #B0392E;
+            --lm-danger-soft: #FBEBE8;
+            --lm-info: #2E5C8A;
+            --lm-info-soft: #E9F0F7;
+            --lm-font-serif: 'Fraunces', Georgia, 'Iowan Old Style', serif;
+            --lm-font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+        }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -150,6 +190,8 @@ $displayRole =
         */
 
         .accounts-page {
+
+            font-family: var(--lm-font-sans);
 
             animation:
                 accountsFadeIn
@@ -228,14 +270,9 @@ $displayRole =
 
             justify-content: center;
 
-            background:
-                linear-gradient(
-                    135deg,
-                    #eef2ff,
-                    #e0e7ff
-                );
+            background: var(--lm-brass-soft);
 
-            color: #4f46e5;
+            color: var(--lm-brass-ink);
 
             font-size: 22px;
 
@@ -248,13 +285,15 @@ $displayRole =
 
             margin: 0;
 
+            font-family: var(--lm-font-serif);
+
             font-size: 26px;
 
-            font-weight: 750;
+            font-weight: 600;
 
-            color: #111827;
+            color: var(--lm-ink-900);
 
-            letter-spacing: -0.4px;
+            letter-spacing: -0.01em;
 
         }
 
@@ -263,7 +302,7 @@ $displayRole =
 
             margin: 4px 0 0;
 
-            color: #6b7280;
+            color: var(--lm-ink-500);
 
             font-size: 14px;
 
@@ -306,7 +345,7 @@ $displayRole =
             cursor: pointer;
 
             transition:
-                all 0.18s ease;
+                transform 0.15s ease;
 
         }
 
@@ -348,22 +387,22 @@ $displayRole =
 
         .accounts-alert-success {
 
-            color: #166534;
+            color: var(--lm-forest);
 
-            background: #f0fdf4;
+            background: var(--lm-forest-soft);
 
-            border: 1px solid #bbf7d0;
+            border: 1px solid rgba(31, 122, 82, 0.3);
 
         }
 
 
         .accounts-alert-error {
 
-            color: #991b1b;
+            color: var(--lm-danger);
 
-            background: #fef2f2;
+            background: var(--lm-danger-soft);
 
-            border: 1px solid #fecaca;
+            border: 1px solid rgba(176, 57, 46, 0.3);
 
         }
 
@@ -395,24 +434,20 @@ $displayRole =
 
             position: relative;
 
-            overflow: hidden;
-
-            background: #ffffff;
+            background: var(--lm-surface);
 
             border:
-                1px solid #e5e7eb;
+                1px solid var(--lm-line);
 
-            border-radius: 14px;
+            border-top: 3px solid var(--lm-ink-300);
+
+            border-radius: 12px;
 
             padding: 19px;
 
-            box-shadow:
-                0 3px 12px
-                rgba(15, 23, 42, 0.045);
-
             transition:
-                transform 0.2s ease,
-                box-shadow 0.2s ease;
+                transform 0.18s ease,
+                box-shadow 0.18s ease;
 
         }
 
@@ -423,34 +458,32 @@ $displayRole =
                 translateY(-2px);
 
             box-shadow:
-                0 8px 22px
-                rgba(15, 23, 42, 0.08);
+                0 10px 24px
+                rgba(22, 33, 29, .08);
 
         }
 
 
-        .account-summary-card::after {
+        .account-summary-grid
+        .account-summary-card:nth-child(2) {
 
-            content: '';
+            border-top-color: var(--lm-forest);
 
-            position: absolute;
+        }
 
-            width: 70px;
 
-            height: 70px;
+        .account-summary-grid
+        .account-summary-card:nth-child(3) {
 
-            right: -25px;
+            border-top-color: var(--lm-rust);
 
-            top: -25px;
+        }
 
-            border-radius: 50%;
 
-            background: rgba(
-                99,
-                102,
-                241,
-                0.05
-            );
+        .account-summary-grid
+        .account-summary-card:nth-child(4) {
+
+            border-top-color: var(--lm-brass);
 
         }
 
@@ -491,51 +524,49 @@ $displayRole =
 
         .summary-icon-blue {
 
-            background: #eff6ff;
+            background: var(--lm-line-soft);
 
-            color: #2563eb;
+            color: var(--lm-ink-700);
 
         }
 
 
         .summary-icon-green {
 
-            background: #f0fdf4;
+            background: var(--lm-forest-soft);
 
-            color: #16a34a;
+            color: var(--lm-forest);
 
         }
 
 
         .summary-icon-red {
 
-            background: #fef2f2;
+            background: var(--lm-rust-soft);
 
-            color: #dc2626;
+            color: var(--lm-rust);
 
         }
 
 
         .summary-icon-purple {
 
-            background: #faf5ff;
+            background: var(--lm-brass-soft);
 
-            color: #9333ea;
+            color: var(--lm-brass-ink);
 
         }
 
 
         .account-summary-title {
 
-            font-size: 12px;
+            font-size: 11px;
 
             font-weight: 650;
 
-            color: #6b7280;
+            color: var(--lm-ink-500);
 
-            text-transform: uppercase;
-
-            letter-spacing: 0.45px;
+            letter-spacing: 0.02em;
 
         }
 
@@ -544,11 +575,11 @@ $displayRole =
 
             font-size: 24px;
 
-            font-weight: 750;
+            font-weight: 700;
 
-            color: #111827;
+            color: var(--lm-ink-900);
 
-            letter-spacing: -0.5px;
+            letter-spacing: -0.01em;
 
         }
 
@@ -559,7 +590,7 @@ $displayRole =
 
             font-size: 11px;
 
-            color: #9ca3af;
+            color: var(--lm-ink-300);
 
         }
 
@@ -572,18 +603,14 @@ $displayRole =
 
         .accounts-panel {
 
-            background: #ffffff;
+            background: var(--lm-surface);
 
             border:
-                1px solid #e5e7eb;
+                1px solid var(--lm-line);
 
-            border-radius: 14px;
+            border-radius: 12px;
 
             overflow: hidden;
-
-            box-shadow:
-                0 3px 14px
-                rgba(15, 23, 42, 0.045);
 
         }
 
@@ -601,7 +628,7 @@ $displayRole =
             padding: 18px 20px;
 
             border-bottom:
-                1px solid #eef0f3;
+                1px solid var(--lm-line-soft);
 
         }
 
@@ -621,11 +648,13 @@ $displayRole =
 
             margin: 0;
 
+            font-family: var(--lm-font-serif);
+
             font-size: 16px;
 
-            font-weight: 700;
+            font-weight: 600;
 
-            color: #111827;
+            color: var(--lm-ink-900);
 
         }
 
@@ -646,9 +675,9 @@ $displayRole =
 
             border-radius: 20px;
 
-            background: #f3f4f6;
+            background: var(--lm-line-soft);
 
-            color: #4b5563;
+            color: var(--lm-ink-700);
 
             font-size: 11px;
 
@@ -661,7 +690,7 @@ $displayRole =
 
             margin: 3px 0 0;
 
-            color: #9ca3af;
+            color: var(--lm-ink-300);
 
             font-size: 12px;
 
@@ -698,20 +727,18 @@ $displayRole =
 
             padding: 12px 18px;
 
-            background: #f9fafb;
+            background: var(--lm-surface-tint);
 
             border-bottom:
-                1px solid #e5e7eb;
+                1px solid var(--lm-line);
 
-            color: #6b7280;
+            color: var(--lm-ink-500);
 
             font-size: 11px;
 
             font-weight: 700;
 
-            text-transform: uppercase;
-
-            letter-spacing: 0.45px;
+            letter-spacing: 0.02em;
 
             text-align: left;
 
@@ -725,9 +752,9 @@ $displayRole =
             padding: 15px 18px;
 
             border-bottom:
-                1px solid #f1f3f5;
+                1px solid var(--lm-line-soft);
 
-            color: #374151;
+            color: var(--lm-ink-700);
 
             font-size: 13px;
 
@@ -746,7 +773,7 @@ $displayRole =
 
         .accounts-table tbody tr:hover {
 
-            background: #fafbff;
+            background: var(--lm-surface-tint);
 
         }
 
@@ -768,9 +795,9 @@ $displayRole =
 
             border-radius: 6px;
 
-            background: #f3f4f6;
+            background: var(--lm-line-soft);
 
-            color: #4b5563;
+            color: var(--lm-ink-700);
 
             font-size: 11px;
 
@@ -812,9 +839,9 @@ $displayRole =
 
             justify-content: center;
 
-            background: #f5f3ff;
+            background: var(--lm-brass-soft);
 
-            color: #7c3aed;
+            color: var(--lm-brass-ink);
 
             font-size: 14px;
 
@@ -825,7 +852,7 @@ $displayRole =
 
         .account-name {
 
-            color: #111827;
+            color: var(--lm-ink-900);
 
             font-weight: 650;
 
@@ -842,11 +869,11 @@ $displayRole =
 
             border-radius: 20px;
 
-            background: #f8fafc;
+            background: var(--lm-surface-tint);
 
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--lm-line);
 
-            color: #475569;
+            color: var(--lm-ink-700);
 
             font-size: 11px;
 
@@ -861,7 +888,7 @@ $displayRole =
 
             font-weight: 750;
 
-            color: #111827;
+            color: var(--lm-ink-900);
 
             white-space: nowrap;
 
@@ -904,36 +931,36 @@ $displayRole =
 
         .status-active {
 
-            color: #15803d;
+            color: var(--lm-forest);
 
-            background: #f0fdf4;
+            background: var(--lm-forest-soft);
 
         }
 
 
         .status-inactive {
 
-            color: #6b7280;
+            color: var(--lm-ink-500);
 
-            background: #f3f4f6;
+            background: var(--lm-line-soft);
 
         }
 
 
         .status-suspended {
 
-            color: #b45309;
+            color: var(--lm-brass-ink);
 
-            background: #fffbeb;
+            background: var(--lm-brass-soft);
 
         }
 
 
         .status-default {
 
-            color: #475569;
+            color: var(--lm-ink-500);
 
-            background: #f8fafc;
+            background: var(--lm-line-soft);
 
         }
 
@@ -969,11 +996,11 @@ $displayRole =
 
             border-radius: 7px;
 
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--lm-line);
 
-            background: #ffffff;
+            background: var(--lm-surface);
 
-            color: #4b5563;
+            color: var(--lm-ink-700);
 
             font-size: 11px;
 
@@ -982,29 +1009,31 @@ $displayRole =
             cursor: pointer;
 
             transition:
-                all 0.15s ease;
+                background 0.15s ease,
+                border-color 0.15s ease,
+                color 0.15s ease;
 
         }
 
 
         .table-action:hover {
 
-            border-color: #c7d2fe;
+            border-color: var(--lm-brass);
 
-            background: #eef2ff;
+            background: var(--lm-brass-soft);
 
-            color: #4f46e5;
+            color: var(--lm-brass-ink);
 
         }
 
 
         .table-action-delete:hover {
 
-            border-color: #fecaca;
+            border-color: rgba(176, 57, 46, 0.4);
 
-            background: #fef2f2;
+            background: var(--lm-danger-soft);
 
-            color: #dc2626;
+            color: var(--lm-danger);
 
         }
 
@@ -1040,9 +1069,9 @@ $displayRole =
 
             justify-content: center;
 
-            background: #f5f3ff;
+            background: var(--lm-brass-soft);
 
-            color: #7c3aed;
+            color: var(--lm-brass-ink);
 
             font-size: 25px;
 
@@ -1055,7 +1084,7 @@ $displayRole =
 
             font-size: 17px;
 
-            color: #111827;
+            color: var(--lm-ink-900);
 
         }
 
@@ -1066,7 +1095,7 @@ $displayRole =
 
             margin: 0 auto 20px;
 
-            color: #6b7280;
+            color: var(--lm-ink-500);
 
             font-size: 13px;
 
@@ -1093,10 +1122,10 @@ $displayRole =
 
             background:
                 rgba(
-                    15,
-                    23,
-                    42,
-                    0.58
+                    22,
+                    33,
+                    29,
+                    0.55
                 );
 
             backdrop-filter:
@@ -1151,7 +1180,7 @@ $displayRole =
 
         .modal {
 
-            background: #ffffff;
+            background: var(--lm-surface);
 
             width: 100%;
 
@@ -1170,16 +1199,18 @@ $displayRole =
             box-shadow:
                 0 25px 70px
                 rgba(
-                    15,
-                    23,
-                    42,
-                    0.25
+                    22,
+                    33,
+                    29,
+                    0.28
                 );
 
             animation:
                 modalIn
                 0.2s
                 ease;
+
+            font-family: var(--lm-font-sans);
 
         }
 
@@ -1228,7 +1259,11 @@ $displayRole =
 
             margin: 0 0 5px;
 
-            color: #111827;
+            color: var(--lm-ink-900);
+
+            font-family: var(--lm-font-serif);
+
+            font-weight: 600;
 
             font-size: 20px;
 
@@ -1239,7 +1274,7 @@ $displayRole =
 
             margin: 0;
 
-            color: #6b7280;
+            color: var(--lm-ink-500);
 
             font-size: 13px;
 
@@ -1256,9 +1291,9 @@ $displayRole =
 
             border-radius: 8px;
 
-            background: #f3f4f6;
+            background: var(--lm-line-soft);
 
-            color: #6b7280;
+            color: var(--lm-ink-500);
 
             font-size: 22px;
 
@@ -1267,16 +1302,17 @@ $displayRole =
             cursor: pointer;
 
             transition:
-                all 0.15s ease;
+                background 0.15s ease,
+                color 0.15s ease;
 
         }
 
 
         .modal-close:hover {
 
-            background: #fee2e2;
+            background: var(--lm-danger-soft);
 
-            color: #dc2626;
+            color: var(--lm-danger);
 
         }
 
@@ -1300,7 +1336,7 @@ $displayRole =
 
             margin-bottom: 7px;
 
-            color: #374151;
+            color: var(--lm-ink-700);
 
             font-size: 13px;
 
@@ -1318,15 +1354,15 @@ $displayRole =
             box-sizing: border-box;
 
             border:
-                1px solid #d1d5db;
+                1px solid var(--lm-line);
 
             border-radius: 9px;
 
             padding: 10px 12px;
 
-            color: #111827;
+            color: var(--lm-ink-900);
 
-            background: #ffffff;
+            background: var(--lm-surface);
 
             font-size: 13px;
 
@@ -1343,15 +1379,15 @@ $displayRole =
         .form-group select:focus,
         .form-group textarea:focus {
 
-            border-color: #6366f1;
+            border-color: var(--lm-brass);
 
             box-shadow:
                 0 0 0 3px
                 rgba(
-                    99,
-                    102,
-                    241,
-                    0.10
+                    184,
+                    134,
+                    15,
+                    0.14
                 );
 
         }
@@ -1379,7 +1415,7 @@ $displayRole =
             padding-top: 18px;
 
             border-top:
-                1px solid #f1f3f5;
+                1px solid var(--lm-line-soft);
 
         }
 
@@ -1411,31 +1447,31 @@ $displayRole =
 
         .modal-btn-secondary {
 
-            background: #ffffff;
+            background: var(--lm-surface);
 
-            border-color: #d1d5db;
+            border-color: var(--lm-line);
 
-            color: #4b5563;
+            color: var(--lm-ink-700);
 
         }
 
 
         .modal-btn-primary {
 
-            background: #4f46e5;
+            background: var(--lm-ink-900);
 
-            border-color: #4f46e5;
+            border-color: var(--lm-ink-900);
 
-            color: #ffffff;
+            color: var(--lm-brass);
 
         }
 
 
         .modal-btn-primary:hover {
 
-            background: #4338ca;
+            background: #0F1815;
 
-            border-color: #4338ca;
+            border-color: #0F1815;
 
         }
 
@@ -1526,6 +1562,30 @@ $displayRole =
 
                 border-radius: 13px;
 
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REDUCED MOTION
+        |--------------------------------------------------------------------------
+        */
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .accounts-page {
+                animation: none;
+            }
+
+            .account-summary-card,
+            .account-action-btn,
+            .table-action,
+            .modal-overlay.active,
+            .modal {
+                animation: none;
+                transition: none;
             }
 
         }
