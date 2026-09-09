@@ -126,8 +126,46 @@ $borrowerCount =
     href="assets/css/style.css"
 >
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700;800&display=swap"
+>
+
 
 <style>
+
+    /*
+    |--------------------------------------------------------------------------
+    | TOKENS — shares the sidebar / dashboard ink + brass language
+    |--------------------------------------------------------------------------
+    */
+
+    :root {
+
+        --lm-ink-900: #16211D;
+        --lm-ink-700: #33413B;
+        --lm-ink-500: #6B7670;
+        --lm-ink-300: #9CA69F;
+        --lm-line: #E7E2D6;
+        --lm-line-soft: #F0EDE4;
+        --lm-surface: #FFFFFF;
+        --lm-surface-tint: #FAF8F2;
+        --lm-brass: #B8860F;
+        --lm-brass-ink: #8A6608;
+        --lm-brass-soft: #F7EFD9;
+        --lm-forest: #1F7A52;
+        --lm-forest-soft: #E7F3EC;
+        --lm-danger: #B0392E;
+        --lm-danger-soft: #FBEBE8;
+        --lm-info: #2E5C8A;
+        --lm-info-soft: #E9F0F7;
+        --lm-font-serif: 'Fraunces', Georgia, 'Iowan Old Style', serif;
+        --lm-font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -138,6 +176,8 @@ $borrowerCount =
     .borrowers-page {
 
         width: 100%;
+
+        font-family: var(--lm-font-sans);
 
     }
 
@@ -167,15 +207,17 @@ $borrowerCount =
 
         margin: 0;
 
-        color: #111827;
+        color: var(--lm-ink-900);
+
+        font-family: var(--lm-font-serif);
 
         font-size: 28px;
 
         line-height: 1.2;
 
-        font-weight: 750;
+        font-weight: 600;
 
-        letter-spacing: -.025em;
+        letter-spacing: -.01em;
 
     }
 
@@ -184,7 +226,7 @@ $borrowerCount =
 
         margin: 7px 0 0;
 
-        color: #6b7280;
+        color: var(--lm-ink-500);
 
         font-size: 14px;
 
@@ -218,17 +260,17 @@ $borrowerCount =
 
         padding: 0 13px;
 
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--lm-line);
 
         border-radius: 10px;
 
-        background: #ffffff;
+        background: var(--lm-surface);
 
-        color: #6b7280;
+        color: var(--lm-ink-500);
 
         font-size: 12px;
 
-        font-weight: 650;
+        font-weight: 600;
 
         white-space: nowrap;
 
@@ -237,9 +279,9 @@ $borrowerCount =
 
     .borrower-count-badge strong {
 
-        color: #111827;
+        color: var(--lm-ink-900);
 
-        font-weight: 750;
+        font-weight: 700;
 
     }
 
@@ -275,31 +317,40 @@ $borrowerCount =
 
         padding: 17px 18px;
 
-        background: #ffffff;
+        background: var(--lm-surface);
 
-        border: 1px solid #e5e7eb;
+        border: 1px solid var(--lm-line);
 
-        border-radius: 14px;
+        border-top: 3px solid var(--lm-line);
 
-        box-shadow:
-            0 2px 7px
-            rgba(
-                0,
-                0,
-                0,
-                .035
-            );
+        border-radius: 12px;
+
+    }
+
+
+    .borrowers-summary
+    .borrower-summary-card:nth-child(2) {
+
+        border-top-color: var(--lm-forest);
+
+    }
+
+
+    .borrowers-summary
+    .borrower-summary-card:nth-child(3) {
+
+        border-top-color: var(--lm-brass);
 
     }
 
 
     .borrower-summary-label {
 
-        color: #6b7280;
+        color: var(--lm-ink-500);
 
         font-size: 11px;
 
-        font-weight: 650;
+        font-weight: 600;
 
     }
 
@@ -308,13 +359,13 @@ $borrowerCount =
 
         margin-top: 5px;
 
-        color: #111827;
+        color: var(--lm-ink-900);
 
         font-size: 22px;
 
         line-height: 1.2;
 
-        font-weight: 750;
+        font-weight: 700;
 
     }
 
@@ -323,7 +374,7 @@ $borrowerCount =
 
         margin-top: 4px;
 
-        color: #9ca3af;
+        color: var(--lm-ink-300);
 
         font-size: 10px;
 
@@ -338,23 +389,14 @@ $borrowerCount =
 
     .borrowers-panel {
 
-        background: #ffffff;
+        background: var(--lm-surface);
 
         border:
-            1px solid #e5e7eb;
+            1px solid var(--lm-line);
 
-        border-radius: 15px;
+        border-radius: 14px;
 
         overflow: visible;
-
-        box-shadow:
-            0 2px 7px
-            rgba(
-                0,
-                0,
-                0,
-                .035
-            );
 
     }
 
@@ -372,7 +414,7 @@ $borrowerCount =
         padding: 18px 20px;
 
         border-bottom:
-            1px solid #f0f1f3;
+            1px solid var(--lm-line-soft);
 
     }
 
@@ -381,7 +423,7 @@ $borrowerCount =
 
         margin: 0;
 
-        color: #111827;
+        color: var(--lm-ink-900);
 
         font-size: 16px;
 
@@ -394,7 +436,7 @@ $borrowerCount =
 
         margin: 4px 0 0;
 
-        color: #9ca3af;
+        color: var(--lm-ink-300);
 
         font-size: 11px;
 
@@ -440,19 +482,17 @@ $borrowerCount =
         padding:
             12px 20px;
 
-        background: #f9fafb;
+        background: var(--lm-surface-tint);
 
-        color: #6b7280;
+        color: var(--lm-ink-500);
 
         font-size: 10px;
 
-        font-weight: 750;
+        font-weight: 700;
 
         text-align: left;
 
-        text-transform: uppercase;
-
-        letter-spacing: .045em;
+        letter-spacing: .02em;
 
         white-space: nowrap;
 
@@ -464,12 +504,12 @@ $borrowerCount =
         padding:
             14px 20px;
 
-        color: #4b5563;
+        color: var(--lm-ink-700);
 
         font-size: 12px;
 
         border-top:
-            1px solid #f3f4f6;
+            1px solid var(--lm-line-soft);
 
         vertical-align: middle;
 
@@ -488,7 +528,7 @@ $borrowerCount =
 
     .borrowers-table tbody tr:hover {
 
-        background: #fafafa;
+        background: var(--lm-surface-tint);
 
     }
 
@@ -526,15 +566,17 @@ $borrowerCount =
 
         justify-content: center;
 
-        border-radius: 11px;
+        border-radius: 10px;
 
-        background: #f3f4f6;
+        background: var(--lm-line-soft);
 
-        color: #374151;
+        color: var(--lm-ink-700);
+
+        font-family: var(--lm-font-serif);
 
         font-size: 13px;
 
-        font-weight: 750;
+        font-weight: 600;
 
         text-transform: uppercase;
 
@@ -558,7 +600,7 @@ $borrowerCount =
 
         white-space: nowrap;
 
-        color: #111827;
+        color: var(--lm-ink-900);
 
         font-size: 13px;
 
@@ -571,7 +613,7 @@ $borrowerCount =
 
         margin-top: 3px;
 
-        color: #9ca3af;
+        color: var(--lm-ink-300);
 
         font-size: 10px;
 
@@ -588,7 +630,7 @@ $borrowerCount =
 
     .borrower-contact {
 
-        color: #4b5563;
+        color: var(--lm-ink-700);
 
         font-size: 12px;
 
@@ -597,7 +639,7 @@ $borrowerCount =
 
     .borrower-contact.muted {
 
-        color: #9ca3af;
+        color: var(--lm-ink-300);
 
     }
 
@@ -610,7 +652,7 @@ $borrowerCount =
 
     .borrower-income {
 
-        color: #111827;
+        color: var(--lm-ink-900);
 
         font-size: 12px;
 
@@ -642,7 +684,7 @@ $borrowerCount =
 
         font-size: 10px;
 
-        font-weight: 750;
+        font-weight: 700;
 
         text-transform: capitalize;
 
@@ -668,54 +710,54 @@ $borrowerCount =
 
     .borrower-status-active {
 
-        background: #ecfdf5;
+        background: var(--lm-forest-soft);
 
-        color: #047857;
+        color: var(--lm-forest);
 
     }
 
 
     .borrower-status-inactive {
 
-        background: #f3f4f6;
+        background: var(--lm-line-soft);
 
-        color: #6b7280;
+        color: var(--lm-ink-500);
 
     }
 
 
     .borrower-status-pending {
 
-        background: #fffbeb;
+        background: var(--lm-brass-soft);
 
-        color: #b45309;
+        color: var(--lm-brass-ink);
 
     }
 
 
     .borrower-status-approved {
 
-        background: #eff6ff;
+        background: var(--lm-info-soft);
 
-        color: #1d4ed8;
+        color: var(--lm-info);
 
     }
 
 
     .borrower-status-danger {
 
-        background: #fef2f2;
+        background: var(--lm-danger-soft);
 
-        color: #b91c1c;
+        color: var(--lm-danger);
 
     }
 
 
     .borrower-status-default {
 
-        background: #f3f4f6;
+        background: var(--lm-line-soft);
 
-        color: #4b5563;
+        color: var(--lm-ink-500);
 
     }
 
@@ -750,13 +792,13 @@ $borrowerCount =
         padding: 0;
 
         border:
-            1px solid #e5e7eb;
+            1px solid var(--lm-line);
 
         border-radius: 9px;
 
-        background: #ffffff;
+        background: var(--lm-surface);
 
-        color: #6b7280;
+        color: var(--lm-ink-500);
 
         cursor: pointer;
 
@@ -767,8 +809,7 @@ $borrowerCount =
         transition:
             background .15s ease,
             border-color .15s ease,
-            color .15s ease,
-            box-shadow .15s ease;
+            color .15s ease;
 
     }
 
@@ -777,20 +818,20 @@ $borrowerCount =
 
     .borrower-action-button[aria-expanded="true"] {
 
-        background: #f9fafb;
+        background: var(--lm-surface-tint);
 
-        border-color: #d1d5db;
+        border-color: var(--lm-ink-300);
 
-        color: #111827;
+        color: var(--lm-ink-900);
 
-        box-shadow:
-            0 2px 6px
-            rgba(
-                0,
-                0,
-                0,
-                .05
-            );
+    }
+
+
+    .borrower-action-button:focus-visible {
+
+        outline: 2px solid var(--lm-brass);
+
+        outline-offset: 2px;
 
     }
 
@@ -807,20 +848,20 @@ $borrowerCount =
 
         padding: 6px;
 
-        background: #ffffff;
+        background: var(--lm-surface);
 
         border:
-            1px solid #e5e7eb;
+            1px solid var(--lm-line);
 
         border-radius: 11px;
 
         box-shadow:
-            0 12px 30px
+            0 16px 34px
             rgba(
-                0,
-                0,
-                0,
-                .12
+                22,
+                33,
+                29,
+                .14
             );
 
         z-index: 9999;
@@ -883,7 +924,7 @@ $borrowerCount =
 
         background: transparent;
 
-        color: #374151;
+        color: var(--lm-ink-700);
 
         text-decoration: none;
 
@@ -906,25 +947,25 @@ $borrowerCount =
 
     .borrower-action-item:hover {
 
-        background: #f3f4f6;
+        background: var(--lm-surface-tint);
 
-        color: #111827;
+        color: var(--lm-ink-900);
 
     }
 
 
     .borrower-action-item.danger {
 
-        color: #dc3545;
+        color: var(--lm-danger);
 
     }
 
 
     .borrower-action-item.danger:hover {
 
-        background: #fff1f2;
+        background: var(--lm-danger-soft);
 
-        color: #b91c1c;
+        color: var(--lm-danger);
 
     }
 
@@ -979,15 +1020,17 @@ $borrowerCount =
 
         justify-content: center;
 
-        border-radius: 15px;
+        border-radius: 14px;
 
-        background: #f3f4f6;
+        background: var(--lm-line-soft);
 
-        color: #6b7280;
+        color: var(--lm-ink-500);
+
+        font-family: var(--lm-font-serif);
 
         font-size: 21px;
 
-        font-weight: 750;
+        font-weight: 600;
 
     }
 
@@ -996,7 +1039,7 @@ $borrowerCount =
 
         margin: 0;
 
-        color: #111827;
+        color: var(--lm-ink-900);
 
         font-size: 16px;
 
@@ -1010,7 +1053,7 @@ $borrowerCount =
         margin:
             6px 0 20px;
 
-        color: #9ca3af;
+        color: var(--lm-ink-300);
 
         font-size: 12px;
 
@@ -1036,20 +1079,20 @@ $borrowerCount =
         padding:
             13px 20px;
 
-        background: #f9fafb;
+        background: var(--lm-surface-tint);
 
         border-top:
-            1px solid #e5e7eb;
+            1px solid var(--lm-line);
 
         border-radius:
-            0 0 15px 15px;
+            0 0 14px 14px;
 
     }
 
 
     .borrowers-footer-text {
 
-        color: #9ca3af;
+        color: var(--lm-ink-300);
 
         font-size: 10px;
 
@@ -1058,11 +1101,11 @@ $borrowerCount =
 
     .borrowers-footer-count {
 
-        color: #6b7280;
+        color: var(--lm-ink-500);
 
         font-size: 11px;
 
-        font-weight: 650;
+        font-weight: 600;
 
     }
 
@@ -1152,14 +1195,14 @@ $borrowerCount =
 
             padding: 15px;
 
-            border-radius: 12px;
+            border-radius: 11px;
 
         }
 
 
         .borrowers-panel {
 
-            border-radius: 13px;
+            border-radius: 12px;
 
         }
 
@@ -1191,7 +1234,7 @@ $borrowerCount =
                 12px 16px;
 
             border-radius:
-                0 0 13px 13px;
+                0 0 12px 12px;
 
         }
 
@@ -1231,6 +1274,28 @@ $borrowerCount =
             text-align: center;
 
             box-sizing: border-box;
+
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REDUCED MOTION
+    |--------------------------------------------------------------------------
+    */
+
+    @media (prefers-reduced-motion: reduce) {
+
+        .borrowers-table tbody tr,
+        .borrower-action-button,
+        .borrower-action-item,
+        .borrower-action-dropdown {
+
+            transition: none;
+
+            animation: none;
 
         }
 

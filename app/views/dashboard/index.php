@@ -260,8 +260,46 @@ $userInitials =
         href="assets/css/style.css"
     >
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700;800&display=swap"
+    >
+
 
     <style>
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOKENS — shares the sidebar's ink / brass language
+        |--------------------------------------------------------------------------
+        */
+
+        :root {
+            --lm-ink-900: #16211D;
+            --lm-ink-700: #33413B;
+            --lm-ink-500: #6B7670;
+            --lm-ink-300: #9CA69F;
+            --lm-line: #E7E2D6;
+            --lm-line-soft: #F0EDE4;
+            --lm-surface: #FFFFFF;
+            --lm-surface-tint: #FAF8F2;
+            --lm-brass: #B8860F;
+            --lm-brass-ink: #8A6608;
+            --lm-brass-soft: #F7EFD9;
+            --lm-forest: #1F7A52;
+            --lm-forest-soft: #E7F3EC;
+            --lm-rust: #B5451C;
+            --lm-rust-soft: #FBEAE2;
+            --lm-danger: #B0392E;
+            --lm-danger-soft: #FBEBE8;
+            --lm-info: #2E5C8A;
+            --lm-info-soft: #E9F0F7;
+            --lm-font-serif: 'Fraunces', Georgia, 'Iowan Old Style', serif;
+            --lm-font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -273,6 +311,7 @@ $userInitials =
             width: 100%;
             max-width: 1600px;
             margin: 0 auto;
+            font-family: var(--lm-font-sans);
         }
 
 
@@ -297,35 +336,35 @@ $userInitials =
         .lm-dashboard-eyebrow {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            margin-bottom: 8px;
-            color: #6b7280;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: .07em;
-            text-transform: uppercase;
+            gap: 8px;
+            margin-bottom: 10px;
+            color: var(--lm-ink-500);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .01em;
         }
 
         .lm-dashboard-eyebrow-dot {
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 0 4px #ecfdf5;
+            background: var(--lm-forest);
+            box-shadow: 0 0 0 4px var(--lm-forest-soft);
         }
 
         .lm-dashboard-heading h1 {
             margin: 0;
-            color: #111827;
+            color: var(--lm-ink-900);
+            font-family: var(--lm-font-serif);
             font-size: 30px;
-            line-height: 1.15;
-            font-weight: 800;
-            letter-spacing: -.035em;
+            line-height: 1.2;
+            font-weight: 600;
+            letter-spacing: -.01em;
         }
 
         .lm-dashboard-heading p {
             margin: 8px 0 0;
-            color: #6b7280;
+            color: var(--lm-ink-500);
             font-size: 14px;
             line-height: 1.5;
         }
@@ -343,13 +382,12 @@ $userInitials =
             gap: 9px;
             min-height: 40px;
             padding: 0 13px;
-            border: 1px solid #e5e7eb;
-            border-radius: 11px;
-            background: #ffffff;
-            color: #6b7280;
+            border: 1px solid var(--lm-line);
+            border-radius: 10px;
+            background: var(--lm-surface);
+            color: var(--lm-ink-700);
             font-size: 12px;
-            font-weight: 650;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, .025);
+            font-weight: 600;
         }
 
         .lm-date-icon {
@@ -359,8 +397,8 @@ $userInitials =
             width: 25px;
             height: 25px;
             border-radius: 7px;
-            background: #f3f4f6;
-            color: #374151;
+            background: var(--lm-brass-soft);
+            color: var(--lm-brass-ink);
             font-size: 12px;
         }
 
@@ -384,54 +422,24 @@ $userInitials =
 
         .lm-kpi-card {
             position: relative;
-            overflow: hidden;
             min-width: 0;
             padding: 20px;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
-            box-shadow:
-                0 2px 8px
-                rgba(
-                    15,
-                    23,
-                    42,
-                    .035
-                );
+            background: var(--lm-surface);
+            border: 1px solid var(--lm-line);
+            border-top: 3px solid var(--lm-line);
+            border-radius: 14px;
             transition:
                 transform .18s ease,
-                box-shadow .18s ease,
-                border-color .18s ease;
+                border-color .18s ease,
+                box-shadow .18s ease;
         }
 
         .lm-kpi-card:hover {
             transform: translateY(-2px);
-            border-color: #dbe0e7;
-            box-shadow:
-                0 12px 28px
-                rgba(
-                    15,
-                    23,
-                    42,
-                    .075
-                );
-        }
-
-        .lm-kpi-card::after {
-            content: "";
-            position: absolute;
-            right: -30px;
-            bottom: -35px;
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: #f8fafc;
-            pointer-events: none;
+            box-shadow: 0 10px 24px rgba(22, 33, 29, .08);
         }
 
         .lm-kpi-top {
-            position: relative;
-            z-index: 1;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -440,64 +448,65 @@ $userInitials =
         }
 
         .lm-kpi-label {
-            color: #6b7280;
+            color: var(--lm-ink-500);
             font-size: 12px;
             line-height: 1.4;
-            font-weight: 650;
+            font-weight: 600;
         }
 
         .lm-kpi-icon {
-            position: relative;
-            z-index: 2;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 42px;
-            height: 42px;
-            min-width: 42px;
-            border-radius: 12px;
-            background: #f3f4f6;
-            color: #374151;
-            font-size: 15px;
-            font-weight: 800;
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 10px;
+            background: var(--lm-line-soft);
+            color: var(--lm-ink-700);
+            font-family: var(--lm-font-serif);
+            font-size: 14px;
+            font-weight: 600;
         }
 
-        .lm-kpi-card.borrowers .lm-kpi-icon {
-            background: #eff6ff;
-            color: #2563eb;
+        .lm-kpi-card.borrowers {
+            border-top-color: var(--lm-ink-300);
         }
 
-        .lm-kpi-card.loans .lm-kpi-icon {
-            background: #f5f3ff;
-            color: #7c3aed;
+        .lm-kpi-card.loans {
+            border-top-color: var(--lm-ink-500);
+        }
+
+        .lm-kpi-card.outstanding {
+            border-top-color: var(--lm-brass);
         }
 
         .lm-kpi-card.outstanding .lm-kpi-icon {
-            background: #fff7ed;
-            color: #ea580c;
+            background: var(--lm-brass-soft);
+            color: var(--lm-brass-ink);
+        }
+
+        .lm-kpi-card.funds {
+            border-top-color: var(--lm-forest);
         }
 
         .lm-kpi-card.funds .lm-kpi-icon {
-            background: #ecfdf5;
-            color: #059669;
+            background: var(--lm-forest-soft);
+            color: var(--lm-forest);
         }
 
         .lm-kpi-value {
-            position: relative;
-            z-index: 1;
-            color: #111827;
+            color: var(--lm-ink-900);
             font-size: 26px;
             line-height: 1.2;
-            font-weight: 800;
-            letter-spacing: -.03em;
+            font-weight: 700;
+            letter-spacing: -.02em;
             word-break: break-word;
         }
 
         .lm-kpi-description {
-            position: relative;
-            z-index: 1;
             margin-top: 7px;
-            color: #9ca3af;
+            color: var(--lm-ink-300);
             font-size: 11px;
             line-height: 1.4;
         }
@@ -527,18 +536,10 @@ $userInitials =
 
         .lm-panel {
             min-width: 0;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
+            background: var(--lm-surface);
+            border: 1px solid var(--lm-line);
+            border-radius: 14px;
             overflow: hidden;
-            box-shadow:
-                0 2px 8px
-                rgba(
-                    15,
-                    23,
-                    42,
-                    .035
-                );
         }
 
         .lm-panel-header {
@@ -548,7 +549,7 @@ $userInitials =
             gap: 16px;
             min-height: 72px;
             padding: 16px 20px;
-            border-bottom: 1px solid #f0f1f3;
+            border-bottom: 1px solid var(--lm-line-soft);
         }
 
         .lm-panel-heading {
@@ -557,16 +558,16 @@ $userInitials =
 
         .lm-panel-title {
             margin: 0;
-            color: #111827;
+            color: var(--lm-ink-900);
             font-size: 16px;
             line-height: 1.3;
-            font-weight: 750;
-            letter-spacing: -.015em;
+            font-weight: 700;
+            letter-spacing: -.01em;
         }
 
         .lm-panel-subtitle {
             margin: 5px 0 0;
-            color: #9ca3af;
+            color: var(--lm-ink-300);
             font-size: 11px;
             line-height: 1.4;
         }
@@ -577,10 +578,10 @@ $userInitials =
             justify-content: center;
             min-height: 28px;
             padding: 0 9px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--lm-line);
             border-radius: 8px;
-            background: #f9fafb;
-            color: #6b7280;
+            background: var(--lm-surface-tint);
+            color: var(--lm-ink-700);
             font-size: 10px;
             font-weight: 700;
             white-space: nowrap;
@@ -603,27 +604,27 @@ $userInitials =
             justify-content: space-between;
             gap: 25px;
             padding-bottom: 22px;
-            border-bottom: 1px solid #f0f1f3;
+            border-bottom: 1px solid var(--lm-line-soft);
         }
 
         .lm-portfolio-label {
-            color: #6b7280;
+            color: var(--lm-ink-500);
             font-size: 12px;
             font-weight: 600;
         }
 
         .lm-portfolio-value {
             margin-top: 6px;
-            color: #111827;
+            color: var(--lm-ink-900);
             font-size: 30px;
-            line-height: 1.15;
-            font-weight: 800;
-            letter-spacing: -.035em;
+            line-height: 1.2;
+            font-weight: 700;
+            letter-spacing: -.02em;
         }
 
         .lm-portfolio-description {
             margin-top: 6px;
-            color: #9ca3af;
+            color: var(--lm-ink-300);
             font-size: 11px;
         }
 
@@ -634,24 +635,17 @@ $userInitials =
             width: 60px;
             height: 60px;
             min-width: 60px;
-            border-radius: 16px;
+            border-radius: 15px;
             background:
                 linear-gradient(
-                    145deg,
-                    #111827,
-                    #374151
+                    150deg,
+                    var(--lm-ink-900),
+                    #23342E
                 );
-            color: #ffffff;
-            font-size: 20px;
-            font-weight: 800;
-            box-shadow:
-                0 8px 18px
-                rgba(
-                    17,
-                    24,
-                    39,
-                    .14
-                );
+            color: var(--lm-brass);
+            font-size: 22px;
+            font-weight: 700;
+            box-shadow: 0 8px 20px rgba(22, 33, 29, .2);
         }
 
         .lm-loan-breakdown {
@@ -668,26 +662,25 @@ $userInitials =
         .lm-loan-breakdown-item {
             min-width: 0;
             padding: 14px;
-            background: #f8fafc;
-            border: 1px solid #f1f5f9;
-            border-radius: 11px;
+            background: var(--lm-surface-tint);
+            border: 1px solid var(--lm-line-soft);
+            border-radius: 10px;
         }
 
         .lm-loan-breakdown-label {
-            color: #9ca3af;
+            color: var(--lm-ink-300);
             font-size: 9px;
             line-height: 1.3;
-            font-weight: 750;
-            text-transform: uppercase;
-            letter-spacing: .055em;
+            font-weight: 700;
+            letter-spacing: .03em;
         }
 
         .lm-loan-breakdown-value {
             margin-top: 6px;
-            color: #111827;
+            color: var(--lm-ink-900);
             font-size: 18px;
             line-height: 1.2;
-            font-weight: 800;
+            font-weight: 700;
         }
 
 
@@ -707,7 +700,7 @@ $userInitials =
             justify-content: space-between;
             gap: 15px;
             padding: 15px 0;
-            border-bottom: 1px solid #f0f1f3;
+            border-bottom: 1px solid var(--lm-line-soft);
         }
 
         .lm-financial-item:first-child {
@@ -734,21 +727,21 @@ $userInitials =
             height: 32px;
             min-width: 32px;
             border-radius: 9px;
-            background: #f9fafb;
-            color: #6b7280;
+            background: var(--lm-line-soft);
+            color: var(--lm-ink-700);
             font-size: 11px;
-            font-weight: 800;
+            font-weight: 700;
         }
 
         .lm-financial-label {
-            color: #6b7280;
+            color: var(--lm-ink-500);
             font-size: 12px;
         }
 
         .lm-financial-value {
-            color: #111827;
+            color: var(--lm-ink-900);
             font-size: 13px;
-            font-weight: 750;
+            font-weight: 700;
             text-align: right;
             white-space: nowrap;
         }
@@ -758,11 +751,11 @@ $userInitials =
         }
 
         .lm-financial-value.positive {
-            color: #047857;
+            color: var(--lm-forest);
         }
 
         .lm-financial-value.negative {
-            color: #b91c1c;
+            color: var(--lm-danger);
         }
 
 
@@ -783,12 +776,12 @@ $userInitials =
             justify-content: space-between;
             gap: 15px;
             padding: 15px 20px;
-            border-bottom: 1px solid #f3f4f6;
+            border-bottom: 1px solid var(--lm-line-soft);
             transition: background .15s ease;
         }
 
         .lm-account:hover {
-            background: #fafafa;
+            background: var(--lm-surface-tint);
         }
 
         .lm-account:last-child {
@@ -810,10 +803,10 @@ $userInitials =
             height: 40px;
             min-width: 40px;
             border-radius: 11px;
-            background: #ecfdf5;
-            color: #059669;
+            background: var(--lm-forest-soft);
+            color: var(--lm-forest);
             font-size: 14px;
-            font-weight: 800;
+            font-weight: 700;
         }
 
         .lm-account-details {
@@ -821,7 +814,7 @@ $userInitials =
         }
 
         .lm-account-name {
-            color: #111827;
+            color: var(--lm-ink-900);
             font-size: 13px;
             line-height: 1.35;
             font-weight: 700;
@@ -832,15 +825,15 @@ $userInitials =
 
         .lm-account-type {
             margin-top: 3px;
-            color: #9ca3af;
+            color: var(--lm-ink-300);
             font-size: 10px;
             text-transform: capitalize;
         }
 
         .lm-account-balance {
-            color: #111827;
+            color: var(--lm-ink-900);
             font-size: 13px;
-            font-weight: 750;
+            font-weight: 700;
             white-space: nowrap;
         }
 
@@ -850,19 +843,19 @@ $userInitials =
             justify-content: space-between;
             gap: 15px;
             padding: 15px 20px;
-            background: #f8fafc;
-            border-top: 1px solid #e5e7eb;
+            background: var(--lm-surface-tint);
+            border-top: 1px solid var(--lm-line);
         }
 
         .lm-account-footer-label {
-            color: #6b7280;
+            color: var(--lm-ink-500);
             font-size: 11px;
         }
 
         .lm-account-footer-value {
-            color: #111827;
+            color: var(--lm-ink-900);
             font-size: 13px;
-            font-weight: 800;
+            font-weight: 700;
         }
 
 
@@ -887,21 +880,20 @@ $userInitials =
 
         .lm-table th {
             padding: 12px 20px;
-            background: #f8fafc;
-            color: #6b7280;
-            font-size: 9px;
-            font-weight: 800;
+            background: var(--lm-surface-tint);
+            color: var(--lm-ink-500);
+            font-size: 10px;
+            font-weight: 700;
             text-align: left;
-            text-transform: uppercase;
-            letter-spacing: .06em;
+            letter-spacing: .02em;
             white-space: nowrap;
         }
 
         .lm-table td {
             padding: 15px 20px;
-            color: #4b5563;
+            color: var(--lm-ink-700);
             font-size: 12px;
-            border-top: 1px solid #f3f4f6;
+            border-top: 1px solid var(--lm-line-soft);
             white-space: nowrap;
         }
 
@@ -910,7 +902,7 @@ $userInitials =
         }
 
         .lm-table tbody tr:hover {
-            background: #fafafa;
+            background: var(--lm-surface-tint);
         }
 
         .lm-loan-number {
@@ -918,19 +910,19 @@ $userInitials =
             align-items: center;
             padding: 5px 8px;
             border-radius: 7px;
-            background: #f3f4f6;
-            color: #111827;
+            background: var(--lm-line-soft);
+            color: var(--lm-ink-900);
             font-size: 11px;
-            font-weight: 750;
+            font-weight: 700;
         }
 
         .lm-borrower {
-            color: #111827;
+            color: var(--lm-ink-900);
             font-weight: 650;
         }
 
         .lm-amount {
-            color: #111827;
+            color: var(--lm-ink-900);
             font-weight: 700;
         }
 
@@ -949,7 +941,7 @@ $userInitials =
             padding: 5px 9px;
             border-radius: 999px;
             font-size: 9px;
-            font-weight: 800;
+            font-weight: 700;
             text-transform: capitalize;
             white-space: nowrap;
         }
@@ -964,38 +956,38 @@ $userInitials =
         }
 
         .dashboard-status-active {
-            background: #ecfdf5;
-            color: #047857;
+            background: var(--lm-forest-soft);
+            color: var(--lm-forest);
         }
 
         .dashboard-status-approved {
-            background: #eff6ff;
-            color: #1d4ed8;
+            background: var(--lm-info-soft);
+            color: var(--lm-info);
         }
 
         .dashboard-status-pending {
-            background: #fffbeb;
-            color: #b45309;
+            background: var(--lm-brass-soft);
+            color: var(--lm-brass-ink);
         }
 
         .dashboard-status-completed {
-            background: #f0fdf4;
-            color: #15803d;
+            background: var(--lm-forest-soft);
+            color: var(--lm-forest);
         }
 
         .dashboard-status-overdue {
-            background: #fff7ed;
-            color: #c2410c;
+            background: var(--lm-rust-soft);
+            color: var(--lm-rust);
         }
 
         .dashboard-status-danger {
-            background: #fef2f2;
-            color: #b91c1c;
+            background: var(--lm-danger-soft);
+            color: var(--lm-danger);
         }
 
         .dashboard-status-default {
-            background: #f3f4f6;
-            color: #4b5563;
+            background: var(--lm-line-soft);
+            color: var(--lm-ink-500);
         }
 
 
@@ -1013,7 +1005,7 @@ $userInitials =
             min-height: 150px;
             padding: 30px 20px;
             text-align: center;
-            color: #9ca3af;
+            color: var(--lm-ink-300);
             font-size: 12px;
         }
 
@@ -1025,10 +1017,10 @@ $userInitials =
             height: 42px;
             margin-bottom: 10px;
             border-radius: 12px;
-            background: #f3f4f6;
-            color: #9ca3af;
+            background: var(--lm-line-soft);
+            color: var(--lm-ink-500);
             font-size: 15px;
-            font-weight: 800;
+            font-weight: 700;
         }
 
 
@@ -1052,22 +1044,21 @@ $userInitials =
         .lm-business-item {
             min-width: 0;
             padding: 16px;
-            background: #f8fafc;
-            border: 1px solid #f0f1f3;
-            border-radius: 12px;
+            background: var(--lm-surface-tint);
+            border: 1px solid var(--lm-line-soft);
+            border-radius: 11px;
         }
 
         .lm-business-label {
             margin-bottom: 7px;
-            color: #9ca3af;
+            color: var(--lm-ink-300);
             font-size: 9px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: .06em;
+            font-weight: 700;
+            letter-spacing: .03em;
         }
 
         .lm-business-value {
-            color: #111827;
+            color: var(--lm-ink-900);
             font-size: 13px;
             line-height: 1.45;
             font-weight: 700;
@@ -1087,13 +1078,13 @@ $userInitials =
             justify-content: center;
             gap: 7px;
             min-height: 34px;
-            padding: 0 11px;
-            border: 1px solid #e5e7eb;
+            padding: 0 12px;
+            border: 1px solid var(--lm-line);
             border-radius: 9px;
-            background: #ffffff;
-            color: #374151;
-            font-size: 10px;
-            font-weight: 750;
+            background: var(--lm-surface);
+            color: var(--lm-ink-700);
+            font-size: 11px;
+            font-weight: 650;
             text-decoration: none;
             white-space: nowrap;
             transition:
@@ -1104,10 +1095,15 @@ $userInitials =
         }
 
         .lm-view-button:hover {
-            background: #111827;
-            border-color: #111827;
-            color: #ffffff;
+            background: var(--lm-ink-900);
+            border-color: var(--lm-ink-900);
+            color: var(--lm-brass);
             transform: translateY(-1px);
+        }
+
+        .lm-view-button:focus-visible {
+            outline: 2px solid var(--lm-brass);
+            outline-offset: 2px;
         }
 
 
@@ -1197,7 +1193,7 @@ $userInitials =
 
             .lm-kpi-card {
                 padding: 17px;
-                border-radius: 14px;
+                border-radius: 12px;
             }
 
             .lm-kpi-value {
@@ -1210,7 +1206,7 @@ $userInitials =
             }
 
             .lm-panel {
-                border-radius: 14px;
+                border-radius: 12px;
             }
 
             .lm-panel-header {
@@ -1243,8 +1239,8 @@ $userInitials =
                 width: 50px;
                 height: 50px;
                 min-width: 50px;
-                border-radius: 13px;
-                font-size: 17px;
+                border-radius: 12px;
+                font-size: 18px;
             }
 
             .lm-loan-breakdown {
@@ -1360,6 +1356,24 @@ $userInitials =
                 width: 36px;
                 height: 36px;
                 min-width: 36px;
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REDUCED MOTION
+        |--------------------------------------------------------------------------
+        */
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .lm-kpi-card,
+            .lm-account,
+            .lm-table tbody tr,
+            .lm-view-button {
+                transition: none;
             }
 
         }
