@@ -40,7 +40,55 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
     href="assets/css/style.css"
 >
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700;800&display=swap"
+>
+
 <style>
+
+    /*
+    |--------------------------------------------------------------------------
+    | TOKENS — shares the sidebar / dashboard / borrowers / loans / payments /
+    | collections / accounts / penalties / expenses language
+    |--------------------------------------------------------------------------
+    */
+
+    :root {
+
+        --lm-ink-900: #16211D;
+        --lm-ink-700: #33413B;
+        --lm-ink-500: #6B7670;
+        --lm-ink-300: #9CA69F;
+        --lm-line: #E7E2D6;
+        --lm-line-soft: #F0EDE4;
+        --lm-surface: #FFFFFF;
+        --lm-surface-tint: #FAF8F2;
+        --lm-brass: #B8860F;
+        --lm-brass-ink: #8A6608;
+        --lm-brass-soft: #F7EFD9;
+        --lm-forest: #1F7A52;
+        --lm-forest-soft: #E7F3EC;
+        --lm-danger: #B0392E;
+        --lm-danger-soft: #FBEBE8;
+        --lm-info: #2E5C8A;
+        --lm-info-soft: #E9F0F7;
+        --lm-font-serif: 'Fraunces', Georgia, 'Iowan Old Style', serif;
+        --lm-font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    }
+
+    .container {
+        font-family: var(--lm-font-sans);
+    }
+
+    .page-header h1 {
+        font-family: var(--lm-font-serif);
+        font-weight: 600;
+    }
+
 
     /* =====================================================
        CREATE CATEGORY MODAL
@@ -50,7 +98,7 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.55);
+        background: rgba(22, 33, 29, 0.55);
         z-index: 9999;
         align-items: center;
         justify-content: center;
@@ -64,11 +112,12 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
     .category-modal {
         width: 100%;
         max-width: 520px;
-        background: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+        background: var(--lm-surface);
+        border-radius: 14px;
+        box-shadow: 0 24px 60px rgba(22, 33, 29, 0.28);
         overflow: hidden;
         animation: modalFadeIn 0.2s ease;
+        font-family: var(--lm-font-sans);
     }
 
     @keyframes modalFadeIn {
@@ -88,12 +137,15 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
         align-items: center;
         justify-content: space-between;
         padding: 20px 24px;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid var(--lm-line);
     }
 
     .category-modal-header h2 {
         margin: 0;
+        font-family: var(--lm-font-serif);
+        font-weight: 600;
         font-size: 20px;
+        color: var(--lm-ink-900);
     }
 
     .modal-close {
@@ -102,11 +154,12 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
         font-size: 28px;
         line-height: 1;
         cursor: pointer;
-        color: #6b7280;
+        color: var(--lm-ink-500);
+        transition: color .15s ease;
     }
 
     .modal-close:hover {
-        color: #111827;
+        color: var(--lm-danger);
     }
 
     .category-modal-body {
@@ -121,6 +174,7 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
         display: block;
         margin-bottom: 7px;
         font-weight: 600;
+        color: var(--lm-ink-700);
     }
 
     .category-form-group input,
@@ -129,10 +183,20 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
         width: 100%;
         box-sizing: border-box;
         padding: 10px 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 7px;
+        border: 1px solid var(--lm-line);
+        border-radius: 8px;
         font-size: 14px;
-        background: #fff;
+        background: var(--lm-surface);
+        color: var(--lm-ink-900);
+        outline: none;
+        transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    .category-form-group input:focus,
+    .category-form-group select:focus,
+    .category-form-group textarea:focus {
+        border-color: var(--lm-brass);
+        box-shadow: 0 0 0 3px rgba(184, 134, 15, 0.14);
     }
 
     .category-form-group textarea {
@@ -145,24 +209,47 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
         justify-content: flex-end;
         gap: 10px;
         padding: 16px 24px;
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid var(--lm-line);
+        background: var(--lm-surface-tint);
     }
 
     .btn-modal-cancel {
-        border: 1px solid #d1d5db;
-        background: #fff;
-        color: #374151;
+        border: 1px solid var(--lm-line);
+        background: var(--lm-surface);
+        color: var(--lm-ink-700);
         padding: 9px 16px;
-        border-radius: 7px;
+        border-radius: 8px;
         cursor: pointer;
+        transition: background .15s ease;
     }
 
     .btn-modal-cancel:hover {
-        background: #f3f4f6;
+        background: var(--lm-line-soft);
     }
 
     body.modal-open {
         overflow: hidden;
+    }
+
+
+    /* =====================================================
+       REDUCED MOTION
+    ====================================================== */
+
+    @media (prefers-reduced-motion: reduce) {
+
+        .category-modal {
+            animation: none;
+        }
+
+        .modal-close,
+        .btn-modal-cancel,
+        .category-form-group input,
+        .category-form-group select,
+        .category-form-group textarea {
+            transition: none;
+        }
+
     }
 
 </style>
@@ -362,7 +449,7 @@ $currentUrl = $currentUrl ?? ($_GET['url'] ?? 'categories');
 
                             <?php else: ?>
 
-                                <span style="color:#9ca3af;">
+                                <span style="color:var(--lm-ink-300);">
                                     —
                                 </span>
 

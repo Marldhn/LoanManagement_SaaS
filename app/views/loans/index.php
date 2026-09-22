@@ -1,4 +1,5 @@
 <?php
+
 $user=$user??Auth::user();
 $business=$business??Auth::business();
 $tenantRole=$tenantRole??Auth::tenantRole();
@@ -20,6 +21,121 @@ if(!function_exists('formatPaymentMethod')){
     }
 }
 
+if(!function_exists('addLoanPaymentPeriod')){
+    function addLoanPaymentPeriod(DateTime $date,$period,$amount=1):DateTime{
+        $date=clone $date;
+        $amount=max((int)$amount,1);
+        $period=strtolower((string)$period);
+
+        if($period==='days'){
+            $date->modify("+{$amount} days");
+        }elseif($period==='weeks'){
+            $date->modify("+".($amount*7)." days");
+        }elseif($period==='every_15_days'){
+            $date->modify("+".($amount*15)." days");
+        }elseif($period==='years'){
+            $date->modify("+{$amount} years");
+        }else{
+            $day=(int)$date->format('j');
+            $date->modify('first day of this month');
+            $date->modify("+{$amount} months");
+            $lastDay=(int)$date->format('t');
+            $date->setDate(
+                (int)$date->format('Y'),
+                (int)$date->format('n'),
+                min($day,$lastDay)
+            );
+        }
+
+        return $date;
+    }
+}
+
+if(!function_exists('calculateLoanDueDate')){
+    function calculateLoanDueDate($firstDate,$releaseDate,$term,$termPeriod):?string{
+        try{
+            $firstDate=$firstDate?:'';
+
+            if(!$firstDate&&$releaseDate){
+                $release=new DateTime($releaseDate);
+                $firstDate=addLoanPaymentPeriod($release,$termPeriod,1)->format('Y-m-d');
+            }
+
+            if(!$firstDate)return null;
+
+            $date=new DateTime($firstDate);
+            $amount=max((int)$term,1)-1;
+
+            if($amount>0)
+                $date=addLoanPaymentPeriod($date,$termPeriod,$amount);
+
+            return $date->format('Y-m-d');
+        }catch(Throwable $e){
+            return null;
+        }
+    }
+}
+
+/* LOAD PENALTIES */
+
+$loanPenalties=[];
+
+if(!empty($loans)){
+    try{
+        $db=Database::getInstance();
+        $loanIds=array_values(array_filter(array_map(
+            fn($loan)=>(int)($loan['id']??0),
+            $loans
+        )));
+
+        if($loanIds){
+            $placeholders=implode(',',array_fill(0,count($loanIds),'?'));
+
+            $stmt=$db->prepare("
+                SELECT
+                    id,
+                    loan_id,
+                    schedule_id,
+                    penalty_type,
+                    penalty_base,
+                    rate,
+                    base_amount,
+                    penalty_amount,
+                    reason,
+                    created_at
+                FROM loan_penalties
+                WHERE business_id=?
+                AND loan_id IN ($placeholders)
+                ORDER BY created_at DESC,id DESC
+            ");
+
+            $stmt->execute(array_merge([Auth::businessId()],$loanIds));
+
+            while($penalty=$stmt->fetch(PDO::FETCH_ASSOC)){
+                $loanId=(int)$penalty['loan_id'];
+
+                if(!isset($loanPenalties[$loanId]))
+                    $loanPenalties[$loanId]=[];
+
+                $loanPenalties[$loanId][]=$penalty;
+            }
+        }
+    }catch(Throwable $e){
+        $loanPenalties=[];
+    }
+}
+
+$loanPenaltyTotals=[];
+
+foreach($loanPenalties as $loanId=>$penalties){
+    $total=0;
+
+    foreach($penalties as $penalty)
+        $total+=(float)($penalty['penalty_amount']??0);
+
+    $loanPenaltyTotals[$loanId]=$total;
+}
+
 $totalLoans=count($loans);
 $activeLoans=$pendingLoans=0;
 $totalPrincipal=$totalPayable=0;
@@ -38,8 +154,10 @@ foreach($loans as $loan){
 
     if(!empty($loan['payments'])&&is_array($loan['payments'])){
         $total=0;
+
         foreach($loan['payments'] as $payment)
             $total+=(float)($payment['amount']??$payment['payment_amount']??$payment['paid_amount']??$payment['total_amount']??0);
+
         $loanPaymentTotals[$id]=$total;
     }
 }
@@ -53,8 +171,11 @@ foreach($loans as $loan){
     $id=(int)($loan['id']??0);
     $payable=(float)($loan['total_payable']??0);
     $paid=(float)($loanPaymentTotals[$id]??0);
-    $totalPayable+=max(0,$payable-$paid);
+    $penalty=(float)($loanPenaltyTotals[$id]??0);
+
+    $totalPayable+=max(0,$payable-$paid)+$penalty;
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -63,19 +184,10 @@ foreach($loans as $loan){
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Loans | Loan Management</title>
 <link rel="stylesheet" href="assets/css/style.css">
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700;800&display=swap">
-
 <style>
-
-/*
-|--------------------------------------------------------------------------
-| TOKENS — shares the sidebar / dashboard / borrowers ink + brass language
-|--------------------------------------------------------------------------
-*/
-
 :root{
     --lm-ink-900:#16211D;
     --lm-ink-700:#33413B;
@@ -99,18 +211,8 @@ foreach($loans as $loan){
     --lm-font-serif:'Fraunces',Georgia,'Iowan Old Style',serif;
     --lm-font-sans:'Public Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
-
 .container{font-family:var(--lm-font-sans)}
-
 .page-header h1{font-family:var(--lm-font-serif);font-weight:600}
-
-
-/*
-|--------------------------------------------------------------------------
-| LOAN DECISION (APPROVE / REJECT)
-|--------------------------------------------------------------------------
-*/
-
 .loan-decision-section{margin-top:25px;padding:18px;background:var(--lm-surface-tint);border:1px solid var(--lm-line);border-radius:12px}
 .loan-decision-title{font-size:14px;font-weight:700;color:var(--lm-ink-700);margin-bottom:12px}
 .loan-decision-actions{display:flex;gap:12px;align-items:center}
@@ -121,14 +223,6 @@ foreach($loans as $loan){
 .loan-decision-reject{background:var(--lm-danger-soft);color:var(--lm-danger);border:1px solid rgba(176,57,46,.3)}
 .loan-decision-reject:hover{background:#F6DAD6;border-color:rgba(176,57,46,.5);transform:translateY(-1px)}
 .loan-decision-button.disabled,.loan-decision-button:disabled{background:var(--lm-line-soft);color:var(--lm-ink-300);border-color:var(--lm-line);box-shadow:none;cursor:not-allowed;opacity:.8;transform:none}
-
-
-/*
-|--------------------------------------------------------------------------
-| MODALS
-|--------------------------------------------------------------------------
-*/
-
 .modal-overlay{position:fixed;inset:0;width:100%;height:100%;background:rgba(22,33,29,.55);display:none;align-items:center;justify-content:center;z-index:9999;padding:20px;box-sizing:border-box}
 .modal-overlay.active{display:flex}
 .modal{width:100%;max-width:700px;max-height:92vh;overflow-y:auto;background:var(--lm-surface);border-radius:14px;padding:25px;box-sizing:border-box;box-shadow:0 24px 60px rgba(22,33,29,.28);font-family:var(--lm-font-sans)}
@@ -139,28 +233,12 @@ foreach($loans as $loan){
 .modal-close{border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer;color:var(--lm-ink-500)}
 .modal-close:hover{color:var(--lm-ink-900)}
 .modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:25px;flex-wrap:wrap}
-
-
-/*
-|--------------------------------------------------------------------------
-| FORMS
-|--------------------------------------------------------------------------
-*/
-
 .loan-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 .loan-form-full{grid-column:1/-1}
 .form-group{margin-bottom:0}
 .form-group label{display:block;margin-bottom:7px;font-weight:600;color:var(--lm-ink-700)}
 .form-group input,.form-group select,.form-group textarea{width:100%;box-sizing:border-box}
 .account-balance-hint,.penalty-calculation-hint{display:block;margin-top:5px;font-size:12px;color:var(--lm-ink-500)}
-
-
-/*
-|--------------------------------------------------------------------------
-| SUMMARY CARDS
-|--------------------------------------------------------------------------
-*/
-
 .loan-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:25px}
 .loan-summary-card{background:var(--lm-surface);border:1px solid var(--lm-line);border-top:3px solid var(--lm-ink-300);border-radius:12px;padding:20px}
 .loan-summary-card:nth-child(2){border-top-color:var(--lm-forest)}
@@ -168,14 +246,6 @@ foreach($loans as $loan){
 .loan-summary-card:nth-child(4){border-top-color:var(--lm-brass)}
 .loan-summary-title{font-size:12px;font-weight:600;color:var(--lm-ink-500);margin-bottom:8px}
 .loan-summary-value{font-size:25px;font-weight:700;color:var(--lm-ink-900);letter-spacing:-.01em}
-
-
-/*
-|--------------------------------------------------------------------------
-| LOAN DETAILS
-|--------------------------------------------------------------------------
-*/
-
 .loan-details-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
 .loan-detail-item{padding:14px;background:var(--lm-surface-tint);border-radius:10px;border:1px solid var(--lm-line-soft)}
 .loan-detail-label{display:block;font-size:12px;color:var(--lm-ink-500);margin-bottom:5px}
@@ -187,14 +257,6 @@ foreach($loans as $loan){
 .loan-payment-schedule-list{margin:0;padding-left:20px;color:var(--lm-ink-700)}
 .loan-payment-schedule-list li{margin-bottom:7px;line-height:1.5}
 .loan-payment-schedule-empty{color:var(--lm-ink-300)}
-
-
-/*
-|--------------------------------------------------------------------------
-| STATUS BADGES
-|--------------------------------------------------------------------------
-*/
-
 .loan-status{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;text-transform:capitalize}
 .loan-status-pending{background:var(--lm-brass-soft);color:var(--lm-brass-ink)}
 .loan-status-approved{background:var(--lm-info-soft);color:var(--lm-info)}
@@ -202,25 +264,9 @@ foreach($loans as $loan){
 .loan-status-completed{background:var(--lm-forest-soft);color:var(--lm-forest)}
 .loan-status-overdue{background:var(--lm-rust-soft);color:var(--lm-rust)}
 .loan-status-cancelled,.loan-status-rejected{background:var(--lm-danger-soft);color:var(--lm-danger)}
-
-
-/*
-|--------------------------------------------------------------------------
-| TABLE ELEMENTS
-|--------------------------------------------------------------------------
-*/
-
 .payment-method{display:inline-block;padding:5px 9px;border-radius:7px;font-size:12px;font-weight:600;background:var(--lm-line-soft);color:var(--lm-ink-700)}
 .loan-number{font-weight:700;color:var(--lm-ink-900)}
 .loan-actions{display:flex;gap:6px;flex-wrap:wrap}
-
-
-/*
-|--------------------------------------------------------------------------
-| ACTION MENU
-|--------------------------------------------------------------------------
-*/
-
 .loan-action-menu{position:relative;display:inline-block}
 .loan-action-button{width:36px;height:36px;border:1px solid var(--lm-line);background:var(--lm-surface);border-radius:9px;font-size:22px;line-height:1;cursor:pointer;color:var(--lm-ink-500);display:flex;align-items:center;justify-content:center;padding:0;position:relative;z-index:2;transition:background .15s ease,border-color .15s ease,color .15s ease}
 .loan-action-button:hover{background:var(--lm-surface-tint);border-color:var(--lm-ink-300);color:var(--lm-ink-900)}
@@ -235,14 +281,6 @@ foreach($loans as $loan){
 .loan-action-danger:hover{background:var(--lm-danger-soft)}
 .loan-action-penalty{color:var(--lm-brass-ink)}
 .loan-action-penalty:hover{background:var(--lm-brass-soft)}
-
-
-/*
-|--------------------------------------------------------------------------
-| PENALTY MODAL
-|--------------------------------------------------------------------------
-*/
-
 .penalty-summary{padding:15px;background:var(--lm-brass-soft);border:1px solid rgba(184,134,15,.3);border-radius:11px;margin-bottom:20px}
 .penalty-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .penalty-summary-item{padding:10px;background:var(--lm-surface);border-radius:8px;border:1px solid var(--lm-line-soft)}
@@ -252,36 +290,33 @@ foreach($loans as $loan){
 .penalty-total-row{display:flex;justify-content:space-between;align-items:center;gap:15px}
 .penalty-total-label{font-weight:600;color:var(--lm-ink-700)}
 .penalty-total-value{font-size:20px;font-weight:800;color:var(--lm-brass-ink)}
-
-
-/*
-|--------------------------------------------------------------------------
-| RESPONSIVE
-|--------------------------------------------------------------------------
-*/
-
-@media(max-width:1100px){.loan-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.loan-penalty-list{margin:0;padding-left:20px;color:var(--lm-ink-700)}
+.loan-penalty-list li{margin-bottom:8px;line-height:1.45}
+.loan-penalty-amount{font-weight:700;color:var(--lm-brass-ink)}
+.loan-penalty-reason{display:block;font-size:12px;color:var(--lm-ink-500);margin-top:2px}
+@media(max-width:1100px){
+    .loan-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(max-width:700px){
-.loan-form-grid,.loan-details-grid,.penalty-summary-grid{grid-template-columns:1fr}
-.loan-form-full,.loan-detail-full{grid-column:auto}
-.loan-summary-grid{grid-template-columns:1fr}
-.loan-decision-actions{flex-direction:column;align-items:stretch}
-.loan-decision-actions form{width:100%}
-.loan-decision-button{width:100%}
-.modal-footer{justify-content:stretch}
+    .loan-form-grid,.loan-details-grid,.penalty-summary-grid{grid-template-columns:1fr}
+    .loan-form-full,.loan-detail-full{grid-column:auto}
+    .loan-summary-grid{grid-template-columns:1fr}
+    .loan-decision-actions{flex-direction:column;align-items:stretch}
+    .loan-decision-actions form{width:100%}
+    .loan-decision-button{width:100%}
+    .modal-footer{justify-content:stretch}
 }
-
 @media(prefers-reduced-motion:reduce){
-.loan-decision-button,.loan-action-button,.loan-action-item{transition:none}
+    .loan-decision-button,.loan-action-button,.loan-action-item{transition:none}
 }
-
 </style>
 </head>
-
 <body>
+
 <?php require APP_PATH.'/views/layouts/sidebar.php'; ?>
 
 <div class="main-content">
+
 <nav class="navbar">
 <div class="page-title">Loans</div>
 <div class="user-info">
@@ -346,7 +381,9 @@ foreach($loans as $loan){
 <?php else: ?>
 
 <div class="table-container" style="margin-top:20px">
+
 <table>
+
 <thead>
 <tr>
 <th>Loan Number</th>
@@ -356,6 +393,7 @@ foreach($loans as $loan){
 <th>Total Payable</th>
 <th>Payment Method</th>
 <th>Term</th>
+<th>Due Date</th>
 <th>Status</th>
 <th>Actions</th>
 </tr>
@@ -370,6 +408,7 @@ $js=fn($v)=>htmlspecialchars(json_encode($v,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_
 <?php foreach($loans as $loan): ?>
 
 <?php
+
 $loanId=(int)($loan['id']??0);
 $loanNumber=$loan['loan_number']??'';
 $borrowerName=$loan['borrower_name']??$loan['full_name']??$loan['borrower']??'Unknown Borrower';
@@ -377,7 +416,8 @@ $principal=(float)($loan['principal_amount']??0);
 $interest=(float)($loan['total_interest']??0);
 $originalPayable=(float)($loan['total_payable']??0);
 $paidAmount=(float)($loanPaymentTotals[$loanId]??0);
-$payable=max(0,$originalPayable-$paidAmount);
+$penaltyTotal=(float)($loanPenaltyTotals[$loanId]??0);
+$payable=max(0,$originalPayable-$paidAmount)+$penaltyTotal;
 $rate=(float)($loan['interest_rate']??0);
 $interestType=$loan['interest_type']??'flat';
 $term=(int)($loan['term']??1);
@@ -391,20 +431,57 @@ $purpose=$loan['purpose']??'';
 $notes=$loan['notes']??'';
 $category=$loan['category_name']??'';
 $scheduleId=(int)($loan['schedule_id']??0);
+
+$systemDueDate=$loan['due_date']??'';
+
+if(!$systemDueDate)
+    $systemDueDate=calculateLoanDueDate($firstDate,$releaseDate,$term,$termPeriod);
+
+$displayStatus=$status;
+
+if(
+    $systemDueDate&&
+    $payable>0&&
+    $systemDueDate<date('Y-m-d')&&
+    in_array($status,['active','approved','pending'],true)
+){
+    $displayStatus='overdue';
+}
+
 ?>
 
 <tr>
 
 <td><span class="loan-number"><?=htmlspecialchars($loanNumber)?></span></td>
+
 <td><?=htmlspecialchars($borrowerName)?></td>
+
 <td><strong>₱<?=number_format($principal,2)?></strong></td>
+
 <td>₱<?=number_format($interest,2)?></td>
+
 <td><strong>₱<?=number_format($payable,2)?></strong></td>
+
 <td><span class="payment-method"><?=htmlspecialchars(formatPaymentMethod($paymentType))?></span></td>
+
 <td><?=$term?></td>
-<td><span class="loan-status loan-status-<?=htmlspecialchars($status)?>"><?=htmlspecialchars(ucfirst($status))?></span></td>
 
 <td>
+<?php if($systemDueDate): ?>
+<span class="loan-due-date"><?=htmlspecialchars((new DateTime($systemDueDate))->format('F j, Y'))?></span>
+<?php else: ?>
+-
+<?php endif; ?>
+</td>
+
+<td>
+<span class="loan-status loan-status-<?=htmlspecialchars($displayStatus)?>">
+<?=htmlspecialchars(ucfirst($displayStatus))?>
+</span>
+</td>
+
+<td>
+
 <div class="loan-action-menu">
 
 <button type="button" class="loan-action-button" onclick="toggleLoanActions(<?=$loanId?>)" aria-expanded="false" data-loan-id="<?=$loanId?>">⋮</button>
@@ -427,9 +504,11 @@ $scheduleId=(int)($loan['schedule_id']??0);
 <?=$js($payable)?>,
 <?=$js($releaseDate)?>,
 <?=$js($firstDate)?>,
-<?=$js($status)?>,
+<?=$js($displayStatus)?>,
 <?=$js($purpose)?>,
-<?=$js($notes)?>
+<?=$js($notes)?>,
+<?=$js($penaltyTotal)?>,
+<?=$js($loanPenalties[$loanId]??[])?>
 )">
 <span>👁</span> View Details
 </button>
@@ -461,13 +540,12 @@ $scheduleId=(int)($loan['schedule_id']??0);
 <?=$loanId?>,
 <?=$js($loanNumber)?>,
 <?=$js($borrowerName)?>,
-<?=$scheduleId?>,
+0,
 <?=$js($payable)?>
 )">
 <span>⚠️</span> Penalty
 </button>
 
-<!-- PERMANENT DELETE: AVAILABLE FOR ALL LOAN STATUSES -->
 <form method="POST" action="index.php?url=loans/delete" onsubmit="return confirm('Are you sure you want to permanently delete this loan? This action cannot be undone.')">
 <input type="hidden" name="id" value="<?=$loanId?>">
 <button type="submit" class="loan-action-item loan-action-danger">
@@ -477,16 +555,20 @@ $scheduleId=(int)($loan['schedule_id']??0);
 
 </div>
 </div>
+
 </td>
 
 </tr>
 
 <?php endforeach; ?>
+
 </tbody>
 </table>
+
 </div>
 
 <?php endif; ?>
+
 </div>
 </div>
 
@@ -504,6 +586,7 @@ $scheduleId=(int)($loan['schedule_id']??0);
 </div>
 
 <form method="POST" action="index.php?url=loans/update" id="editLoanForm">
+
 <input type="hidden" name="id" id="edit_loan_id">
 
 <div class="loan-form-grid">
@@ -591,6 +674,7 @@ $scheduleId=(int)($loan['schedule_id']??0);
 <button type="button" class="btn btn-secondary" onclick="closeEditLoanModal()">Cancel</button>
 <button type="submit" class="btn btn-primary">Save Changes</button>
 </div>
+
 </form>
 </div>
 </div>
@@ -616,13 +700,17 @@ $scheduleId=(int)($loan['schedule_id']??0);
 <label>Borrower</label>
 <select id="borrower_id" name="borrower_id" required>
 <option value="">Select Borrower</option>
+
 <?php foreach($borrowers as $borrower):
 $id=(int)($borrower['id']??0);
 $name=$borrower['full_name']??trim(($borrower['first_name']??'').' '.($borrower['middle_name']??'').' '.($borrower['last_name']??''));
 $name=$name?:($borrower['name']??'Borrower');
 ?>
+
 <option value="<?=$id?>"><?=htmlspecialchars($name)?></option>
+
 <?php endforeach; ?>
+
 </select>
 </div>
 
@@ -630,12 +718,16 @@ $name=$name?:($borrower['name']??'Borrower');
 <label>Loan Category</label>
 <select id="category_id" name="category_id">
 <option value="">Select Category</option>
+
 <?php foreach($categories as $category):
 $id=(int)($category['id']??0);
 $name=$category['name']??$category['category_name']??'Category';
 ?>
+
 <option value="<?=$id?>"><?=htmlspecialchars($name)?></option>
+
 <?php endforeach; ?>
+
 </select>
 </div>
 
@@ -643,14 +735,19 @@ $name=$category['name']??$category['category_name']??'Category';
 <label>Account</label>
 <select id="account_id" name="account_id" required>
 <option value="">Select Account</option>
+
 <?php foreach($accounts as $account):
 $id=(int)($account['id']??0);
 $name=$account['account_name']??'Account';
 $balance=(float)($account['balance']??0);
 ?>
+
 <option value="<?=$id?>" data-balance="<?=$balance?>"><?=htmlspecialchars($name)?> - ₱<?=number_format($balance,2)?></option>
+
 <?php endforeach; ?>
+
 </select>
+
 <span class="account-balance-hint" id="accountBalanceHint">Select an account.</span>
 </div>
 
@@ -681,8 +778,8 @@ $balance=(float)($account['balance']??0);
 </div>
 
 <div class="form-group">
-    <label>Term</label>
-    <input type="number" id="term" name="term" min="1" value="1" required>
+<label>Term</label>
+<input type="number" id="term" name="term" min="1" value="1" required>
 </div>
 
 <div class="form-group">
@@ -749,14 +846,28 @@ $balance=(float)($account['balance']??0);
 <div class="loan-details-grid">
 
 <?php
+
 $details=[
-'loan_number'=>'Loan Number','borrower'=>'Borrower','category'=>'Category',
-'payment_method'=>'Payment Type','status'=>'Status','principal'=>'Principal Amount',
-'interest_rate'=>'Interest Rate','interest_type'=>'Interest Type','term'=>'Term',
-'due_date'=>'Due Date','processing_fee'=>'Processing Fee','total_interest'=>'Total Interest',
-'total_payable'=>'Total Payable','release_date'=>'Release Date',
-'first_payment_date'=>'First Payment Date','purpose'=>'Purpose','notes'=>'Notes'
+    'loan_number'=>'Loan Number',
+    'borrower'=>'Borrower',
+    'category'=>'Category',
+    'payment_method'=>'Payment Type',
+    'status'=>'Status',
+    'principal'=>'Principal Amount',
+    'interest_rate'=>'Interest Rate',
+    'interest_type'=>'Interest Type',
+    'term'=>'Term',
+    'due_date'=>'Due Date',
+    'processing_fee'=>'Processing Fee',
+    'total_interest'=>'Total Interest',
+    'penalty'=>'Penalty Amount',
+    'total_payable'=>'Total Payable',
+    'release_date'=>'Release Date',
+    'first_payment_date'=>'First Payment Date',
+    'purpose'=>'Purpose',
+    'notes'=>'Notes'
 ];
+
 foreach($details as $id=>$label):
 ?>
 
@@ -766,6 +877,13 @@ foreach($details as $id=>$label):
 </div>
 
 <?php endforeach; ?>
+
+<div class="loan-detail-item loan-detail-full">
+<span class="loan-detail-label">Applied Penalties</span>
+<div id="detail_penalties">
+<span class="loan-payment-schedule-empty">No penalties applied.</span>
+</div>
+</div>
 
 <div class="loan-detail-item loan-detail-full">
 <span class="loan-detail-label">Payment Schedule</span>
@@ -789,8 +907,8 @@ foreach($details as $id=>$label):
 </form>
 
 <button type="button" class="btn btn-secondary" onclick="closeLoanDetails()">Close</button>
-</div>
 
+</div>
 </div>
 </div>
 
@@ -808,6 +926,7 @@ foreach($details as $id=>$label):
 </div>
 
 <div class="penalty-summary">
+
 <div class="penalty-summary-grid">
 
 <div class="penalty-summary-item">
@@ -826,38 +945,31 @@ foreach($details as $id=>$label):
 </div>
 
 <div class="penalty-summary-item">
-<span class="penalty-summary-label">Schedule ID</span>
-<span class="penalty-summary-value" id="penalty_schedule_display">Not selected</span>
+<span class="penalty-summary-label">Schedule</span>
+<span class="penalty-summary-value" id="penalty_schedule_display">Finding schedule...</span>
 </div>
 
 </div>
 </div>
 
-<form method="POST" action="index.php?url=loans/penalty" id="penaltyForm">
+<form method="POST" action="index.php?url=loans/penalty/store" id="penaltyForm">
 
 <input type="hidden" name="loan_id" id="penalty_loan_id">
+<input type="hidden" name="schedule_id" id="penalty_schedule_id">
 
 <div class="loan-form-grid">
-
-<div class="form-group loan-form-full">
-<label>Schedule ID</label>
-<input type="number" name="schedule_id" id="penalty_schedule_id" min="1" required placeholder="Enter schedule ID">
-<span class="penalty-calculation-hint">The penalty must be attached to a specific loan schedule.</span>
-</div>
 
 <div class="form-group">
 <label>Penalty Type</label>
 <select name="penalty_type" id="penalty_type" required>
 <option value="fixed">Fixed Amount</option>
 <option value="percentage">Percentage</option>
-<option value="daily_fixed">Daily Fixed</option>
-<option value="daily_percentage">Daily Percentage</option>
 </select>
 </div>
 
 <div class="form-group">
 <label>Rate / Amount</label>
-<input type="number" name="penalty_rate" id="penalty_rate" min="0" step=".01" value="0" required>
+<input type="number" name="penalty_base_rate" id="penalty_rate" min="0" step=".01" value="0" required>
 <span class="penalty-calculation-hint" id="penaltyRateHint">Enter the fixed penalty amount.</span>
 </div>
 
@@ -879,10 +991,12 @@ foreach($details as $id=>$label):
 </div>
 
 <div class="penalty-total-box">
+
 <div class="penalty-total-row">
 <span class="penalty-total-label">Calculated Penalty</span>
 <span class="penalty-total-value" id="penalty_total_display">₱0.00</span>
 </div>
+
 </div>
 
 <div class="modal-footer">
@@ -891,10 +1005,12 @@ foreach($details as $id=>$label):
 </div>
 
 </form>
+
 </div>
 </div>
 
 <script>
+
 function formatPaymentMethod(v){
     v=String(v||'installment').toLowerCase();
     return v==='full_payment'?'Full Payment':v==='installment'?'Installment':formatText(v);
@@ -918,7 +1034,9 @@ function createStatusBadge(v){
     return `<span class="loan-status loan-status-${escapeHtml(v)}">${escapeHtml(formatText(v))}</span>`;
 }
 
-function openCreateLoanModal(){document.getElementById('createLoanModal')?.classList.add('active')}
+function openCreateLoanModal(){
+    document.getElementById('createLoanModal')?.classList.add('active');
+}
 
 function closeCreateLoanModal(e){
     if(e&&e.target!==e.currentTarget)return;
@@ -969,6 +1087,7 @@ document.addEventListener('click',e=>{
 
 function openLoanEdit(id,borrower,category,principal,rate,interestType,term,termPeriod,paymentType,fee,releaseDate,firstDate,purpose,notes){
     const modal=document.getElementById('editLoanModal');
+
     if(!modal)return;
 
     const set=(id,v)=>{
@@ -1056,9 +1175,13 @@ function formatDateForInput(d){
 
 function parseLocalDate(v){
     if(!v)return null;
+
     const p=String(v).split('-');
+
     if(p.length!==3)return null;
+
     const d=new Date(Number(p[0]),Number(p[1])-1,Number(p[2]));
+
     return isNaN(d.getTime())?null:d;
 }
 
@@ -1067,11 +1190,15 @@ function addPaymentPeriod(date,period,amount=1){
     amount=Math.max(Number(amount)||1,1);
     period=String(period||'months').toLowerCase();
 
-    if(period==='days')d.setDate(d.getDate()+amount);
-    else if(period==='every_15_days')d.setDate(d.getDate()+amount*15);
-    else if(period==='weeks')d.setDate(d.getDate()+amount*7);
-    else if(period==='years')d.setFullYear(d.getFullYear()+amount);
-    else{
+    if(period==='days'){
+        d.setDate(d.getDate()+amount);
+    }else if(period==='every_15_days'){
+        d.setDate(d.getDate()+amount*15);
+    }else if(period==='weeks'){
+        d.setDate(d.getDate()+amount*7);
+    }else if(period==='years'){
+        d.setFullYear(d.getFullYear()+amount);
+    }else{
         const day=d.getDate();
         d.setDate(1);
         d.setMonth(d.getMonth()+amount);
@@ -1090,7 +1217,8 @@ function updateAutomaticFirstPaymentDate(){
 
     const d=parseLocalDate(releaseDateInput.value);
 
-    if(d)firstPaymentInput.value=formatDateForInput(addPaymentPeriod(d,termPeriodInput.value,1));
+    if(d)
+        firstPaymentInput.value=formatDateForInput(addPaymentPeriod(d,termPeriodInput.value,1));
 }
 
 releaseDateInput?.addEventListener('change',updateAutomaticFirstPaymentDate);
@@ -1100,13 +1228,16 @@ function calculateFinalDueDate(firstPaymentDateValue,term,termPeriod){
     if(!firstPaymentDateValue)return null;
 
     const firstDate=parseLocalDate(firstPaymentDateValue);
+
     if(!firstDate)return null;
 
     return addPaymentPeriod(firstDate,termPeriod,Math.max(Number(term||1),1)-1);
 }
 
 function generatePaymentSchedule(releaseDateValue,firstPaymentDateValue,term,termPeriod,paymentType,totalPayable){
+
     const container=document.getElementById('detail_payment_schedule');
+
     if(!container)return;
 
     let firstDue=firstPaymentDateValue?parseLocalDate(firstPaymentDateValue):null;
@@ -1128,6 +1259,7 @@ function generatePaymentSchedule(releaseDateValue,firstPaymentDateValue,term,ter
 
     const count=Math.max(Number(term||1),1);
     const amount=Number(totalPayable||0)/count;
+
     let html='<div class="loan-payment-schedule-title">'+count+' Installment Payment'+(count!==1?'s':'')+'</div><ol class="loan-payment-schedule-list">';
 
     for(let i=1;i<=count;i++){
@@ -1138,11 +1270,51 @@ function generatePaymentSchedule(releaseDateValue,firstPaymentDateValue,term,ter
     container.innerHTML=html+'</ol>';
 }
 
-function openLoanDetails(id,loanNumber,borrower,category,principal,interestRate,interestType,term,termPeriod,paymentType,fee,totalInterest,totalPayable,releaseDate,firstPaymentDate,status,purpose,notes){
+function renderLoanPenalties(penalties,totalPenalty){
+
+    const container=document.getElementById('detail_penalties');
+
+    if(!container)return;
+
+    if(!Array.isArray(penalties)||!penalties.length){
+        container.innerHTML='<span class="loan-payment-schedule-empty">No penalties applied.</span>';
+        return;
+    }
+
+    let html='<ol class="loan-penalty-list">';
+
+    penalties.forEach(penalty=>{
+        const amount=Number(penalty.penalty_amount||0);
+        const type=String(penalty.penalty_type||'fixed');
+        const reason=String(penalty.reason||'No reason provided');
+        const created=penalty.created_at?parseLocalDate(String(penalty.created_at).substring(0,10)):null;
+
+        html+='<li>';
+        html+='<span class="loan-penalty-amount">'+formatMoney(amount)+'</span> — '+escapeHtml(formatText(type));
+
+        if(created)
+            html+='<span class="loan-penalty-reason">Applied '+escapeHtml(formatDisplayDate(created))+'</span>';
+
+        html+='<span class="loan-penalty-reason">'+escapeHtml(reason)+'</span>';
+        html+='</li>';
+    });
+
+    html+='</ol>';
+    html+='<div style="margin-top:12px;font-weight:700;color:var(--lm-brass-ink)">Total Penalties: '+formatMoney(totalPenalty)+'</div>';
+
+    container.innerHTML=html;
+}
+
+function openLoanDetails(id,loanNumber,borrower,category,principal,interestRate,interestType,term,termPeriod,paymentType,fee,totalInterest,totalPayable,releaseDate,firstPaymentDate,status,purpose,notes,penaltyTotal,penalties){
+
     const set=(id,v)=>{
         const e=document.getElementById(id);
         if(e)e.textContent=v;
     };
+
+    penaltyTotal=Number(penaltyTotal||0);
+    totalPayable=Number(totalPayable||0);
+    const loanPayableWithoutPenalty=totalPayable-penaltyTotal;
 
     set('detail_loan_number',loanNumber||'-');
     set('detail_borrower',borrower||'-');
@@ -1154,6 +1326,7 @@ function openLoanDetails(id,loanNumber,borrower,category,principal,interestRate,
     set('detail_term',Number(term||0)+' '+formatText(termPeriod));
     set('detail_processing_fee',formatMoney(fee));
     set('detail_total_interest',formatMoney(totalInterest));
+    set('detail_penalty',formatMoney(penaltyTotal));
     set('detail_total_payable',formatMoney(totalPayable));
     set('detail_purpose',purpose||'-');
     set('detail_notes',notes||'-');
@@ -1166,6 +1339,7 @@ function openLoanDetails(id,loanNumber,borrower,category,principal,interestRate,
     }
 
     const due=firstDue?calculateFinalDueDate(firstPaymentDate||formatDateForInput(firstDue),term,termPeriod):null;
+
     const dueElement=document.getElementById('detail_due_date');
 
     if(dueElement){
@@ -1177,9 +1351,19 @@ function openLoanDetails(id,loanNumber,borrower,category,principal,interestRate,
 
     const statusElement=document.getElementById('detail_status');
 
-    if(statusElement)statusElement.innerHTML=createStatusBadge(status);
+    if(statusElement)
+        statusElement.innerHTML=createStatusBadge(status);
 
-    generatePaymentSchedule(releaseDate,firstPaymentDate,term,termPeriod,paymentType,totalPayable);
+    renderLoanPenalties(penalties,penaltyTotal);
+
+    generatePaymentSchedule(
+        releaseDate,
+        firstPaymentDate,
+        term,
+        termPeriod,
+        paymentType,
+        totalPayable
+    );
 
     document.getElementById('approve_loan_id').value=id;
     document.getElementById('reject_loan_id').value=id;
@@ -1198,8 +1382,12 @@ function openLoanDetails(id,loanNumber,borrower,category,principal,interestRate,
     document.getElementById('loanDetailsModal')?.classList.add('active');
 }
 
-function openPenaltyModal(loanId,loanNumber,borrower,scheduleId,loanPayable){
+/* AUTOMATED PENALTY */
+
+async function openPenaltyModal(loanId,loanNumber,borrower,scheduleId,loanPayable){
+
     const modal=document.getElementById('penaltyModal');
+
     if(!modal)return;
 
     document.getElementById('penalty_loan_id').value=loanId||'';
@@ -1209,13 +1397,69 @@ function openPenaltyModal(loanId,loanNumber,borrower,scheduleId,loanPayable){
 
     const scheduleInput=document.getElementById('penalty_schedule_id');
     const scheduleDisplay=document.getElementById('penalty_schedule_display');
+    const baseInput=document.getElementById('penalty_base_amount');
 
-    if(scheduleInput)scheduleInput.value=scheduleId||'';
-    if(scheduleDisplay)scheduleDisplay.textContent=scheduleId?String(scheduleId):'Not selected';
+    if(scheduleInput)scheduleInput.value='';
+    if(scheduleDisplay)scheduleDisplay.textContent='Finding overdue schedule...';
+    if(baseInput)baseInput.value='0.00';
 
-    document.getElementById('penalty_base_amount').value=Number(loanPayable||0).toFixed(2);
-    updatePenaltyCalculation();
+    document.getElementById('penalty_amount').value='0.00';
+    document.getElementById('penalty_total_display').textContent='₱0.00';
+
     modal.classList.add('active');
+
+    try{
+
+        const response=await fetch('index.php?url=loans/penalty&loan_id='+encodeURIComponent(loanId),{
+            headers:{'Accept':'application/json'}
+        });
+
+        const data=await response.json();
+
+        if(!data.success)
+            throw new Error(data.message||'Unable to find an eligible loan schedule.');
+
+        const schedule=data.recommended_schedule;
+
+        if(!schedule){
+            if(scheduleDisplay)scheduleDisplay.textContent='No overdue schedule';
+            alert('No overdue unpaid schedule is available for this loan.');
+            return;
+        }
+
+        const selectedId=Number(schedule.id||0);
+        const totalDue=Number(schedule.total_due||0);
+        const paidAmount=Number(schedule.paid_amount||0);
+        const remaining=Math.max(0,totalDue-paidAmount);
+
+        if(!selectedId||remaining<=0){
+            if(scheduleDisplay)scheduleDisplay.textContent='No unpaid overdue schedule';
+            alert('No overdue unpaid schedule is available for this loan.');
+            return;
+        }
+
+        if(scheduleInput)scheduleInput.value=selectedId;
+
+        if(scheduleDisplay){
+            const dueDate=schedule.due_date?formatDisplayDate(parseLocalDate(schedule.due_date)):'';
+            scheduleDisplay.textContent='Schedule #'+selectedId+(dueDate?' — Due '+dueDate:'');
+        }
+
+        if(baseInput)baseInput.value=remaining.toFixed(2);
+
+        updatePenaltyCalculation();
+
+    }catch(error){
+
+        if(scheduleDisplay)scheduleDisplay.textContent='Unable to find schedule';
+
+        if(baseInput)baseInput.value='0.00';
+
+        document.getElementById('penalty_amount').value='0.00';
+        document.getElementById('penalty_total_display').textContent='₱0.00';
+
+        alert(error.message||'Unable to find an eligible loan schedule.');
+    }
 }
 
 const penaltyTypeInput=document.getElementById('penalty_type');
@@ -1226,11 +1470,13 @@ const penaltyTotalDisplay=document.getElementById('penalty_total_display');
 const penaltyRateHint=document.getElementById('penaltyRateHint');
 
 function updatePenaltyCalculation(){
+
     if(!penaltyTypeInput||!penaltyRateInput||!penaltyBaseInput||!penaltyAmountInput)return;
 
     const type=String(penaltyTypeInput.value||'fixed').toLowerCase();
     const rate=Number(penaltyRateInput.value||0);
     const base=Number(penaltyBaseInput.value||0);
+
     let amount=0;
 
     if(type==='percentage'){
@@ -1248,9 +1494,11 @@ function updatePenaltyCalculation(){
     }
 
     amount=Math.max(Number.isFinite(amount)?amount:0,0);
+
     penaltyAmountInput.value=amount.toFixed(2);
 
-    if(penaltyTotalDisplay)penaltyTotalDisplay.textContent=formatMoney(amount);
+    if(penaltyTotalDisplay)
+        penaltyTotalDisplay.textContent=formatMoney(amount);
 }
 
 penaltyTypeInput?.addEventListener('change',updatePenaltyCalculation);
@@ -1258,6 +1506,7 @@ penaltyRateInput?.addEventListener('input',updatePenaltyCalculation);
 penaltyBaseInput?.addEventListener('input',updatePenaltyCalculation);
 
 document.getElementById('penaltyForm')?.addEventListener('submit',e=>{
+
     const loanId=document.getElementById('penalty_loan_id');
     const scheduleId=document.getElementById('penalty_schedule_id');
     const reason=document.getElementById('penalty_reason');
@@ -1271,8 +1520,7 @@ document.getElementById('penaltyForm')?.addEventListener('submit',e=>{
 
     if(!scheduleId?.value){
         e.preventDefault();
-        alert('Please enter the loan schedule ID.');
-        scheduleId?.focus();
+        alert('No eligible overdue schedule was found for this loan.');
         return;
     }
 
@@ -1289,10 +1537,12 @@ document.getElementById('penaltyForm')?.addEventListener('submit',e=>{
         return;
     }
 
-    if(!confirm('Are you sure you want to apply this penalty?'))e.preventDefault();
+    if(!confirm('Are you sure you want to apply this penalty?'))
+        e.preventDefault();
 });
 
 document.getElementById('approveLoanForm')?.addEventListener('submit',e=>{
+
     if(!document.getElementById('approve_loan_id')?.value){
         e.preventDefault();
         alert('No loan selected.');
@@ -1302,6 +1552,7 @@ document.getElementById('approveLoanForm')?.addEventListener('submit',e=>{
 });
 
 document.getElementById('rejectLoanForm')?.addEventListener('submit',e=>{
+
     if(!document.getElementById('reject_loan_id')?.value){
         e.preventDefault();
         alert('No loan selected.');
@@ -1311,6 +1562,7 @@ document.getElementById('rejectLoanForm')?.addEventListener('submit',e=>{
 });
 
 document.addEventListener('keydown',e=>{
+
     if(e.key==='Escape'){
         closeCreateLoanModal();
         closeEditLoanModal();
@@ -1322,6 +1574,7 @@ document.addEventListener('keydown',e=>{
 
 updateAutomaticFirstPaymentDate();
 updateAccountBalanceHint();
+
 </script>
 
 </body>

@@ -67,8 +67,56 @@ $currentUrl =
         href="assets/css/style.css"
     >
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700;800&display=swap"
+    >
+
 
     <style>
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOKENS — shares the sidebar / dashboard / borrowers / loans / payments /
+        | collections / accounts / penalties language
+        |--------------------------------------------------------------------------
+        */
+
+        :root {
+
+            --lm-ink-900: #16211D;
+            --lm-ink-700: #33413B;
+            --lm-ink-500: #6B7670;
+            --lm-ink-300: #9CA69F;
+            --lm-line: #E7E2D6;
+            --lm-line-soft: #F0EDE4;
+            --lm-surface: #FFFFFF;
+            --lm-surface-tint: #FAF8F2;
+            --lm-brass: #B8860F;
+            --lm-brass-ink: #8A6608;
+            --lm-brass-soft: #F7EFD9;
+            --lm-forest: #1F7A52;
+            --lm-forest-soft: #E7F3EC;
+            --lm-danger: #B0392E;
+            --lm-danger-soft: #FBEBE8;
+            --lm-info: #2E5C8A;
+            --lm-info-soft: #E9F0F7;
+            --lm-font-serif: 'Fraunces', Georgia, 'Iowan Old Style', serif;
+            --lm-font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+        }
+
+        .container {
+            font-family: var(--lm-font-sans);
+        }
+
+        .page-header h1 {
+            font-family: var(--lm-font-serif);
+            font-weight: 600;
+        }
+
 
         /* =====================================================
            EXPENSE MODAL
@@ -80,7 +128,7 @@ $currentUrl =
 
             inset: 0;
 
-            background: rgba(15, 23, 42, 0.60);
+            background: rgba(22, 33, 29, 0.55);
 
             display: none;
 
@@ -112,12 +160,14 @@ $currentUrl =
 
             overflow-y: auto;
 
-            background: #ffffff;
+            background: var(--lm-surface);
 
             border-radius: 16px;
 
             box-shadow:
-                0 25px 60px rgba(0, 0, 0, 0.25);
+                0 25px 60px rgba(22, 33, 29, 0.28);
+
+            font-family: var(--lm-font-sans);
         }
 
 
@@ -131,7 +181,7 @@ $currentUrl =
 
             padding: 22px 24px;
 
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--lm-line);
         }
 
 
@@ -139,9 +189,13 @@ $currentUrl =
 
             margin: 0;
 
+            font-family: var(--lm-font-serif);
+
+            font-weight: 600;
+
             font-size: 20px;
 
-            color: #111827;
+            color: var(--lm-ink-900);
         }
 
 
@@ -153,7 +207,7 @@ $currentUrl =
 
             border: none;
 
-            background: #f3f4f6;
+            background: var(--lm-line-soft);
 
             border-radius: 8px;
 
@@ -161,21 +215,25 @@ $currentUrl =
 
             font-size: 22px;
 
-            color: #6b7280;
+            color: var(--lm-ink-500);
 
             display: flex;
 
             align-items: center;
 
             justify-content: center;
+
+            transition:
+                background .15s ease,
+                color .15s ease;
         }
 
 
         .expense-modal-close:hover {
 
-            background: #e5e7eb;
+            background: var(--lm-danger-soft);
 
-            color: #111827;
+            color: var(--lm-danger);
         }
 
 
@@ -201,7 +259,7 @@ $currentUrl =
 
             font-size: 14px;
 
-            color: #374151;
+            color: var(--lm-ink-700);
         }
 
 
@@ -213,7 +271,7 @@ $currentUrl =
 
             box-sizing: border-box;
 
-            border: 1px solid #d1d5db;
+            border: 1px solid var(--lm-line);
 
             border-radius: 9px;
 
@@ -221,9 +279,9 @@ $currentUrl =
 
             font-size: 14px;
 
-            background: #ffffff;
+            background: var(--lm-surface);
 
-            color: #111827;
+            color: var(--lm-ink-900);
 
             outline: none;
 
@@ -237,14 +295,14 @@ $currentUrl =
         .expense-form-group select:focus,
         .expense-form-group textarea:focus {
 
-            border-color: #2563eb;
+            border-color: var(--lm-brass);
 
             box-shadow:
                 0 0 0 3px rgba(
-                    37,
-                    99,
-                    235,
-                    0.10
+                    184,
+                    134,
+                    15,
+                    0.14
                 );
         }
 
@@ -265,9 +323,9 @@ $currentUrl =
 
             padding: 12px 14px;
 
-            background: #f8fafc;
+            background: var(--lm-surface-tint);
 
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--lm-line-soft);
 
             border-radius: 9px;
 
@@ -285,7 +343,7 @@ $currentUrl =
 
             font-weight: 700;
 
-            color: #111827;
+            color: var(--lm-ink-900);
         }
 
 
@@ -293,19 +351,19 @@ $currentUrl =
 
             margin-top: 4px;
 
-            color: #64748b;
+            color: var(--lm-ink-500);
         }
 
 
         .expense-remaining strong {
 
-            color: #16a34a;
+            color: var(--lm-forest);
         }
 
 
         .expense-remaining.insufficient strong {
 
-            color: #dc2626;
+            color: var(--lm-danger);
         }
 
 
@@ -321,7 +379,7 @@ $currentUrl =
 
             padding: 18px 24px;
 
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid var(--lm-line);
         }
 
 
@@ -338,34 +396,36 @@ $currentUrl =
             font-weight: 600;
 
             cursor: pointer;
+
+            transition: background .15s ease;
         }
 
 
         .expense-btn-cancel {
 
-            background: #f3f4f6;
+            background: var(--lm-line-soft);
 
-            color: #374151;
+            color: var(--lm-ink-700);
         }
 
 
         .expense-btn-cancel:hover {
 
-            background: #e5e7eb;
+            background: var(--lm-line);
         }
 
 
         .expense-btn-save {
 
-            background: #2563eb;
+            background: var(--lm-ink-900);
 
-            color: #ffffff;
+            color: var(--lm-brass);
         }
 
 
         .expense-btn-save:hover {
 
-            background: #1d4ed8;
+            background: #0F1815;
         }
 
 
@@ -391,9 +451,9 @@ $currentUrl =
 
             border-radius: 7px;
 
-            background: #eff6ff;
+            background: var(--lm-info-soft);
 
-            color: #1d4ed8;
+            color: var(--lm-info);
 
             font-size: 13px;
 
@@ -403,7 +463,7 @@ $currentUrl =
 
         .expense-no-account {
 
-            color: #9ca3af;
+            color: var(--lm-ink-300);
         }
 
 
@@ -428,6 +488,21 @@ $currentUrl =
                 padding-left: 18px;
 
                 padding-right: 18px;
+            }
+
+        }
+
+
+        /* =====================================================
+           REDUCED MOTION
+        ===================================================== */
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .expense-modal-close,
+            .expense-btn {
+
+                transition: none;
             }
 
         }
@@ -736,7 +811,7 @@ require BASE_PATH .
                                 <?php else: ?>
 
                                     <span
-                                        style="color:#9ca3af;"
+                                        style="color:var(--lm-ink-300);"
                                     >
                                         —
                                     </span>
@@ -1129,7 +1204,7 @@ require BASE_PATH .
                         Notes
                         <span
                             style="
-                                color:#9ca3af;
+                                color:var(--lm-ink-300);
                                 font-weight:400;
                             "
                         >

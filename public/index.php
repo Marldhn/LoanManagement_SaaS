@@ -387,6 +387,24 @@ switch ($url) {
         break;
 
 
+        case 'loans/penalty':
+
+    $controller = new LoanController();
+
+    $controller->penalty();
+
+    break;
+
+
+case 'loans/penalty/store':
+
+    $controller = new LoanController();
+
+    $controller->storePenalty();
+
+    break;
+
+
     case 'loans/create':
 
         $controller = new LoanController();

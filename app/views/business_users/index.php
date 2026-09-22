@@ -37,7 +37,56 @@ unset($_SESSION['error']);
         href="assets/css/style.css"
     >
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700;800&display=swap"
+    >
+
     <style>
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOKENS — shares the sidebar / dashboard / borrowers / loans / payments /
+        | collections / accounts / penalties / expenses / categories / settings /
+        | borrower-details language
+        |--------------------------------------------------------------------------
+        */
+
+        :root {
+
+            --lm-ink-900: #16211D;
+            --lm-ink-700: #33413B;
+            --lm-ink-500: #6B7670;
+            --lm-ink-300: #9CA69F;
+            --lm-line: #E7E2D6;
+            --lm-line-soft: #F0EDE4;
+            --lm-surface: #FFFFFF;
+            --lm-surface-tint: #FAF8F2;
+            --lm-brass: #B8860F;
+            --lm-brass-ink: #8A6608;
+            --lm-brass-soft: #F7EFD9;
+            --lm-forest: #1F7A52;
+            --lm-forest-soft: #E7F3EC;
+            --lm-danger: #B0392E;
+            --lm-danger-soft: #FBEBE8;
+            --lm-info: #2E5C8A;
+            --lm-info-soft: #E9F0F7;
+            --lm-font-serif: 'Fraunces', Georgia, 'Iowan Old Style', serif;
+            --lm-font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+        }
+
+        .container {
+            font-family: var(--lm-font-sans);
+        }
+
+        .page-header h1 {
+            font-family: var(--lm-font-serif);
+            font-weight: 600;
+        }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -57,12 +106,10 @@ unset($_SESSION['error']);
         */
 
         .users-card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 16px;
+            background: var(--lm-surface);
+            border: 1px solid var(--lm-line);
+            border-radius: 14px;
             overflow: visible;
-            box-shadow:
-                0 2px 8px rgba(0, 0, 0, .04);
         }
 
 
@@ -72,22 +119,30 @@ unset($_SESSION['error']);
             justify-content: space-between;
             gap: 20px;
             padding: 20px;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--lm-line-soft);
+            color: var(--lm-ink-500);
+            font-size: 13px;
+        }
+
+
+        .users-card-header strong {
+            color: var(--lm-ink-900);
         }
 
 
         .users-card-title {
             margin: 0;
+            font-family: var(--lm-font-serif);
             font-size: 18px;
-            font-weight: 700;
-            color: #111827;
+            font-weight: 600;
+            color: var(--lm-ink-900);
         }
 
 
         .users-card-description {
             margin: 5px 0 0;
             font-size: 13px;
-            color: #6b7280;
+            color: var(--lm-ink-500);
         }
 
 
@@ -114,23 +169,32 @@ unset($_SESSION['error']);
 
         .users-table th {
             padding: 13px 18px;
-            background: #f9fafb;
-            color: #6b7280;
+            background: var(--lm-surface-tint);
+            color: var(--lm-ink-500);
             font-size: 11px;
             font-weight: 700;
             text-align: left;
-            text-transform: uppercase;
-            letter-spacing: .04em;
+            letter-spacing: .02em;
             white-space: nowrap;
         }
 
 
         .users-table td {
             padding: 15px 18px;
-            border-top: 1px solid #f3f4f6;
-            color: #374151;
+            border-top: 1px solid var(--lm-line-soft);
+            color: var(--lm-ink-700);
             font-size: 13px;
             white-space: nowrap;
+        }
+
+
+        .users-table tbody tr {
+            transition: background .15s ease;
+        }
+
+
+        .users-table tbody tr:hover {
+            background: var(--lm-surface-tint);
         }
 
 
@@ -152,26 +216,27 @@ unset($_SESSION['error']);
             height: 38px;
             min-width: 38px;
             border-radius: 10px;
-            background: #f3f4f6;
-            color: #374151;
+            background: var(--lm-brass-soft);
+            color: var(--lm-brass-ink);
             display: flex;
             align-items: center;
             justify-content: center;
+            font-family: var(--lm-font-serif);
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 600;
             text-transform: uppercase;
         }
 
 
         .user-name-main {
-            color: #111827;
+            color: var(--lm-ink-900);
             font-weight: 700;
         }
 
 
         .user-name-secondary {
             margin-top: 3px;
-            color: #9ca3af;
+            color: var(--lm-ink-300);
             font-size: 11px;
         }
 
@@ -194,14 +259,14 @@ unset($_SESSION['error']);
 
 
         .users-status-active {
-            background: #ecfdf5;
-            color: #047857;
+            background: var(--lm-forest-soft);
+            color: var(--lm-forest);
         }
 
 
         .users-status-inactive {
-            background: #fef2f2;
-            color: #b91c1c;
+            background: var(--lm-danger-soft);
+            color: var(--lm-danger);
         }
 
 
@@ -224,10 +289,10 @@ unset($_SESSION['error']);
             gap: 7px;
             height: 36px;
             padding: 0 12px;
-            border: 1px solid #d1d5db;
+            border: 1px solid var(--lm-line);
             border-radius: 8px;
-            background: #ffffff;
-            color: #374151;
+            background: var(--lm-surface);
+            color: var(--lm-ink-700);
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
@@ -238,8 +303,8 @@ unset($_SESSION['error']);
 
 
         .user-action-button:hover {
-            background: #f9fafb;
-            border-color: #9ca3af;
+            background: var(--lm-surface-tint);
+            border-color: var(--lm-ink-300);
         }
 
 
@@ -261,11 +326,11 @@ unset($_SESSION['error']);
             z-index: 9999;
             width: 200px;
             padding: 6px;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
+            background: var(--lm-surface);
+            border: 1px solid var(--lm-line);
             border-radius: 10px;
             box-shadow:
-                0 12px 30px rgba(0, 0, 0, .12);
+                0 16px 34px rgba(22, 33, 29, .16);
             display: none;
         }
 
@@ -285,7 +350,7 @@ unset($_SESSION['error']);
             border: none;
             border-radius: 7px;
             background: transparent;
-            color: #374151;
+            color: var(--lm-ink-700);
             font-size: 13px;
             font-weight: 500;
             text-decoration: none;
@@ -296,34 +361,34 @@ unset($_SESSION['error']);
 
         .user-action-menu a:hover,
         .user-action-menu button:hover {
-            background: #f3f4f6;
+            background: var(--lm-surface-tint);
         }
 
 
         .user-action-menu .danger-action {
-            color: #dc2626;
+            color: var(--lm-danger);
         }
 
 
         .user-action-menu .danger-action:hover {
-            background: #fef2f2;
+            background: var(--lm-danger-soft);
         }
 
 
         .user-action-menu .success-action {
-            color: #047857;
+            color: var(--lm-forest);
         }
 
 
         .user-action-menu .success-action:hover {
-            background: #ecfdf5;
+            background: var(--lm-forest-soft);
         }
 
 
         .user-action-divider {
             height: 1px;
             margin: 5px 4px;
-            background: #f3f4f6;
+            background: var(--lm-line-soft);
         }
 
 
@@ -344,25 +409,26 @@ unset($_SESSION['error']);
             height: 50px;
             margin: 0 auto 14px;
             border-radius: 13px;
-            background: #f3f4f6;
+            background: var(--lm-line-soft);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #6b7280;
-            font-weight: 700;
+            color: var(--lm-ink-500);
+            font-family: var(--lm-font-serif);
+            font-weight: 600;
         }
 
 
         .users-empty h3 {
             margin: 0;
-            color: #111827;
+            color: var(--lm-ink-900);
             font-size: 16px;
         }
 
 
         .users-empty p {
             margin: 6px 0 0;
-            color: #9ca3af;
+            color: var(--lm-ink-300);
             font-size: 13px;
         }
 
@@ -381,7 +447,7 @@ unset($_SESSION['error']);
             align-items: center;
             justify-content: center;
             padding: 20px;
-            background: rgba(17, 24, 39, .55);
+            background: rgba(22, 33, 29, .55);
         }
 
 
@@ -393,12 +459,13 @@ unset($_SESSION['error']);
         .password-modal {
             width: 100%;
             max-width: 460px;
-            background: #ffffff;
-            border-radius: 16px;
+            background: var(--lm-surface);
+            border-radius: 14px;
             box-shadow:
-                0 25px 60px rgba(0, 0, 0, .20);
+                0 24px 60px rgba(22, 33, 29, .28);
             overflow: hidden;
             animation: passwordModalIn .15s ease;
+            font-family: var(--lm-font-sans);
         }
 
 
@@ -423,21 +490,22 @@ unset($_SESSION['error']);
             justify-content: space-between;
             gap: 20px;
             padding: 20px;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--lm-line);
         }
 
 
         .password-modal-title {
             margin: 0;
-            color: #111827;
+            color: var(--lm-ink-900);
+            font-family: var(--lm-font-serif);
             font-size: 18px;
-            font-weight: 700;
+            font-weight: 600;
         }
 
 
         .password-modal-user {
             margin-top: 5px;
-            color: #6b7280;
+            color: var(--lm-ink-500);
             font-size: 13px;
         }
 
@@ -447,16 +515,17 @@ unset($_SESSION['error']);
             height: 32px;
             border: none;
             border-radius: 8px;
-            background: #f3f4f6;
-            color: #6b7280;
+            background: var(--lm-line-soft);
+            color: var(--lm-ink-500);
             font-size: 18px;
             cursor: pointer;
+            transition: background .15s ease, color .15s ease;
         }
 
 
         .password-modal-close:hover {
-            background: #e5e7eb;
-            color: #111827;
+            background: var(--lm-danger-soft);
+            color: var(--lm-danger);
         }
 
 
@@ -469,8 +538,8 @@ unset($_SESSION['error']);
             margin-bottom: 18px;
             padding: 11px 12px;
             border-radius: 9px;
-            background: #f9fafb;
-            color: #6b7280;
+            background: var(--lm-surface-tint);
+            color: var(--lm-ink-500);
             font-size: 12px;
             line-height: 1.5;
         }
@@ -484,7 +553,7 @@ unset($_SESSION['error']);
         .password-field label {
             display: block;
             margin-bottom: 7px;
-            color: #374151;
+            color: var(--lm-ink-700);
             font-size: 13px;
             font-weight: 600;
         }
@@ -495,18 +564,20 @@ unset($_SESSION['error']);
             box-sizing: border-box;
             height: 42px;
             padding: 0 12px;
-            border: 1px solid #d1d5db;
+            border: 1px solid var(--lm-line);
             border-radius: 8px;
             outline: none;
             font-size: 13px;
-            color: #111827;
+            color: var(--lm-ink-900);
+            background: var(--lm-surface);
+            transition: border-color .15s ease, box-shadow .15s ease;
         }
 
 
         .password-field input:focus {
-            border-color: #9ca3af;
+            border-color: var(--lm-brass);
             box-shadow:
-                0 0 0 3px rgba(107, 114, 128, .10);
+                0 0 0 3px rgba(184, 134, 15, .14);
         }
 
 
@@ -515,25 +586,27 @@ unset($_SESSION['error']);
             justify-content: flex-end;
             gap: 10px;
             padding: 16px 20px;
-            border-top: 1px solid #f0f0f0;
+            border-top: 1px solid var(--lm-line);
+            background: var(--lm-surface-tint);
         }
 
 
         .password-cancel-button {
             height: 38px;
             padding: 0 14px;
-            border: 1px solid #d1d5db;
+            border: 1px solid var(--lm-line);
             border-radius: 8px;
-            background: #ffffff;
-            color: #374151;
+            background: var(--lm-surface);
+            color: var(--lm-ink-700);
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
+            transition: background .15s ease;
         }
 
 
         .password-cancel-button:hover {
-            background: #f9fafb;
+            background: var(--lm-line-soft);
         }
 
 
@@ -542,16 +615,17 @@ unset($_SESSION['error']);
             padding: 0 16px;
             border: none;
             border-radius: 8px;
-            background: #111827;
-            color: #ffffff;
+            background: var(--lm-ink-900);
+            color: var(--lm-brass);
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
+            transition: background .15s ease;
         }
 
 
         .password-submit-button:hover {
-            background: #1f2937;
+            background: #0F1815;
         }
 
 
@@ -575,6 +649,29 @@ unset($_SESSION['error']);
 
             .password-modal {
                 max-width: 100%;
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REDUCED MOTION
+        |--------------------------------------------------------------------------
+        */
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .users-table tbody tr,
+            .user-action-button,
+            .user-action-arrow,
+            .password-modal,
+            .password-modal-close,
+            .password-cancel-button,
+            .password-submit-button,
+            .password-field input {
+                transition: none;
+                animation: none;
             }
 
         }
@@ -1168,7 +1265,7 @@ require APP_PATH . '/views/layouts/sidebar.php';
 
                                         <span
                                             style="
-                                                color:#9ca3af;
+                                                color:var(--lm-ink-300);
                                                 font-size:12px;
                                             "
                                         >

@@ -155,8 +155,48 @@ function borrowerValue($value, $fallback = '-')
         href="assets/css/style.css"
     >
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700;800&display=swap"
+    >
+
 
     <style>
+
+        /*
+        |--------------------------------------------------------------------------
+        | TOKENS — shares the sidebar / dashboard / borrowers / loans / payments /
+        | collections / accounts / penalties / expenses / categories / settings
+        | language
+        |--------------------------------------------------------------------------
+        */
+
+        :root {
+
+            --lm-ink-900: #16211D;
+            --lm-ink-700: #33413B;
+            --lm-ink-500: #6B7670;
+            --lm-ink-300: #9CA69F;
+            --lm-line: #E7E2D6;
+            --lm-line-soft: #F0EDE4;
+            --lm-surface: #FFFFFF;
+            --lm-surface-tint: #FAF8F2;
+            --lm-brass: #B8860F;
+            --lm-brass-ink: #8A6608;
+            --lm-brass-soft: #F7EFD9;
+            --lm-forest: #1F7A52;
+            --lm-forest-soft: #E7F3EC;
+            --lm-danger: #B0392E;
+            --lm-danger-soft: #FBEBE8;
+            --lm-info: #2E5C8A;
+            --lm-info-soft: #E9F0F7;
+            --lm-font-serif: 'Fraunces', Georgia, 'Iowan Old Style', serif;
+            --lm-font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+        }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -166,6 +206,8 @@ function borrowerValue($value, $fallback = '-')
 
         .borrower-details-page {
             width: 100%;
+
+            font-family: var(--lm-font-sans);
         }
 
 
@@ -197,16 +239,18 @@ function borrowerValue($value, $fallback = '-')
 
             border-radius: 14px;
 
-            background: #eff6ff;
+            background: var(--lm-brass-soft);
 
-            color: #2563eb;
+            color: var(--lm-brass-ink);
 
             display: flex;
             align-items: center;
             justify-content: center;
 
+            font-family: var(--lm-font-serif);
+
             font-size: 22px;
-            font-weight: 700;
+            font-weight: 600;
 
             flex-shrink: 0;
         }
@@ -215,17 +259,28 @@ function borrowerValue($value, $fallback = '-')
         .borrower-details-title h1 {
             margin: 0 0 5px;
 
+            font-family: var(--lm-font-serif);
+
             font-size: 27px;
-            font-weight: 700;
+            font-weight: 600;
+
+            color: var(--lm-ink-900);
+
+            letter-spacing: -.01em;
         }
 
 
         .borrower-details-title p {
             margin: 0;
 
-            color: #6b7280;
+            color: var(--lm-ink-500);
 
             font-size: 14px;
+        }
+
+
+        .borrower-details-title p strong {
+            color: var(--lm-ink-900);
         }
 
 
@@ -255,17 +310,27 @@ function borrowerValue($value, $fallback = '-')
 
 
         .borrower-summary-card {
-            background: #fff;
+            background: var(--lm-surface);
 
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--lm-line);
+
+            border-top: 3px solid var(--lm-ink-300);
 
             border-radius: 12px;
 
             padding: 20px;
+        }
 
-            box-shadow:
-                0 2px 8px
-                rgba(0, 0, 0, 0.04);
+
+        .borrower-summary-grid
+        .borrower-summary-card:nth-child(3) {
+            border-top-color: var(--lm-forest);
+        }
+
+
+        .borrower-summary-grid
+        .borrower-summary-card:nth-child(4) {
+            border-top-color: var(--lm-brass);
         }
 
 
@@ -283,11 +348,11 @@ function borrowerValue($value, $fallback = '-')
 
 
         .borrower-summary-title {
-            color: #6b7280;
+            color: var(--lm-ink-500);
 
-            font-size: 13px;
+            font-size: 12px;
 
-            font-weight: 500;
+            font-weight: 600;
         }
 
 
@@ -297,13 +362,31 @@ function borrowerValue($value, $fallback = '-')
 
             border-radius: 9px;
 
-            background: #f8fafc;
+            background: var(--lm-line-soft);
+
+            color: var(--lm-ink-700);
 
             display: flex;
             align-items: center;
             justify-content: center;
 
-            font-size: 16px;
+            font-size: 15px;
+        }
+
+
+        .borrower-summary-grid
+        .borrower-summary-card:nth-child(3)
+        .borrower-summary-icon {
+            background: var(--lm-forest-soft);
+            color: var(--lm-forest);
+        }
+
+
+        .borrower-summary-grid
+        .borrower-summary-card:nth-child(4)
+        .borrower-summary-icon {
+            background: var(--lm-brass-soft);
+            color: var(--lm-brass-ink);
         }
 
 
@@ -312,9 +395,11 @@ function borrowerValue($value, $fallback = '-')
 
             font-weight: 700;
 
-            color: #111827;
+            color: var(--lm-ink-900);
 
             line-height: 1.2;
+
+            letter-spacing: -.01em;
         }
 
 
@@ -325,19 +410,15 @@ function borrowerValue($value, $fallback = '-')
         */
 
         .borrower-details-card {
-            background: #fff;
+            background: var(--lm-surface);
 
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--lm-line);
 
             border-radius: 12px;
 
             margin-bottom: 22px;
 
             overflow: hidden;
-
-            box-shadow:
-                0 2px 8px
-                rgba(0, 0, 0, 0.04);
         }
 
 
@@ -345,7 +426,7 @@ function borrowerValue($value, $fallback = '-')
             padding: 18px 22px;
 
             border-bottom:
-                1px solid #e5e7eb;
+                1px solid var(--lm-line-soft);
 
             display: flex;
 
@@ -360,18 +441,20 @@ function borrowerValue($value, $fallback = '-')
         .borrower-details-card-header h2 {
             margin: 0;
 
+            font-family: var(--lm-font-serif);
+
             font-size: 17px;
 
-            font-weight: 700;
+            font-weight: 600;
 
-            color: #111827;
+            color: var(--lm-ink-900);
         }
 
 
         .borrower-details-card-header p {
             margin: 4px 0 0;
 
-            color: #6b7280;
+            color: var(--lm-ink-500);
 
             font-size: 13px;
         }
@@ -415,7 +498,7 @@ function borrowerValue($value, $fallback = '-')
             padding: 13px 0;
 
             border-bottom:
-                1px solid #f1f5f9;
+                1px solid var(--lm-line-soft);
         }
 
 
@@ -430,7 +513,7 @@ function borrowerValue($value, $fallback = '-')
 
 
         .borrower-info-label {
-            color: #64748b;
+            color: var(--lm-ink-500);
 
             font-size: 13px;
 
@@ -439,7 +522,7 @@ function borrowerValue($value, $fallback = '-')
 
 
         .borrower-info-value {
-            color: #111827;
+            color: var(--lm-ink-900);
 
             font-size: 14px;
 
@@ -458,9 +541,9 @@ function borrowerValue($value, $fallback = '-')
 
             padding: 16px;
 
-            background: #f8fafc;
+            background: var(--lm-surface-tint);
 
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--lm-line-soft);
 
             border-radius: 10px;
         }
@@ -473,12 +556,12 @@ function borrowerValue($value, $fallback = '-')
 
             font-weight: 700;
 
-            color: #475569;
+            color: var(--lm-ink-700);
         }
 
 
         .borrower-notes-content {
-            color: #334155;
+            color: var(--lm-ink-700);
 
             font-size: 14px;
 
@@ -509,9 +592,9 @@ function borrowerValue($value, $fallback = '-')
 
             border-radius: 10px;
 
-            background: #f8fafc;
+            background: var(--lm-surface-tint);
 
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--lm-line-soft);
         }
 
 
@@ -520,7 +603,7 @@ function borrowerValue($value, $fallback = '-')
 
             margin-bottom: 6px;
 
-            color: #64748b;
+            color: var(--lm-ink-500);
 
             font-size: 12px;
         }
@@ -533,7 +616,7 @@ function borrowerValue($value, $fallback = '-')
 
             font-weight: 700;
 
-            color: #111827;
+            color: var(--lm-ink-900);
         }
 
 
@@ -562,16 +645,18 @@ function borrowerValue($value, $fallback = '-')
         .borrower-loan-table th {
             padding: 13px 14px;
 
-            background: #f8fafc;
+            background: var(--lm-surface-tint);
 
             border-bottom:
-                1px solid #e5e7eb;
+                1px solid var(--lm-line);
 
-            color: #64748b;
+            color: var(--lm-ink-500);
 
-            font-size: 12px;
+            font-size: 11px;
 
             font-weight: 700;
+
+            letter-spacing: .02em;
 
             text-align: left;
 
@@ -583,9 +668,9 @@ function borrowerValue($value, $fallback = '-')
             padding: 14px;
 
             border-bottom:
-                1px solid #f1f5f9;
+                1px solid var(--lm-line-soft);
 
-            color: #374151;
+            color: var(--lm-ink-700);
 
             font-size: 13px;
 
@@ -593,20 +678,27 @@ function borrowerValue($value, $fallback = '-')
         }
 
 
+        .borrower-loan-table tbody tr {
+            transition: background .15s ease;
+        }
+
+
         .borrower-loan-table tbody tr:hover {
-            background: #fafafa;
+            background: var(--lm-surface-tint);
         }
 
 
         .borrower-loan-number {
             font-weight: 700;
 
-            color: #2563eb;
+            color: var(--lm-info);
         }
 
 
         .borrower-loan-balance {
             font-weight: 700;
+
+            color: var(--lm-ink-900);
         }
 
 
@@ -631,7 +723,9 @@ function borrowerValue($value, $fallback = '-')
 
             border-radius: 50%;
 
-            background: #f1f5f9;
+            background: var(--lm-line-soft);
+
+            color: var(--lm-ink-500);
 
             display: flex;
 
@@ -647,13 +741,15 @@ function borrowerValue($value, $fallback = '-')
             margin: 0 0 8px;
 
             font-size: 17px;
+
+            color: var(--lm-ink-900);
         }
 
 
         .borrower-empty-state p {
             margin: 0 0 20px;
 
-            color: #6b7280;
+            color: var(--lm-ink-300);
 
             font-size: 14px;
         }
@@ -748,6 +844,21 @@ function borrowerValue($value, $fallback = '-')
                 width: 100%;
 
                 text-align: center;
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REDUCED MOTION
+        |--------------------------------------------------------------------------
+        */
+
+        @media (prefers-reduced-motion: reduce) {
+
+            .borrower-loan-table tbody tr {
+                transition: none;
             }
 
         }

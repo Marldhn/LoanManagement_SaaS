@@ -339,8 +339,47 @@ $error =
     href="assets/css/style.css"
 >
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700;800&display=swap"
+>
+
 
 <style>
+
+    /*
+    |--------------------------------------------------------------------------
+    | TOKENS — shares the sidebar / dashboard / borrowers / loans / payments /
+    | collections / accounts / penalties / expenses / categories language
+    |--------------------------------------------------------------------------
+    */
+
+    :root {
+
+        --lm-ink-900: #16211D;
+        --lm-ink-700: #33413B;
+        --lm-ink-500: #6B7670;
+        --lm-ink-300: #9CA69F;
+        --lm-line: #E7E2D6;
+        --lm-line-soft: #F0EDE4;
+        --lm-surface: #FFFFFF;
+        --lm-surface-tint: #FAF8F2;
+        --lm-brass: #B8860F;
+        --lm-brass-ink: #8A6608;
+        --lm-brass-soft: #F7EFD9;
+        --lm-forest: #1F7A52;
+        --lm-forest-soft: #E7F3EC;
+        --lm-danger: #B0392E;
+        --lm-danger-soft: #FBEBE8;
+        --lm-info: #2E5C8A;
+        --lm-info-soft: #E9F0F7;
+        --lm-font-serif: 'Fraunces', Georgia, 'Iowan Old Style', serif;
+        --lm-font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    }
+
 
     /*
     |--------------------------------------------------------------------------
@@ -355,6 +394,8 @@ $error =
         max-width: 1400px;
 
         margin: 0 auto;
+
+        font-family: var(--lm-font-sans);
 
     }
 
@@ -384,11 +425,15 @@ $error =
 
         margin: 0 0 6px;
 
+        font-family: var(--lm-font-serif);
+
         font-size: 28px;
 
-        font-weight: 700;
+        font-weight: 600;
 
-        color: #111827;
+        color: var(--lm-ink-900);
+
+        letter-spacing: -.01em;
 
     }
 
@@ -397,7 +442,7 @@ $error =
 
         margin: 0;
 
-        color: #6b7280;
+        color: var(--lm-ink-500);
 
         font-size: 14px;
 
@@ -433,24 +478,15 @@ $error =
 
     .settings-sidebar {
 
-        background: #fff;
+        background: var(--lm-surface);
 
         border:
             1px solid
-            #e5e7eb;
+            var(--lm-line);
 
         border-radius: 12px;
 
         overflow: hidden;
-
-        box-shadow:
-            0 2px 8px
-            rgba(
-                0,
-                0,
-                0,
-                0.04
-            );
 
     }
 
@@ -463,17 +499,15 @@ $error =
 
         border-bottom:
             1px solid
-            #e5e7eb;
+            var(--lm-line-soft);
 
-        font-size: 13px;
+        font-size: 12px;
 
         font-weight: 700;
 
-        color: #64748b;
+        color: var(--lm-ink-500);
 
-        text-transform: uppercase;
-
-        letter-spacing: .04em;
+        letter-spacing: .02em;
 
     }
 
@@ -503,7 +537,7 @@ $error =
 
         text-decoration: none;
 
-        color: #475569;
+        color: var(--lm-ink-700);
 
         font-size: 13px;
 
@@ -520,18 +554,18 @@ $error =
 
     .settings-nav-item:hover {
 
-        background: #f8fafc;
+        background: var(--lm-surface-tint);
 
-        color: #2563eb;
+        color: var(--lm-ink-900);
 
     }
 
 
     .settings-nav-item.active {
 
-        background: #eff6ff;
+        background: var(--lm-brass-soft);
 
-        color: #2563eb;
+        color: var(--lm-brass-ink);
 
         font-weight: 700;
 
@@ -564,26 +598,17 @@ $error =
 
     .settings-card {
 
-        background: #fff;
+        background: var(--lm-surface);
 
         border:
             1px solid
-            #e5e7eb;
+            var(--lm-line);
 
         border-radius: 12px;
 
         margin-bottom: 22px;
 
         overflow: hidden;
-
-        box-shadow:
-            0 2px 8px
-            rgba(
-                0,
-                0,
-                0,
-                0.04
-            );
 
     }
 
@@ -596,7 +621,7 @@ $error =
 
         border-bottom:
             1px solid
-            #e5e7eb;
+            var(--lm-line-soft);
 
     }
 
@@ -606,11 +631,13 @@ $error =
         margin:
             0 0 4px;
 
+        font-family: var(--lm-font-serif);
+
         font-size: 17px;
 
-        font-weight: 700;
+        font-weight: 600;
 
-        color: #111827;
+        color: var(--lm-ink-900);
 
     }
 
@@ -619,7 +646,7 @@ $error =
 
         margin: 0;
 
-        color: #6b7280;
+        color: var(--lm-ink-500);
 
         font-size: 13px;
 
@@ -678,7 +705,7 @@ $error =
 
         margin-bottom: 7px;
 
-        color: #374151;
+        color: var(--lm-ink-700);
 
         font-size: 13px;
 
@@ -689,7 +716,7 @@ $error =
 
     .settings-required {
 
-        color: #dc2626;
+        color: var(--lm-danger);
 
     }
 
@@ -708,13 +735,13 @@ $error =
 
         border:
             1px solid
-            #d1d5db;
+            var(--lm-line);
 
         border-radius: 8px;
 
-        background: #fff;
+        background: var(--lm-surface);
 
-        color: #111827;
+        color: var(--lm-ink-900);
 
         font-size: 14px;
 
@@ -731,15 +758,15 @@ $error =
     .settings-select:focus,
     .settings-textarea:focus {
 
-        border-color: #2563eb;
+        border-color: var(--lm-brass);
 
         box-shadow:
             0 0 0 3px
             rgba(
-                37,
-                99,
-                235,
-                .10
+                184,
+                134,
+                15,
+                .14
             );
 
     }
@@ -758,7 +785,7 @@ $error =
 
         margin-top: 5px;
 
-        color: #94a3b8;
+        color: var(--lm-ink-300);
 
         font-size: 12px;
 
@@ -796,11 +823,11 @@ $error =
 
         border:
             1px solid
-            #e5e7eb;
+            var(--lm-line);
 
         border-radius: 14px;
 
-        background: #f8fafc;
+        background: var(--lm-surface-tint);
 
         display: flex;
 
@@ -842,7 +869,7 @@ $error =
 
         gap: 6px;
 
-        color: #94a3b8;
+        color: var(--lm-ink-300);
 
         text-align: center;
 
@@ -879,13 +906,15 @@ $error =
 
         border:
             1px dashed
-            #cbd5e1;
+            var(--lm-line);
 
         border-radius: 8px;
 
-        background: #f8fafc;
+        background: var(--lm-surface-tint);
 
         font-size: 13px;
+
+        color: var(--lm-ink-700);
 
     }
 
@@ -928,36 +957,36 @@ $error =
 
     .settings-status.active {
 
-        background: #dcfce7;
+        background: var(--lm-forest-soft);
 
-        color: #166534;
+        color: var(--lm-forest);
 
     }
 
 
     .settings-status.pending {
 
-        background: #fef3c7;
+        background: var(--lm-brass-soft);
 
-        color: #92400e;
+        color: var(--lm-brass-ink);
 
     }
 
 
     .settings-status.inactive {
 
-        background: #f1f5f9;
+        background: var(--lm-line-soft);
 
-        color: #475569;
+        color: var(--lm-ink-500);
 
     }
 
 
     .settings-status.suspended {
 
-        background: #fee2e2;
+        background: var(--lm-danger-soft);
 
-        color: #991b1b;
+        color: var(--lm-danger);
 
     }
 
@@ -993,7 +1022,7 @@ $error =
 
         border-bottom:
             1px solid
-            #f1f5f9;
+            var(--lm-line-soft);
 
     }
 
@@ -1027,7 +1056,7 @@ $error =
 
         margin-bottom: 3px;
 
-        color: #111827;
+        color: var(--lm-ink-900);
 
         font-size: 14px;
 
@@ -1040,7 +1069,7 @@ $error =
 
         display: block;
 
-        color: #64748b;
+        color: var(--lm-ink-500);
 
         font-size: 12px;
 
@@ -1081,7 +1110,7 @@ $error =
 
         inset: 0;
 
-        background: #cbd5e1;
+        background: var(--lm-line);
 
         border-radius: 999px;
 
@@ -1104,7 +1133,7 @@ $error =
 
         top: 3px;
 
-        background: #fff;
+        background: var(--lm-surface);
 
         border-radius: 50%;
 
@@ -1113,9 +1142,9 @@ $error =
         box-shadow:
             0 1px 3px
             rgba(
-                0,
-                0,
-                0,
+                22,
+                33,
+                29,
                 .20
             );
 
@@ -1125,7 +1154,7 @@ $error =
     .settings-switch input:checked
     + .settings-slider {
 
-        background: #2563eb;
+        background: var(--lm-brass);
 
     }
 
@@ -1153,13 +1182,13 @@ $error =
 
         border:
             1px solid
-            #dbeafe;
+            rgba(46, 92, 138, 0.25);
 
-        background: #eff6ff;
+        background: var(--lm-info-soft);
 
         border-radius: 9px;
 
-        color: #1e40af;
+        color: var(--lm-info);
 
         font-size: 13px;
 
@@ -1195,26 +1224,26 @@ $error =
 
     .settings-alert-success {
 
-        background: #dcfce7;
+        background: var(--lm-forest-soft);
 
         border:
             1px solid
-            #bbf7d0;
+            rgba(31, 122, 82, 0.3);
 
-        color: #166534;
+        color: var(--lm-forest);
 
     }
 
 
     .settings-alert-error {
 
-        background: #fee2e2;
+        background: var(--lm-danger-soft);
 
         border:
             1px solid
-            #fecaca;
+            rgba(176, 57, 46, 0.3);
 
-        color: #991b1b;
+        color: var(--lm-danger);
 
     }
 
@@ -1233,9 +1262,9 @@ $error =
 
         border-top:
             1px solid
-            #e5e7eb;
+            var(--lm-line);
 
-        background: #fafafa;
+        background: var(--lm-surface-tint);
 
         display: flex;
 
@@ -1256,14 +1285,14 @@ $error =
 
         background:
             linear-gradient(
-                135deg,
-                #eff6ff,
-                #ffffff
+                150deg,
+                var(--lm-ink-900),
+                #23342E
             );
 
         border:
             1px solid
-            #bfdbfe;
+            var(--lm-ink-900);
 
         border-radius: 12px;
 
@@ -1291,20 +1320,22 @@ $error =
 
     .saas-plan-title {
 
+        font-family: var(--lm-font-serif);
+
         font-size: 15px;
 
-        font-weight: 700;
+        font-weight: 600;
 
-        color: #1e3a8a;
+        color: var(--lm-brass);
 
     }
 
 
     .saas-plan-badge {
 
-        background: #2563eb;
+        background: var(--lm-brass);
 
-        color: #fff;
+        color: var(--lm-ink-900);
 
         padding:
             5px
@@ -1325,11 +1356,18 @@ $error =
 
         margin: 0;
 
-        color: #475569;
+        color: rgba(243, 241, 234, 0.75);
 
         font-size: 13px;
 
         line-height: 1.6;
+
+    }
+
+
+    .saas-plan-text strong {
+
+        color: #F3F1EA;
 
     }
 
@@ -1344,7 +1382,7 @@ $error =
 
         border:
             1px solid
-            #fecaca;
+            rgba(176, 57, 46, 0.3);
 
     }
 
@@ -1352,11 +1390,11 @@ $error =
     .settings-danger-card
     .settings-card-header {
 
-        background: #fffafa;
+        background: var(--lm-danger-soft);
 
         border-bottom:
             1px solid
-            #fecaca;
+            rgba(176, 57, 46, 0.3);
 
     }
 
@@ -1364,7 +1402,7 @@ $error =
     .settings-danger-card
     .settings-card-header h2 {
 
-        color: #991b1b;
+        color: var(--lm-danger);
 
     }
 
@@ -1389,7 +1427,7 @@ $error =
 
         font-size: 14px;
 
-        color: #374151;
+        color: var(--lm-ink-700);
 
     }
 
@@ -1398,7 +1436,7 @@ $error =
 
         margin: 0;
 
-        color: #64748b;
+        color: var(--lm-ink-500);
 
         font-size: 12px;
 
@@ -1421,13 +1459,13 @@ $error =
 
         border:
             1px solid
-            #dc2626;
+            var(--lm-danger);
 
         border-radius: 8px;
 
-        background: #fff;
+        background: var(--lm-surface);
 
-        color: #dc2626;
+        color: var(--lm-danger);
 
         text-decoration: none;
 
@@ -1437,12 +1475,14 @@ $error =
 
         cursor: pointer;
 
+        transition: background .15s ease;
+
     }
 
 
     .btn-danger:hover {
 
-        background: #fef2f2;
+        background: var(--lm-danger-soft);
 
     }
 
@@ -1579,6 +1619,29 @@ $error =
             padding:
                 14px
                 16px;
+
+        }
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REDUCED MOTION
+    |--------------------------------------------------------------------------
+    */
+
+    @media (prefers-reduced-motion: reduce) {
+
+        .settings-nav-item,
+        .settings-input,
+        .settings-select,
+        .settings-textarea,
+        .settings-slider,
+        .settings-slider:before,
+        .btn-danger {
+
+            transition: none;
 
         }
 
@@ -2321,7 +2384,7 @@ require APP_PATH .
                                             align-items:center;
                                             gap:8px;
                                             font-size:13px;
-                                            color:#475569;
+                                            color:var(--lm-ink-700);
                                         "
                                     >
 
